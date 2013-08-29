@@ -1,2 +1,8 @@
 bin
 .settings
+.DS_Store
+artifacts.jar
+content.jar
+features
+plugins
+update-site.zip
