@@ -18,4 +18,11 @@
       <update label="Eclipse Integration for Tapestry5" url="https://github.com/anjlab/eclipse-tapestry5-plugin/tree/master/update-site"/>
    </url>
 
+   <plugin
+         id="com.anjlab.eclipse.tapestry5"
+         download-size="0"
+         install-size="0"
+         version="0.0.0"
+         unpack="false"/>
+
 </feature>
