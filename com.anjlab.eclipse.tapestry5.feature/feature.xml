@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<feature
+      id="com.anjlab.eclipse.tapestry5.feature"
+      label="Eclipse Integration for Tapestry5 Feature"
+      version="1.0.0"
+      provider-name="AnjLab Team"
+      plugin="com.anjlab.eclipse.tapestry5">
+
+   <description url="https://github.com/anjlab/eclipse-tapestry5-plugin">
+      Yet another Design/Code switcher for Tapestry5 applications.
+   </description>
+
+   <license url="http://www.apache.org/licenses/LICENSE-2.0.txt">
+      
+   </license>
+
+   <url>
+      <update label="Eclipse Integration for Tapestry5" url="https://github.com/anjlab/eclipse-tapestry5-plugin/tree/master/update-site"/>
+   </url>
+
+</feature>
