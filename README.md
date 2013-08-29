@@ -6,4 +6,8 @@ Yet another Design/Code switcher for Tapestry5 applications.
 
 ### Install
 
-Copy contents of the `plugins` to your `eclipse/plugins` folder and restart the Eclipse.
+In Eclipse go to *Help* -> *Install New Software...* -> *Add...*
+
+Use this update site URL:
+
+    https://dl.bintray.com/anjlab/eclipse
