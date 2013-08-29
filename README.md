@@ -11,3 +11,9 @@ In Eclipse go to *Help* -> *Install New Software...* -> *Add...*
 Use this update site URL:
 
     https://dl.bintray.com/anjlab/eclipse
+
+Or drag &amp; drop this icon into a running Eclipse:
+
+<a href="http://marketplace.eclipse.org/marketplace-client-intro?mpc_install=1125032" title="Drag and drop into a running Eclipse workspace to install Eclipse Integration for Tapestry5">
+  <img src="https://marketplace.eclipse.org/sites/all/modules/custom/marketplace/images/installbutton.png"/>
+</a>
