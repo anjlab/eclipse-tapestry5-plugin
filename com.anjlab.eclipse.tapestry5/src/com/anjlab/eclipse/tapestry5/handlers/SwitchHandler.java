@@ -73,8 +73,6 @@ public class SwitchHandler extends AbstractHandler
                 {
                     throw new ExecutionException("Unable to get file from selection", e);
                 }
-                
-                return null;
             }
         }
         
