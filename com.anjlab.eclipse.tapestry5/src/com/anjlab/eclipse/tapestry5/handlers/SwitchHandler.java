@@ -67,6 +67,8 @@ public class SwitchHandler extends AbstractHandler
                     if (file != null)
                     {
                         openComplementFile(window, file);
+                        
+                        return null;
                     }
                 }
                 catch (JavaModelException e)
@@ -250,7 +252,9 @@ public class SwitchHandler extends AbstractHandler
 
             private boolean isSourceFolder(IJavaElement javaElement) throws JavaModelException
             {
-                return javaElement != null && (javaElement instanceof IPackageFragmentRoot);
+                return javaElement != null
+                    && (javaElement instanceof IPackageFragmentRoot)
+                    && (((IPackageFragmentRoot) javaElement).getKind() == IPackageFragmentRoot.K_SOURCE);
             }
 
             private String getComplementFileName(String fileName, String originalExtension)
