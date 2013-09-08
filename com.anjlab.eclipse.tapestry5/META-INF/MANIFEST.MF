@@ -12,7 +12,9 @@ Require-Bundle: org.eclipse.ui,
  org.eclipse.ui,
  org.eclipse.core.runtime,
  org.eclipse.ui.ide,
- org.eclipse.jdt.core
+ org.eclipse.jdt.core,
+ org.eclipse.ui.workbench.texteditor;bundle-version="3.8.100",
+ org.eclipse.jdt.ui;bundle-version="3.9.0"
 Bundle-RequiredExecutionEnvironment: JavaSE-1.6
 Bundle-ActivationPolicy: lazy
 Eclipse-LazyStart: true
