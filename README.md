@@ -24,7 +24,7 @@ In Eclipse go to *Help* -> *Install New Software...* -> *Add...*
 
 Use this update site URL:
 
-    https://dl.bintray.com/anjlab/eclipse
+    http://dl.bintray.com/anjlab/eclipse-tapestry5-plugin
 
 Or drag &amp; drop this icon into a running Eclipse:
 
