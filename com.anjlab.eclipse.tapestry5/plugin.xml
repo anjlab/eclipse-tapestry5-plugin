@@ -45,5 +45,31 @@
          </toolbar>
       </menuContribution>
    </extension>
+   <extension
+         point="org.eclipse.ui.views">
+      <category
+            id="com.anjlab.eclipse.tapestry5"
+            name="Tapestry5">
+      </category>
+      <view
+            category="com.anjlab.eclipse.tapestry5"
+            class="com.anjlab.eclipse.tapestry5.views.TapestryContextView"
+            icon="icons/tapestry-logo.png"
+            id="com.anjlab.eclipse.tapestry5.views.TapestryContextView"
+            name="Tapestry Context">
+      </view>
+   </extension>
+   <extension
+         point="org.eclipse.ui.perspectiveExtensions">
+      <perspectiveExtension
+            targetID="org.eclipse.jdt.ui.JavaPerspective">
+         <view
+               id="com.anjlab.eclipse.tapestry5.views.TapestryContextView"
+               ratio="0.5"
+               relationship="top"
+               relative="org.eclipse.ui.views.ContentOutline">
+         </view>
+      </perspectiveExtension>
+   </extension>
 
 </plugin>
