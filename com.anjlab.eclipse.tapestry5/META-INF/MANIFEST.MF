@@ -2,7 +2,7 @@ Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
 Bundle-Name: Eclipse Integration for Tapestry5
 Bundle-SymbolicName: com.anjlab.eclipse.tapestry5;singleton:=true
-Bundle-Version: 1.0.2
+Bundle-Version: 1.1.0
 Bundle-Activator: com.anjlab.eclipse.tapestry5.Activator
 Bundle-Vendor: AnjLab Team
 Require-Bundle: org.eclipse.ui,
@@ -12,7 +12,9 @@ Require-Bundle: org.eclipse.ui,
  org.eclipse.ui,
  org.eclipse.core.runtime,
  org.eclipse.ui.ide,
- org.eclipse.jdt.core
+ org.eclipse.jdt.core,
+ org.eclipse.ui.workbench.texteditor;bundle-version="3.8.100",
+ org.eclipse.jdt.ui;bundle-version="3.9.0"
 Bundle-RequiredExecutionEnvironment: JavaSE-1.6
 Bundle-ActivationPolicy: lazy
 Eclipse-LazyStart: true
