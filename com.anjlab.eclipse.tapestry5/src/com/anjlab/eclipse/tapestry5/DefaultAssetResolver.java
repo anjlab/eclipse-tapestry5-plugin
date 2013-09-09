@@ -16,7 +16,14 @@ public class DefaultAssetResolver implements AssetResolver
             @Override
             public String getFileName(String fileName, String fileExtension)
             {
-                return path;
+                int lastIndexOfDash = fileName.lastIndexOf('/');
+                
+                if (lastIndexOfDash <= 0)
+                {
+                    return path;
+                }
+                
+                return fileName.substring(0, lastIndexOfDash) + '/' + path;
             }
         });
         
