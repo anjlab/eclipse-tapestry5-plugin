@@ -215,7 +215,7 @@
    </license>
 
    <url>
-      <update label="Eclipse Integration for Tapestry5" url="http://dl.bintray.com/anjlab/eclipse-tapestry5-plugin"/>
+      <update label="Eclipse Integration for Tapestry5" url="https://dl.bintray.com/anjlab/eclipse-tapestry5-plugin"/>
    </url>
 
    <plugin
