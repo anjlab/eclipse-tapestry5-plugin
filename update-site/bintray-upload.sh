@@ -1,7 +1,7 @@
 #!/bin/sh
 
 PACKAGE_NAME=eclipse-tapestry5-plugin
-VERSION_NAME=1.1.0
+VERSION_NAME=1.1.1
 
 curl -vT content.jar \
     -udmitrygusev:$bintray_api_key \
