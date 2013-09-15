@@ -17,11 +17,9 @@ import org.eclipse.core.resources.IFolder;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.runtime.CoreException;
-import org.eclipse.jdt.core.IJavaElement;
 import org.eclipse.jdt.core.IJavaProject;
 import org.eclipse.jdt.core.IPackageFragmentRoot;
 import org.eclipse.jdt.core.JavaCore;
-import org.eclipse.jdt.core.JavaModelException;
 
 public class TapestryUtils
 {
@@ -116,7 +114,7 @@ public class TapestryUtils
                 
                 container = adaptedFile.getParent();
                 
-                while (container != null && !isSourceFolder(container))
+                while (container != null && !EclipseUtils.isSourceFolder(container))
                 {
                     container = container.getParent();
                 }
@@ -136,7 +134,7 @@ public class TapestryUtils
             
             for (IPackageFragmentRoot root : javaProject.getAllPackageFragmentRoots())
             {
-                if (!isSourceFolder(root))
+                if (!EclipseUtils.isSourceFolder(root))
                 {
                     continue;
                 }
@@ -185,7 +183,7 @@ public class TapestryUtils
         }
     }
 
-    private synchronized static String getPagesPath(IProject project)
+    public synchronized static String getPagesPath(IProject project)
     {
         String appPackage = getAppPackage(project);
         
@@ -194,7 +192,16 @@ public class TapestryUtils
              : "";
     }
 
-    private static String joinPath(String part1, String part2)
+    public synchronized static String getComponentsPath(IProject project)
+    {
+        String appPackage = getAppPackage(project);
+        
+        return appPackage != null
+             ? '/' + appPackage.replace('.', '/') + "/components"
+             : "";
+    }
+
+    public static String joinPath(String part1, String part2)
     {
         return (part1 + '/' + part2).replaceAll("//", "/");
     }
@@ -219,7 +226,7 @@ public class TapestryUtils
                 ancestor.getProjectRelativePath().toPortableString().length());
     }
 
-    private static List<IFile> findMembers(IContainer container, String path)
+    public static List<IFile> findMembers(IContainer container, String path)
     {
         List<IFile> resources = new ArrayList<IFile>();
         
@@ -265,18 +272,6 @@ public class TapestryUtils
             }
         }
         return resources;
-    }
-
-    private static boolean isSourceFolder(IContainer container) throws JavaModelException
-    {
-        return isSourceFolder((IJavaElement) container.getAdapter(IJavaElement.class));
-    }
-
-    private static boolean isSourceFolder(IJavaElement javaElement) throws JavaModelException
-    {
-        return javaElement != null
-            && (javaElement instanceof IPackageFragmentRoot)
-            && (((IPackageFragmentRoot) javaElement).getKind() == IPackageFragmentRoot.K_SOURCE);
     }
 
     public static boolean isTemplateFile(IFile file)

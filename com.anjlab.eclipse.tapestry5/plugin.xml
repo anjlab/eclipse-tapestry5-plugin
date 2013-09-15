@@ -71,5 +71,14 @@
          </view>
       </perspectiveExtension>
    </extension>
+   <extension
+         point="org.eclipse.ui.workbench.texteditor.hyperlinkDetectors">
+         <hyperlinkDetector
+            id="com.anjlab.eclipse.tapestry5.hyperlink.TapestryComponentHyperlinkDetector"
+            class="com.anjlab.eclipse.tapestry5.hyperlink.TapestryComponentHyperlinkDetector"
+            targetId="org.eclipse.ui.DefaultTextEditor"
+            name="Tapestry Component Hyperlink Detector">
+         </hyperlinkDetector>
+   </extension>
 
 </plugin>

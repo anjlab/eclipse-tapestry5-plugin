@@ -23,8 +23,6 @@ import org.eclipse.ui.IWorkbenchPart;
 import org.eclipse.ui.IWorkbenchWindow;
 import org.eclipse.ui.part.ViewPart;
 
-import com.anjlab.eclipse.tapestry5.AssetException;
-import com.anjlab.eclipse.tapestry5.AssetPath;
 import com.anjlab.eclipse.tapestry5.EclipseUtils;
 import com.anjlab.eclipse.tapestry5.TapestryContext;
 import com.anjlab.eclipse.tapestry5.TapestryUtils;
@@ -95,23 +93,6 @@ public class TapestryContextView extends ViewPart
                 if (obj instanceof TreeObject)
                 {
                     IFile file = (IFile) ((TreeObject) obj).getData();
-                    
-                    if (file instanceof AssetPath)
-                    {
-                        AssetPath assetPath = (AssetPath) file;
-                        try
-                        {
-                            file = assetPath.resolveFile(false);
-                        }
-                        catch (AssetException e)
-                        {
-                            EclipseUtils.openError(getViewSite().getWorkbenchWindow(),
-                                    "Unable to resolve asset '" + assetPath.getAssetPath() + "': "
-                                            + e.getLocalizedMessage());
-                            
-                            return;
-                        }
-                    }
                     
                     EclipseUtils.openFile(getViewSite().getWorkbenchWindow(), file);
                 }
@@ -254,4 +235,5 @@ public class TapestryContextView extends ViewPart
     {
         viewer.getControl().setFocus();
     }
+
 }

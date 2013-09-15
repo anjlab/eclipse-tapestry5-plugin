@@ -3,12 +3,16 @@ package com.anjlab.eclipse.tapestry5;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.eclipse.core.resources.IContainer;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.IResourceDelta;
+import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IAdaptable;
 import org.eclipse.core.runtime.Platform;
 import org.eclipse.jdt.core.ICompilationUnit;
+import org.eclipse.jdt.core.IJavaElement;
+import org.eclipse.jdt.core.IPackageFragmentRoot;
 import org.eclipse.jdt.core.JavaModelException;
 import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jface.viewers.ISelection;
@@ -99,7 +103,26 @@ public class EclipseUtils
             {
                 try
                 {
-                    IDE.openEditor(window.getActivePage(), file, true);
+                    IFile localFile = file;
+                    
+                    if (localFile instanceof AssetPath)
+                    {
+                        AssetPath assetPath = (AssetPath) localFile;
+                        try
+                        {
+                            localFile = assetPath.resolveFile(false);
+                        }
+                        catch (AssetException e)
+                        {
+                            EclipseUtils.openError(window,
+                                    "Unable to resolve asset '" + assetPath.getAssetPath() + "': "
+                                            + e.getLocalizedMessage());
+                            
+                            return;
+                        }
+                    }
+                    
+                    IDE.openEditor(window.getActivePage(), localFile, true);
                 }
                 catch (Exception e)
                 {
@@ -146,6 +169,62 @@ public class EclipseUtils
             }
         }
         return files;
+    }
+
+    public static boolean isSourceFolder(IContainer container) throws JavaModelException
+    {
+        return EclipseUtils.isSourceFolder((IJavaElement) container.getAdapter(IJavaElement.class));
+    }
+
+    public static boolean isSourceFolder(IJavaElement javaElement) throws JavaModelException
+    {
+        return javaElement != null
+            && (javaElement instanceof IPackageFragmentRoot)
+            && (((IPackageFragmentRoot) javaElement).getKind() == IPackageFragmentRoot.K_SOURCE);
+    }
+
+    public static IFile findFileCaseInsensitive(IContainer container, String componentPath)
+    {
+        String[] parts = (componentPath.startsWith("/") ? componentPath.substring(1) : componentPath).split("/");
+        for (int i = 0; i < parts.length; i++)
+        {
+            String part = parts[i];
+            try
+            {
+                boolean found = false;
+                
+                for (IResource member : container.members())
+                {
+                    if (part.equalsIgnoreCase(member.getName()))
+                    {
+                        if (member instanceof IFile && i == parts.length - 1)
+                        {
+                            return (IFile) member;
+                        }
+                        
+                        if (!(member instanceof IContainer))
+                        {
+                            return null;
+                        }
+                        
+                        container = (IContainer) member;
+                        
+                        found = true;
+                        
+                        break;
+                    }
+                }
+                
+                if (!found)
+                {
+                    return null;
+                }
+            }
+            catch (CoreException e)
+            {
+            }
+        }
+        return null;
     }
 
 }
