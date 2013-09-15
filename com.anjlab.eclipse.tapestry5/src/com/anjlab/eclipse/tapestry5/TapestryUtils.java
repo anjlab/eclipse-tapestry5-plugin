@@ -1,9 +1,15 @@
 package com.anjlab.eclipse.tapestry5;
 
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.regex.Pattern;
+
+import javax.xml.stream.XMLStreamConstants;
+import javax.xml.stream.XMLStreamException;
+import javax.xml.stream.XMLStreamReader;
 
 import org.eclipse.core.resources.IContainer;
 import org.eclipse.core.resources.IFile;
@@ -19,6 +25,8 @@ import org.eclipse.jdt.core.JavaModelException;
 
 public class TapestryUtils
 {
+    private static final String TAPESTRY_APP_PACKAGE = "tapestry.app-package";
+
     public static IFile findComplementFile(IFile forFile)
     {
         List<IFile> files = findTapestryFiles(forFile, true, new FileNameBuilder()
@@ -61,16 +69,13 @@ public class TapestryUtils
             
             if (isTemplateFile(forFile))
             {
-                if (forFile.getParent().equals(webapp))
+                if (fromWebapp = isInFolder(forFile, webapp))
                 {
                     String relativeFileName = getRelativeFileName(forFile, webapp);
                     
-                    fromWebapp = relativeFileName != null;
-                    
-                    if (fromWebapp)
-                    {
-                        complementFileName = fileNameBuilder.getFileName(relativeFileName, forFile.getFileExtension());
-                    }
+                    complementFileName = fileNameBuilder.getFileName(
+                            joinPath(getPagesPath(project), relativeFileName),
+                            forFile.getFileExtension());
                 }
             }
             
@@ -160,7 +165,8 @@ public class TapestryUtils
             {
                 if (webapp != null)
                 {
-                    IResource file = webapp.findMember(complementFileName);
+                    IResource file = webapp.findMember(
+                            complementFileName.substring(getPagesPath(project).length()));
                     
                     if (file instanceof IFile)
                     {
@@ -177,6 +183,34 @@ public class TapestryUtils
             
             return Collections.emptyList();
         }
+    }
+
+    private synchronized static String getPagesPath(IProject project)
+    {
+        String appPackage = getAppPackage(project);
+        
+        return appPackage != null
+             ? '/' + appPackage.replace('.', '/') + "/pages"
+             : "";
+    }
+
+    private static String joinPath(String part1, String part2)
+    {
+        return (part1 + '/' + part2).replaceAll("//", "/");
+    }
+
+    private static boolean isInFolder(IFile file, IContainer folder)
+    {
+        IContainer parent = file.getParent();
+        while (parent != null)
+        {
+            if (parent.equals(folder))
+            {
+                return true;
+            }
+            parent = parent.getParent();
+        }
+        return false;
     }
 
     private static String getRelativeFileName(IFile file, IContainer ancestor)
@@ -283,5 +317,93 @@ public class TapestryUtils
         //  TODO Support non-default locations?
         
         return (IContainer) project.findMember("src/main/webapp");
+    }
+    
+    public static String getAppPackage(IProject project)
+    {
+        IContainer webapp = findWebapp(project);
+        
+        if (webapp == null)
+        {
+            return null;
+        }
+        
+        IFile webXml = (IFile) webapp.findMember("/WEB-INF/web.xml");
+        
+        if (webXml == null)
+        {
+            return null;
+        }
+        
+        Map<String, Object> cache = Activator.getDefault().getWebXmlCache(project);
+        
+        String appPackage = (String) cache.get(TAPESTRY_APP_PACKAGE);
+        
+        if (appPackage != null)
+        {
+            return appPackage;
+        }
+        
+        XMLStreamReader reader = null;
+        InputStream input = null;
+        
+        try
+        {
+            input = webXml.getContents();
+            
+            reader = Activator.getDefault().getXMLInputFactory()
+                    .createXMLStreamReader(input);
+            
+            while (nextStartElement(reader))
+            {
+                if ("param-name".equals(reader.getName().getLocalPart()))
+                {
+                    if (TAPESTRY_APP_PACKAGE.equals(reader.getElementText()))
+                    {
+                        if (nextStartElement(reader))
+                        {
+                            if ("param-value".equals(reader.getName().getLocalPart()))
+                            {
+                                appPackage = reader.getElementText();
+                                
+                                cache.put(TAPESTRY_APP_PACKAGE, appPackage);
+                                
+                                return appPackage;
+                            }
+                        }
+                        break;
+                    }
+                }
+            }
+        }
+        catch (Exception e)
+        {
+            Activator.getDefault().logError("Error reading value of 'tapestry.app-package' from web.xml", e);
+        }
+        finally
+        {
+            if (reader != null)
+            {
+                try { reader.close(); } catch (Exception e) {}
+            }
+            if (input != null)
+            {
+                try { input.close(); } catch (Exception e) {}
+            }
+        }
+        
+        return null;
+    }
+
+    private static boolean nextStartElement(XMLStreamReader reader) throws XMLStreamException
+    {
+        while (reader.hasNext())
+        {
+            if (reader.next() == XMLStreamConstants.START_ELEMENT)
+            {
+                return true;
+            }
+        }
+        return false;
     }
 }

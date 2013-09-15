@@ -1,5 +1,17 @@
 package com.anjlab.eclipse.tapestry5;
 
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+
+import javax.xml.stream.XMLInputFactory;
+
+import org.eclipse.core.resources.IFile;
+import org.eclipse.core.resources.IProject;
+import org.eclipse.core.resources.IResourceChangeEvent;
+import org.eclipse.core.resources.IResourceChangeListener;
+import org.eclipse.core.resources.IResourceDelta;
+import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.jface.resource.ImageDescriptor;
 import org.eclipse.ui.plugin.AbstractUIPlugin;
@@ -11,11 +23,15 @@ import org.osgi.framework.BundleContext;
 public class Activator extends AbstractUIPlugin
 {
 
+    private static final String WEB_XML = "web.xml";
+
     // The plug-in ID
     public static final String PLUGIN_ID = "com.anjlab.eclipse.tapestry5"; //$NON-NLS-1$
 
     // The shared instance
     private static Activator plugin;
+
+    private IResourceChangeListener postChangeListener;
 
     /**
      * The constructor
@@ -35,8 +51,56 @@ public class Activator extends AbstractUIPlugin
     {
         super.start(context);
         plugin = this;
+        
+        projectCache = new ConcurrentHashMap<String, Map<String,Object>>();
+        
+        postChangeListener = new IResourceChangeListener()
+        {
+            @Override
+            public void resourceChanged(IResourceChangeEvent event)
+            {
+                List<IFile> changedFiles = EclipseUtils.getAllAffectedResources(
+                        event.getDelta(), IFile.class, IResourceDelta.CHANGED);
+                
+                for (IFile changedFile : changedFiles)
+                {
+                    if (WEB_XML.equals(changedFile.getName()))
+                    {
+                        getWebXmlCache(changedFile.getProject()).clear();
+                    }
+                }
+            }
+        };
+        
+        ResourcesPlugin.getWorkspace().addResourceChangeListener(postChangeListener, IResourceChangeEvent.POST_CHANGE);
     }
 
+    private Map<String, Map<String, Object>> projectCache;
+    
+    public synchronized Map<String, Object> getCache(IProject project)
+    {
+        Map<String, Object> cache = projectCache.get(project.getName());
+        if (cache == null)
+        {
+            cache = new ConcurrentHashMap<String, Object>();
+            projectCache.put(project.getName(), cache);
+        }
+        return cache;
+    }
+    
+    @SuppressWarnings("unchecked")
+    public synchronized Map<String, Object> getWebXmlCache(IProject project)
+    {
+        Map<String, Object> cache = getCache(project);
+        Map<String, Object> webXmlCache = (Map<String, Object>) cache.get(WEB_XML);
+        if (webXmlCache == null)
+        {
+            webXmlCache = new ConcurrentHashMap<String, Object>();
+            cache.put(WEB_XML, webXmlCache);
+        }
+        return webXmlCache;
+    }
+    
     /*
      * (non-Javadoc)
      * 
@@ -46,6 +110,10 @@ public class Activator extends AbstractUIPlugin
      */
     public void stop(BundleContext context) throws Exception
     {
+        ResourcesPlugin.getWorkspace().removeResourceChangeListener(postChangeListener);
+        
+        projectCache = null;
+        
         plugin = null;
         super.stop(context);
     }
@@ -87,4 +155,16 @@ public class Activator extends AbstractUIPlugin
     {
         getLog().log(new Status(Status.WARNING, PLUGIN_ID, message));
     }
+    
+    private XMLInputFactory factory = null;
+    
+    public XMLInputFactory getXMLInputFactory()
+    {
+        if (factory == null)
+        {
+            factory = XMLInputFactory.newInstance();
+        }
+        return factory;
+    }
+
 }
