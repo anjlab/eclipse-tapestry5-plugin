@@ -17,7 +17,7 @@ Tapestry Context View will appear (top right on this screenshot):
 
 ![Screenshot](https://f.cloud.github.com/assets/76579/1105085/c106e906-1918-11e3-9525-68839dcc89b2.png)
 
-### Jump to definition
+### Jump to Definition
 
 CMD+Hover over component reference to jump to one of its definitions:
 
