@@ -17,6 +17,11 @@ Tapestry Context View will appear (top right on this screenshot):
 
 ![Screenshot](https://f.cloud.github.com/assets/76579/1105085/c106e906-1918-11e3-9525-68839dcc89b2.png)
 
+### Jump to definition
+
+CMD+Hover over component reference to jump to one of its definitions:
+
+![Screenshot](https://f.cloud.github.com/assets/76579/1147100/4ee57f58-1e96-11e3-957d-1f875797620b.png)
 
 ### Install
 
