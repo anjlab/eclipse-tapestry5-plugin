@@ -17,6 +17,7 @@ import org.eclipse.core.resources.IFolder;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.IPath;
 import org.eclipse.jdt.core.IJavaProject;
 import org.eclipse.jdt.core.IPackageFragmentRoot;
 import org.eclipse.jdt.core.JavaCore;
@@ -277,6 +278,11 @@ public class TapestryUtils
     public static boolean isTemplateFile(IFile file)
     {
         return "tml".equals(file.getFileExtension());
+    }
+
+    public static boolean isTemplateFile(IPath path)
+    {
+        return "tml".equals(path.getFileExtension());
     }
 
     public static boolean isJavaFile(IFile file)

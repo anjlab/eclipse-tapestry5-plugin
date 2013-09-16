@@ -48,6 +48,17 @@ public class TapestryComponentHyperlinkDetector extends AbstractHyperlinkDetecto
             return null;
         }
         
+        ITextFileBufferManager bufferManager = FileBuffers.getTextFileBufferManager();
+        
+        ITextFileBuffer fileBuffer = bufferManager.getTextFileBuffer(document);
+        
+        IPath fileLocation = fileBuffer.getLocation();
+        
+        if (fileLocation == null || !TapestryUtils.isTemplateFile(fileLocation))
+        {
+            return null;
+        }
+        
         IRegion lineInfo;
         String line;
         try
@@ -82,7 +93,7 @@ public class TapestryComponentHyperlinkDetector extends AbstractHyperlinkDetecto
             leftIndex--;
         }
         
-        while (rightIndex < line.length() && isValidCharForComponentReference(line.charAt(rightIndex + 1)))
+        while (rightIndex + 1 < line.length() && isValidCharForComponentReference(line.charAt(rightIndex + 1)))
         {
             rightIndex++;
         }
@@ -103,13 +114,7 @@ public class TapestryComponentHyperlinkDetector extends AbstractHyperlinkDetecto
             
             final String componentName = text.substring(leftOffset, text.length() - rightOffset);
             
-            ITextFileBufferManager bufferManager = FileBuffers.getTextFileBufferManager();
-            
-            ITextFileBuffer fileBuffer = bufferManager.getTextFileBuffer(document);
-            
-            IPath location = fileBuffer.getLocation();
-            
-            IResource resource = ResourcesPlugin.getWorkspace().getRoot().findMember(location);
+            IResource resource = ResourcesPlugin.getWorkspace().getRoot().findMember(fileLocation);
             
             if (resource == null || resource.getProject() == null)
             {
