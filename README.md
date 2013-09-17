@@ -17,6 +17,17 @@ Tapestry Context View will appear (top right on this screenshot):
 
 ![Screenshot](https://f.cloud.github.com/assets/76579/1105085/c106e906-1918-11e3-9525-68839dcc89b2.png)
 
+### Quick Switch within Tapestry Context
+
+Note: _This feature is only available in Eclipse 4._
+
+Quick Switch provides the same navigation functionality as Tapestry Context view.
+Use it when you work in maximized editor mode and/or your Tapestry Context view is minimized.
+
+Default shortcut for this pop-up is `CMD+;`:
+
+![Screenshot](https://f.cloud.github.com/assets/76579/1160288/8b93c87e-1fd6-11e3-8609-3ff77283dd38.png)
+
 ### Jump to Definition
 
 CMD+Hover over component reference to jump to one of its definitions:
