@@ -45,8 +45,7 @@ public class MStackElementImpl implements MStackElement, MPart
     @Override
     public String getLabel()
     {
-        // TODO Auto-generated method stub
-        return null;
+        return file.getName();
     }
 
     @Override
