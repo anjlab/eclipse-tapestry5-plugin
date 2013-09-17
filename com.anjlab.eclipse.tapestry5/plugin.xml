@@ -9,7 +9,7 @@
             id="com.anjlab.eclipse.tapestry5.commands.category">
       </category>
       <command
-            name="Switch Design/Code"
+            name="Switch Tapestry Design/Code"
             categoryId="com.anjlab.eclipse.tapestry5.commands.category"
             id="com.anjlab.eclipse.tapestry5.commands.switchCommand">
       </command>
@@ -39,7 +39,7 @@
             <command
                   commandId="com.anjlab.eclipse.tapestry5.commands.switchCommand"
                   icon="icons/tapestry-logo.png"
-                  tooltip="Switch Design/Code"
+                  tooltip="Switch Tapestry Design/Code"
                   id="com.anjlab.eclipse.tapestry5.toolbars.switchCommand">
             </command>
          </toolbar>

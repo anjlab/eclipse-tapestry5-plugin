@@ -19,13 +19,17 @@ public class ViewLabelProvider extends LabelProvider
         return obj.toString();
     }
 
-    @SuppressWarnings("restriction")
     @Override
     public Image getImage(Object obj)
     {
+        return getImageDescriptor(obj).createImage();
+    }
+
+    public ImageDescriptor getImageDescriptor(Object obj)
+    {
         if (obj instanceof TreeParent)
         {
-            return PlatformUI.getWorkbench().getSharedImages().getImage(ISharedImages.IMG_OBJ_FOLDER);
+            return PlatformUI.getWorkbench().getSharedImages().getImageDescriptor(ISharedImages.IMG_OBJ_FOLDER);
         }
         
         if (obj instanceof TreeObject)
@@ -34,37 +38,42 @@ public class ViewLabelProvider extends LabelProvider
             
             if (data instanceof IFile)
             {
-                Image image = PlatformUI.getWorkbench().getEditorRegistry()
-                        .getImageDescriptor(((IFile) data).getName())
-                        .createImage();
-                
-                if (data instanceof AssetPath)
-                {
-                    ImageDescriptor[] overlays;
-                    
-                    try
-                    {
-                        ((AssetPath) data).resolveFile(false);
-                        
-                        overlays = new ImageDescriptor[0];
-                    }
-                    catch (AssetException e)
-                    {
-                        overlays = new ImageDescriptor[]
-                        {
-                            org.eclipse.jdt.internal.ui.JavaPluginImages.DESC_OVR_WARNING
-                        };
-                    }
-                    
-                    DecorationOverlayIcon overlayIcon = new DecorationOverlayIcon(image, overlays);
-                    
-                    return overlayIcon.createImage();
-                }
-                
-                return image;
+                return getImageDescriptor((IFile) data);
             }
         }
         
-        return PlatformUI.getWorkbench().getSharedImages().getImage(ISharedImages.IMG_OBJ_FILE);
+        return PlatformUI.getWorkbench().getSharedImages().getImageDescriptor(ISharedImages.IMG_OBJ_FILE);
+    }
+
+    @SuppressWarnings("restriction")
+    public ImageDescriptor getImageDescriptor(IFile file)
+    {
+        ImageDescriptor imageDesc = PlatformUI.getWorkbench().getEditorRegistry()
+                .getImageDescriptor(file.getName());
+        
+        if (file instanceof AssetPath)
+        {
+            ImageDescriptor[] overlays;
+            
+            try
+            {
+                ((AssetPath) file).resolveFile(false);
+                
+                overlays = new ImageDescriptor[0];
+            }
+            catch (AssetException e)
+            {
+                overlays = new ImageDescriptor[]
+                {
+                    org.eclipse.jdt.internal.ui.JavaPluginImages.DESC_OVR_WARNING
+                };
+            }
+            
+            DecorationOverlayIcon overlayIcon = new DecorationOverlayIcon(imageDesc.createImage(), overlays);
+            
+            return overlayIcon;
+        }
+        
+        return imageDesc;
     }
 }

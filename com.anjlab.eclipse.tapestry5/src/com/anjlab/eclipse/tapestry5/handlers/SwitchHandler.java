@@ -4,7 +4,6 @@ import org.eclipse.core.commands.AbstractHandler;
 import org.eclipse.core.commands.ExecutionEvent;
 import org.eclipse.core.commands.ExecutionException;
 import org.eclipse.core.resources.IFile;
-import org.eclipse.jdt.core.JavaModelException;
 import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.ui.IWorkbenchWindow;
 import org.eclipse.ui.handlers.HandlerUtil;
@@ -36,12 +35,7 @@ public class SwitchHandler extends AbstractHandler
         
         try
         {
-            IFile file = EclipseUtils.getFileFromSelection(window.getSelectionService().getSelection());
-            
-            if (file == null)
-            {
-                file = EclipseUtils.getFileFromPage(window.getActivePage());
-            }
+            IFile file = EclipseUtils.getFileForTapestryContext(window);
             
             if (file != null)
             {
@@ -61,10 +55,6 @@ public class SwitchHandler extends AbstractHandler
                 EclipseUtils.openFile(window, complementFile);
             }
         }
-        catch (JavaModelException e)
-        {
-            throw new ExecutionException("Error switching file", e);
-        }
         catch (ExecutionException e)
         {
             MessageDialog.openError(
@@ -74,6 +64,5 @@ public class SwitchHandler extends AbstractHandler
         }
         return null;
     }
-    
 
 }

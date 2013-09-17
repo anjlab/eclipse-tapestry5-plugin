@@ -1,0 +1,21 @@
+Manifest-Version: 1.0
+Bundle-ManifestVersion: 2
+Bundle-Name: Additional Tapestry5 Support for Eclipse4
+Bundle-SymbolicName: com.anjlab.eclipse.e4.tapestry5;singleton:=true
+Bundle-Version: 1.2.2
+Bundle-Activator: com.anjlab.eclipse.e4.tapestry5.Activator
+Bundle-Vendor: AnjLab Team
+Require-Bundle: org.eclipse.ui,
+ org.eclipse.core.runtime,
+ org.eclipse.e4.ui.workbench.renderers.swt,
+ org.eclipse.e4.ui.workbench.swt,
+ org.eclipse.e4.ui.model.workbench,
+ org.eclipse.e4.ui.workbench,
+ org.eclipse.emf.common,
+ org.eclipse.e4.core.contexts,
+ org.eclipse.jdt.ui,
+ org.eclipse.ui.navigator,
+ org.eclipse.core.resources,
+ com.anjlab.eclipse.tapestry5
+Bundle-RequiredExecutionEnvironment: JavaSE-1.6
+Bundle-ActivationPolicy: lazy

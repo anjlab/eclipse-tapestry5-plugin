@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?eclipse version="3.4"?>
+<plugin>
+
+   <extension
+         point="org.eclipse.ui.commands">
+      <category
+            name="Tapestry5"
+            id="com.anjlab.eclipse.tapestry5.commands.category">
+      </category>
+      <command
+            name="Quick Switch within Tapestry Context"
+            categoryId="com.anjlab.eclipse.tapestry5.commands.category"
+            id="com.anjlab.eclipse.e4.tapestry5.commands.quickSwitchCommand">
+      </command>
+   </extension>
+   <extension
+         point="org.eclipse.ui.handlers">
+      <handler
+            commandId="com.anjlab.eclipse.e4.tapestry5.commands.quickSwitchCommand"
+            class="com.anjlab.eclipse.e4.tapestry5.handlers.QuickSwitchHandler">
+      </handler>
+   </extension>
+   <extension
+         point="org.eclipse.ui.bindings">
+      <key
+            commandId="com.anjlab.eclipse.e4.tapestry5.commands.quickSwitchCommand"
+            contextId="org.eclipse.ui.contexts.window"
+            sequence="M1+;"
+            schemeId="org.eclipse.ui.defaultAcceleratorConfiguration">
+      </key>
+   </extension>
+</plugin>

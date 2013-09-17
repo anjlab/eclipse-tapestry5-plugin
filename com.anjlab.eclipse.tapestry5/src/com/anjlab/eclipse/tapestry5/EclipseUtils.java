@@ -227,4 +227,25 @@ public class EclipseUtils
         return null;
     }
 
+    public static IFile getFileForTapestryContext(IWorkbenchWindow window)
+    {
+        IFile file = null;
+        
+        try
+        {
+            file = getFileFromSelection(window.getSelectionService().getSelection());
+        }
+        catch (JavaModelException e)
+        {
+            //  Ignore
+        }
+        
+        if (file == null)
+        {
+            file = getFileFromPage(window.getActivePage());
+        }
+        
+        return file;
+    }
+
 }

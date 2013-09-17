@@ -1,14 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <feature
-      id="com.anjlab.eclipse.tapestry5.feature"
-      label="Basic Tapestry5 Support (required)"
+      id="com.anjlab.eclipse.e4.tapestry5.feature"
+      label="Additional Tapestry5 Support for Eclipse4"
       version="1.2.2"
       provider-name="AnjLab Team"
-      plugin="com.anjlab.eclipse.tapestry5">
+      plugin="com.anjlab.eclipse.e4.tapestry5">
 
    <description url="https://github.com/anjlab/eclipse-tapestry5-plugin">
-      Design/Code switcher, Tapestry Context view, Jump to Definition
-for TML files.
+      Quick switch within Tapestry Context files.
    </description>
 
    <copyright>
@@ -223,8 +222,22 @@ for TML files.
       <update label="Eclipse Integration for Tapestry5" url="https://dl.bintray.com/anjlab/eclipse-tapestry5-plugin"/>
    </url>
 
+   <requires>
+      <import plugin="org.eclipse.ui"/>
+      <import plugin="org.eclipse.core.runtime"/>
+      <import plugin="org.eclipse.e4.ui.workbench.renderers.swt"/>
+      <import plugin="org.eclipse.e4.ui.workbench.swt"/>
+      <import plugin="org.eclipse.e4.ui.model.workbench"/>
+      <import plugin="org.eclipse.e4.ui.workbench"/>
+      <import plugin="org.eclipse.emf.common"/>
+      <import plugin="org.eclipse.e4.core.contexts"/>
+      <import plugin="org.eclipse.jdt.ui"/>
+      <import plugin="org.eclipse.ui.navigator"/>
+      <import plugin="com.anjlab.eclipse.tapestry5"/>
+   </requires>
+
    <plugin
-         id="com.anjlab.eclipse.tapestry5"
+         id="com.anjlab.eclipse.e4.tapestry5"
          download-size="0"
          install-size="0"
          version="0.0.0"

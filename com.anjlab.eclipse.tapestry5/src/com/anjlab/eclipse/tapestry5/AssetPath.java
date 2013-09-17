@@ -44,6 +44,18 @@ public class AssetPath implements IFile
     }
     
     @Override
+    public String toString()
+    {
+        return assetPath;
+    }
+    
+    @Override
+    public int getType()
+    {
+        return IFile.FILE;
+    }
+    
+    @Override
     public int hashCode()
     {
         return javaFile.hashCode() + assetPath.hashCode();
@@ -176,6 +188,58 @@ public class AssetPath implements IFile
             return asset.path;
         }
         return asset.path.substring(separatorIndex + 1);
+    }
+    
+
+    public void createMarker(Throwable t) throws CoreException
+    {
+        IMarker marker = findMarker();
+        
+        if (marker == null)
+        {
+            marker = javaFile.createMarker(IMarker.PROBLEM);
+            
+            marker.setAttribute(IMarker.MESSAGE, t.getLocalizedMessage());
+            marker.setAttribute(IMarker.PRIORITY, IMarker.PRIORITY_HIGH);
+            marker.setAttribute(IMarker.SEVERITY, IMarker.SEVERITY_WARNING);
+            
+            if (sourceRange != null)
+            {
+                marker.setAttribute(IMarker.CHAR_START, sourceRange.getOffset());
+                marker.setAttribute(IMarker.CHAR_END, sourceRange.getOffset() + sourceRange.getLength());
+            }
+            
+            marker.setAttribute(ASSET_PATH_MARKER_ATTRIBUTE, assetPath);
+        }
+    }
+
+    public IMarker findMarker() throws CoreException
+    {
+        IMarker[] markers = javaFile.findMarkers(IMarker.PROBLEM, false, IResource.DEPTH_ZERO);
+        
+        IMarker assetPathMarker = null;
+        
+        for (IMarker marker : markers)
+        {
+            Object markerPath = marker.getAttribute(ASSET_PATH_MARKER_ATTRIBUTE);
+            
+            if (markerPath != null && markerPath.equals(assetPath))
+            {
+                assetPathMarker = marker;
+                break;
+            }
+        }
+        return assetPathMarker;
+    }
+
+    public void deleteMarker() throws CoreException
+    {
+        IMarker marker = findMarker();
+        
+        if (marker != null)
+        {
+            marker.delete();
+        }
     }
     
     @Override
@@ -442,12 +506,6 @@ public class AssetPath implements IFile
     {
         // TODO Auto-generated method stub
         return null;
-    }
-
-    @Override
-    public int getType()
-    {
-        return IFile.FILE;
     }
 
     @Override
@@ -890,55 +948,4 @@ public class AssetPath implements IFile
 
     }
 
-    
-    public void createMarker(Throwable t) throws CoreException
-    {
-        IMarker marker = findMarker();
-        
-        if (marker == null)
-        {
-            marker = javaFile.createMarker(IMarker.PROBLEM);
-            
-            marker.setAttribute(IMarker.MESSAGE, t.getLocalizedMessage());
-            marker.setAttribute(IMarker.PRIORITY, IMarker.PRIORITY_HIGH);
-            marker.setAttribute(IMarker.SEVERITY, IMarker.SEVERITY_WARNING);
-            
-            if (sourceRange != null)
-            {
-                marker.setAttribute(IMarker.CHAR_START, sourceRange.getOffset());
-                marker.setAttribute(IMarker.CHAR_END, sourceRange.getOffset() + sourceRange.getLength());
-            }
-            
-            marker.setAttribute(ASSET_PATH_MARKER_ATTRIBUTE, assetPath);
-        }
-    }
-
-    public IMarker findMarker() throws CoreException
-    {
-        IMarker[] markers = javaFile.findMarkers(IMarker.PROBLEM, false, IResource.DEPTH_ZERO);
-        
-        IMarker assetPathMarker = null;
-        
-        for (IMarker marker : markers)
-        {
-            Object markerPath = marker.getAttribute(ASSET_PATH_MARKER_ATTRIBUTE);
-            
-            if (markerPath != null && markerPath.equals(assetPath))
-            {
-                assetPathMarker = marker;
-                break;
-            }
-        }
-        return assetPathMarker;
-    }
-
-    public void deleteMarker() throws CoreException
-    {
-        IMarker marker = findMarker();
-        
-        if (marker != null)
-        {
-            marker.delete();
-        }
-    }
 }
