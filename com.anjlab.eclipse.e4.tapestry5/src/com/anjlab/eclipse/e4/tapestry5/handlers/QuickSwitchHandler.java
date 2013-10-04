@@ -1,26 +1,37 @@
 package com.anjlab.eclipse.e4.tapestry5.handlers;
 
+import java.lang.reflect.Constructor;
+import java.util.Arrays;
+import java.util.List;
+
 import org.eclipse.core.commands.AbstractHandler;
 import org.eclipse.core.commands.ExecutionEvent;
 import org.eclipse.core.commands.ExecutionException;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.e4.ui.internal.workbench.renderers.swt.BasicPartList;
+import org.eclipse.e4.ui.model.application.ui.MElementContainer;
+import org.eclipse.e4.ui.model.application.ui.basic.MPart;
+import org.eclipse.e4.ui.workbench.modeling.EPartService;
+import org.eclipse.e4.ui.workbench.renderers.swt.StackRenderer;
 import org.eclipse.e4.ui.workbench.swt.util.ISWTResourceUtilities;
 import org.eclipse.emf.common.util.URI;
 import org.eclipse.jface.resource.ImageDescriptor;
 import org.eclipse.swt.SWT;
+import org.eclipse.swt.custom.CTabItem;
 import org.eclipse.swt.graphics.Point;
 import org.eclipse.swt.graphics.Rectangle;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.Listener;
 import org.eclipse.swt.widgets.Monitor;
+import org.eclipse.swt.widgets.Shell;
 import org.eclipse.ui.IWorkbenchPartReference;
 import org.eclipse.ui.IWorkbenchWindow;
 import org.eclipse.ui.handlers.HandlerUtil;
 import org.eclipse.ui.internal.EditorReference;
 import org.eclipse.ui.internal.PartPane;
 
+import com.anjlab.eclipse.tapestry5.Activator;
 import com.anjlab.eclipse.tapestry5.EclipseUtils;
 import com.anjlab.eclipse.tapestry5.TapestryContext;
 import com.anjlab.eclipse.tapestry5.views.ViewLabelProvider;
@@ -87,25 +98,13 @@ public class QuickSwitchHandler extends AbstractHandler
             return null;
         }
         
-        final MElementContainerImpl mElementContainerImpl = new MElementContainerImpl(context);
+        final BasicPartList editorList = createEditorList(context, window);
         
-        final ViewLabelProvider labelProvider = new ViewLabelProvider();
-        
-        final BasicPartList editorList = new BasicPartList(window.getShell(),
-                SWT.ON_TOP, SWT.V_SCROLL | SWT.H_SCROLL,
-                new EPartServiceImpl(window),
-                mElementContainerImpl,
-                new ISWTResourceUtilities()
-                {
-                    @Override
-                    public ImageDescriptor imageDescriptorFromURI(URI uri)
-                    {
-                        IFile file = mElementContainerImpl.lookupFile(uri.toString());
-                        
-                        return labelProvider.getImageDescriptor(file);
-                    }
-                },
-                false);
+        if (editorList == null)
+        {
+            Activator.getDefault().logError("This feature is not available for your Eclipse runtime");
+            return null;
+        }
         
         editorList.setInput();
         
@@ -129,6 +128,81 @@ public class QuickSwitchHandler extends AbstractHandler
         });
         
         return null;
+    }
+
+    private BasicPartList createEditorList(TapestryContext context, IWorkbenchWindow window)
+    {
+        final MElementContainerImpl mElementContainerImpl = new MElementContainerImpl(context);
+        
+        final ViewLabelProvider labelProvider = new ViewLabelProvider();
+        
+        StackRenderer stackRenderer = new StackRenderer()
+        {
+            public CTabItem findItemForPart(MPart part)
+            {
+                return null;
+            }
+        };
+        
+        List<Object> initArgs = Arrays.asList(window.getShell(),
+                SWT.ON_TOP, SWT.V_SCROLL | SWT.H_SCROLL,
+                new EPartServiceImpl(window),
+                mElementContainerImpl,
+                stackRenderer,
+                new ISWTResourceUtilities()
+                {
+                    @Override
+                    public ImageDescriptor imageDescriptorFromURI(URI uri)
+                    {
+                        IFile file = mElementContainerImpl.lookupFile(uri.toString());
+                        
+                        return labelProvider.getImageDescriptor(file);
+                    }
+                },
+                false);
+        
+        for (Constructor<?> constructor : BasicPartList.class.getConstructors())
+        {
+            @SuppressWarnings("unchecked")
+            List<Class<?>> paramTypes = Arrays.asList(
+                    Shell.class,
+                    int.class,
+                    int.class,
+                    EPartService.class,
+                    MElementContainer.class,
+                    StackRenderer.class,
+                    ISWTResourceUtilities.class,
+                    boolean.class);
+            
+            if (Arrays.equals(constructor.getParameterTypes(), paramTypes.toArray()))
+            {
+                return newInstance(initArgs, constructor);
+            }
+            
+            int paramIndex = paramTypes.indexOf(StackRenderer.class);
+            
+            paramTypes.remove(paramIndex);
+            initArgs.remove(paramIndex);
+            
+            if (Arrays.equals(constructor.getParameterTypes(), paramTypes.toArray()))
+            {
+                return newInstance(initArgs, constructor);
+            }
+        }
+        
+        return null;
+    }
+
+    private BasicPartList newInstance(List<Object> initArgs, Constructor<?> constructor)
+    {
+        try
+        {
+            return (BasicPartList) constructor.newInstance(initArgs.toArray());
+        }
+        catch (Exception e)
+        {
+            return null;
+        }
     }
 
     private Point getLocation(IWorkbenchWindow window, Point size)
