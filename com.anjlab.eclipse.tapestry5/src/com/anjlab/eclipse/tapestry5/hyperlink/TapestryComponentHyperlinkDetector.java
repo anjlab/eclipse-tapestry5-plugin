@@ -52,6 +52,11 @@ public class TapestryComponentHyperlinkDetector extends AbstractHyperlinkDetecto
         
         ITextFileBuffer fileBuffer = bufferManager.getTextFileBuffer(document);
         
+        if (fileBuffer == null)
+        {
+            return null;
+        }
+        
         IPath fileLocation = fileBuffer.getLocation();
         
         if (fileLocation == null || !TapestryUtils.isTemplateFile(fileLocation))
