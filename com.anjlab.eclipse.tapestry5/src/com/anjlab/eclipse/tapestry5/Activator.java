@@ -17,6 +17,8 @@ import org.eclipse.jface.resource.ImageDescriptor;
 import org.eclipse.ui.plugin.AbstractUIPlugin;
 import org.osgi.framework.BundleContext;
 
+import com.anjlab.eclipse.tapestry5.views.ViewContentProvider;
+
 /**
  * The activator class controls the plug-in life cycle
  */
@@ -33,6 +35,8 @@ public class Activator extends AbstractUIPlugin
 
     private IResourceChangeListener postChangeListener;
 
+    private ViewContentProvider contentProvider;
+    
     /**
      * The constructor
      */
@@ -40,6 +44,16 @@ public class Activator extends AbstractUIPlugin
     {
     }
 
+    public ViewContentProvider getContentProvider()
+    {
+        return contentProvider;
+    }
+    
+    public void setContentProvider(ViewContentProvider contentProvider)
+    {
+        this.contentProvider = contentProvider;
+    }
+    
     /*
      * (non-Javadoc)
      * 

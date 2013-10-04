@@ -34,6 +34,7 @@ import org.eclipse.ui.internal.PartPane;
 import com.anjlab.eclipse.tapestry5.Activator;
 import com.anjlab.eclipse.tapestry5.EclipseUtils;
 import com.anjlab.eclipse.tapestry5.TapestryContext;
+import com.anjlab.eclipse.tapestry5.views.ViewContentProvider;
 import com.anjlab.eclipse.tapestry5.views.ViewLabelProvider;
 
 /**
@@ -51,8 +52,6 @@ public class QuickSwitchHandler extends AbstractHandler
     {
     }
 
-    private TapestryContext previousContext;
-    
     /**
      * the command has been executed, so extract extract the needed information
      * from the application context.
@@ -76,29 +75,29 @@ public class QuickSwitchHandler extends AbstractHandler
             return null;
         }
         
-        TapestryContext context = null;
+        ViewContentProvider provider = null;
         
-        if (previousContext != null)
+        if (getContentProvider() != null)
         {
-            if (previousContext.contains(file))
+            if (getContentProvider().getContext().contains(file))
             {
-                context = previousContext;
+                provider = getContentProvider();
             }
         }
         
-        if (context == null)
+        if (provider == null)
         {
-            context = new TapestryContext(file);
-            
-            previousContext = context;
+            provider = new ViewContentProvider(file);
         }
         
-        if (context.getFiles().size() == 0)
+        setContentProvider(provider);
+        
+        if (provider.getContext().getFiles().size() == 0)
         {
             return null;
         }
         
-        final BasicPartList editorList = createEditorList(context, window);
+        final BasicPartList editorList = createEditorList(provider.getContext(), window);
         
         if (editorList == null)
         {
@@ -128,6 +127,16 @@ public class QuickSwitchHandler extends AbstractHandler
         });
         
         return null;
+    }
+    
+    private ViewContentProvider getContentProvider()
+    {
+        return Activator.getDefault().getContentProvider();
+    }
+    
+    private void setContentProvider(ViewContentProvider contentProvider)
+    {
+        Activator.getDefault().setContentProvider(contentProvider);
     }
 
     private BasicPartList createEditorList(TapestryContext context, IWorkbenchWindow window)

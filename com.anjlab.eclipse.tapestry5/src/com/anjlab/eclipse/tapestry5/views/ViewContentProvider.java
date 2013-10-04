@@ -11,19 +11,17 @@ import com.anjlab.eclipse.tapestry5.TapestryUtils;
 public class ViewContentProvider implements ITreeContentProvider
 {
     private TreeParent invisibleRoot;
-    private IViewSite viewSite;
     private IFile file;
     private TapestryContext context;
 
-    public ViewContentProvider(IViewSite viewSite, IFile file, TapestryContext context)
+    public ViewContentProvider(IFile file, TapestryContext context)
     {
-        this.viewSite = viewSite;
         this.file = file;
     }
     
-    public ViewContentProvider(IViewSite viewSite, IFile file)
+    public ViewContentProvider(IFile file)
     {
-        this(viewSite, file, null);
+        this(file, null);
     }
 
     private void initialize()
@@ -48,7 +46,7 @@ public class ViewContentProvider implements ITreeContentProvider
     
     public Object[] getElements(Object parent)
     {
-        if (parent.equals(viewSite))
+        if (parent instanceof IViewSite || parent == null)
         {
             if (invisibleRoot == null)
             {
@@ -88,7 +86,7 @@ public class ViewContentProvider implements ITreeContentProvider
     
     public boolean hasElements()
     {
-        return getElements(viewSite).length > 0;
+        return getElements(null).length > 0;
     }
     
     public void inputChanged(Viewer v, Object oldInput, Object newInput)

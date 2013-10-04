@@ -23,6 +23,7 @@ import org.eclipse.ui.IWorkbenchPart;
 import org.eclipse.ui.IWorkbenchWindow;
 import org.eclipse.ui.part.ViewPart;
 
+import com.anjlab.eclipse.tapestry5.Activator;
 import com.anjlab.eclipse.tapestry5.EclipseUtils;
 import com.anjlab.eclipse.tapestry5.TapestryContext;
 import com.anjlab.eclipse.tapestry5.TapestryUtils;
@@ -50,7 +51,6 @@ public class TapestryContextView extends ViewPart
     public static final String ID = "com.anjlab.eclipse.tapestry5.views.TapestryOutlineView";
 
     private TreeViewer viewer;
-    private ViewContentProvider contentProvider;
     private ISelectionListener selectionListener;
     private IResourceChangeListener postBuildListener;
     private IResourceChangeListener postChangeListener;
@@ -78,7 +78,7 @@ public class TapestryContextView extends ViewPart
          */
         
         viewer = new TreeViewer(parent, SWT.MULTI | SWT.H_SCROLL | SWT.V_SCROLL);
-        viewer.setContentProvider(new ViewContentProvider(getViewSite(), (IFile) null));
+        viewer.setContentProvider(new ViewContentProvider((IFile) null));
         viewer.setLabelProvider(new ViewLabelProvider());
         viewer.setSorter(new NameSorter());
         viewer.setInput(getViewSite());
@@ -104,7 +104,7 @@ public class TapestryContextView extends ViewPart
             @Override
             public void resourceChanged(IResourceChangeEvent event)
             {
-                if (contentProvider == null)
+                if (getContentProvider() == null)
                 {
                     return;
                 }
@@ -119,7 +119,7 @@ public class TapestryContextView extends ViewPart
                         continue;
                     }
                     
-                    if (contentProvider.getContext().contains(changedFile))
+                    if (getContentProvider().getContext().contains(changedFile))
                     {
                         //  Some @Imports may have changed
                         updateContext(changedFile);
@@ -137,7 +137,7 @@ public class TapestryContextView extends ViewPart
             @Override
             public void resourceChanged(IResourceChangeEvent event)
             {
-                if (contentProvider != null)
+                if (getContentProvider() != null)
                 {
                     List<IProject> projects = EclipseUtils.getAllAffectedResources(event.getDelta(), IProject.class);
                     
@@ -146,7 +146,7 @@ public class TapestryContextView extends ViewPart
                         TapestryContext.deleteMarkers(project);
                     }
                     
-                    contentProvider.getContext().validate();
+                    getContentProvider().getContext().validate();
                 }
             }
         };
@@ -191,29 +191,39 @@ public class TapestryContextView extends ViewPart
     
     private void updateContext(IFile file)
     {
-        ViewContentProvider provider = new ViewContentProvider(getViewSite(), file);
+        ViewContentProvider provider = new ViewContentProvider(file);
         
-        if (!provider.hasElements() && contentProvider != null
-                && contentProvider.getContext().contains(file))
+        if (!provider.hasElements() && getContentProvider() != null
+                && getContentProvider().getContext().contains(file))
         {
             //  In case if we clicked on @Import'ed asset (JS or CSS) file, then we can't obtain tapestry context for it
             //  because we don't have any naming conventions for these files, and also these files may be
             //  referenced from multiple components/pages, so they may belong to multiple contexts.
             //  Anyway if we can't find any elements for the context -- we simply show the previous one.
             
-            provider = contentProvider;
+            provider = getContentProvider();
         }
         
-        contentProvider = provider;
+        setContentProvider(provider);
         
         getViewSite().getWorkbenchWindow().getShell().getDisplay().syncExec(new Runnable()
         {
             @Override
             public void run()
             {
-                viewer.setContentProvider(contentProvider);
+                viewer.setContentProvider(getContentProvider());
             }
         });
+    }
+    
+    private ViewContentProvider getContentProvider()
+    {
+        return Activator.getDefault().getContentProvider();
+    }
+    
+    private void setContentProvider(ViewContentProvider contentProvider)
+    {
+        Activator.getDefault().setContentProvider(contentProvider);
     }
     
     @Override
