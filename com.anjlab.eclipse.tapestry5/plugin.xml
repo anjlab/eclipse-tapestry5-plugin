@@ -13,12 +13,21 @@
             categoryId="com.anjlab.eclipse.tapestry5.commands.category"
             id="com.anjlab.eclipse.tapestry5.commands.switchCommand">
       </command>
+      <command
+            name="Create File for Tapestry5"
+            categoryId="com.anjlab.eclipse.tapestry5.commands.category"
+            id="com.anjlab.eclipse.tapestry5.commands.createCommand">
+      </command>
    </extension>
    <extension
          point="org.eclipse.ui.handlers">
       <handler
             commandId="com.anjlab.eclipse.tapestry5.commands.switchCommand"
             class="com.anjlab.eclipse.tapestry5.handlers.SwitchHandler">
+      </handler>
+      <handler
+            commandId="com.anjlab.eclipse.tapestry5.commands.createCommand"
+            class="com.anjlab.eclipse.tapestry5.handlers.CreateHandler">
       </handler>
    </extension>
    <extension
@@ -41,6 +50,12 @@
                   icon="icons/tapestry-logo.png"
                   tooltip="Switch Tapestry Design/Code"
                   id="com.anjlab.eclipse.tapestry5.toolbars.switchCommand">
+            </command>
+            <command
+                  commandId="com.anjlab.eclipse.tapestry5.commands.createCommand"
+                  icon="IMG_OBJ_ADD"
+                  tooltip="Create File for Tapestry5"
+                  id="com.anjlab.eclipse.tapestry5.toolbars.createCommand">
             </command>
          </toolbar>
       </menuContribution>
@@ -80,5 +95,17 @@
             name="Tapestry Component Hyperlink Detector">
          </hyperlinkDetector>
    </extension>
-
+   <extension
+         point="org.eclipse.ui.viewActions">
+         <viewContribution
+            id="com.anjlab.eclipse.tapestry5.viewActions"
+            targetID="com.anjlab.eclipse.tapestry5.views.TapestryContextView">
+            <action id="com.anjlab.eclipse.tapestry5.actions.CreateAction"
+                toolbarPath="additions"
+                tooltip="Create..."
+                icon="IMG_OBJ_ADD"
+                class="com.anjlab.eclipse.tapestry5.actions.CreateActionViewDelegate">
+            </action>
+         </viewContribution>
+   </extension>
 </plugin>
