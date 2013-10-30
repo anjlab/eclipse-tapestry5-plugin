@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.eclipse.core.resources.IContainer;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IMarker;
 import org.eclipse.core.resources.IProject;
@@ -13,6 +14,7 @@ import org.eclipse.core.resources.IResource;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.jdt.core.IAnnotation;
 import org.eclipse.jdt.core.ICompilationUnit;
+import org.eclipse.jdt.core.IJavaElement;
 import org.eclipse.jdt.core.IMemberValuePair;
 import org.eclipse.jdt.core.ISourceRange;
 import org.eclipse.jdt.core.IType;
@@ -37,7 +39,14 @@ public class TapestryContext
         {
             initFromPropertiesFile(file);
         }
-        
+        else if (TapestryUtils.isJavaScriptFile(file) || TapestryUtils.isStyleSheetFile(file))
+        {
+            initFromImportedFile(file);
+        }
+    }
+
+    private void addImports()
+    {
         IFile javaFile = getJavaFile();
         
         if (javaFile != null)
@@ -50,8 +59,7 @@ public class TapestryContext
                 {
                     for (IAnnotation annotation : type.getAnnotations())
                     {
-                        if ("org.apache.tapestry5.annotations.Import".equals(annotation.getElementName())
-                                || "Import".equals(annotation.getElementName()))
+                        if (TapestryUtils.isTapestryImportAnnotation(annotation))
                         {
                             IMemberValuePair[] pairs = annotation.getMemberValuePairs();
                             for (IMemberValuePair pair : pairs)
@@ -72,7 +80,7 @@ public class TapestryContext
             }
         }
     }
-    
+
     private void processImport(IAnnotation annotation, String type, Object value)
     {
         if (value instanceof Object[])
@@ -119,6 +127,72 @@ public class TapestryContext
         return null;
     }
     
+    public IFile getTemplateFile()
+    {
+        for (IFile file : files)
+        {
+            if (TapestryUtils.isTemplateFile(file))
+            {
+                return file;
+            }
+        }
+        return null;
+    }
+    
+    private void initFromImportedFile(IFile file)
+    {
+        List<IFile> files = TapestryUtils.findTapestryFiles(file, true, new FileNameBuilder()
+        {
+            @Override
+            public String getFileName(String fileName, String fileExtension)
+            {
+                return fileName.substring(0, fileName.lastIndexOf(fileExtension)) + "java";
+            }
+        });
+        
+        if (files.isEmpty())
+        {
+            //  Support alternative naming of the asset files: lower-case-with-dashes
+            files = TapestryUtils.findTapestryFiles(file, true, new FileNameBuilder()
+            {
+                @Override
+                public String getFileName(String fileName, String fileExtension)
+                {
+                    StringBuilder builder = new StringBuilder();
+                    String[] pathParts = fileName.split("/");
+                    for (int i = 0; i < pathParts.length - 1; i++)
+                    {
+                        builder.append(pathParts[i]).append("/");
+                    }
+                    
+                    String[] parts = pathParts[pathParts.length - 1].split("-");
+                    for (String part : parts)
+                    {
+                        builder.append(Character.toUpperCase(part.charAt(0)))
+                               .append(part.substring(1));
+                    }
+                    fileName = builder.toString();
+                    return fileName.substring(0, fileName.lastIndexOf(fileExtension)) + "java";
+                }
+            });
+        }
+        
+        if (!files.isEmpty())
+        {
+            IFile javaFile = files.get(0);
+            addWithComplementFile(javaFile);
+            addImports();
+            
+            if (!contains(file))
+            {
+                //  Assumption was wrong: Original file not from this context
+                this.files.clear();
+                
+                this.files.add(file);
+            }
+        }
+    }
+    
     private void initFromPropertiesFile(IFile file)
     {
         List<IFile> files = TapestryUtils.findTapestryFiles(file, true, new FileNameBuilder()
@@ -143,12 +217,14 @@ public class TapestryContext
         }
         
         addPropertiesFiles(file);
+        addImports();
     }
 
     private void initFromJavaOrTemplateFile(IFile file)
     {
         addWithComplementFile(file);
         addPropertiesFiles(file);
+        addImports();
     }
     
     private void addWithComplementFile(IFile file)
@@ -274,6 +350,71 @@ public class TapestryContext
             }
         }
         return null;
+    }
+
+    public boolean contains(String fileName)
+    {
+        for (IFile file : files)
+        {
+            if (fileName.equals(file.getName()))
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+    
+    public IJavaElement getJavaElement()
+    {
+        IFile javaFile = getJavaFile();
+        if (javaFile == null)
+        {
+            return null;
+        }
+        return JavaCore.create(javaFile);
+    }
+
+    public String getName()
+    {
+        for (IFile file : files)
+        {
+            if (TapestryUtils.isJavaFile(file) || TapestryUtils.isTemplateFile(file))
+            {
+                return file.getName().substring(0, file.getName().lastIndexOf(file.getFileExtension()) - 1);
+            }
+        }
+        return null;
+    }
+
+    public boolean isEmpty()
+    {
+        return files.isEmpty();
+    }
+
+    public String getPackageName()
+    {
+        IContainer root = TapestryUtils.getRoot(getJavaFile());
+        
+        if (root != null)
+        {
+            return TapestryUtils.pathToPackageName(TapestryUtils.getRelativeFileName(getJavaFile().getParent(), root), false);
+        }
+        
+        root = TapestryUtils.getRoot(getTemplateFile());
+        
+        if (root != null)
+        {
+            if (TapestryUtils.isWebApp(root))
+            {
+                //  Page from web context
+                return TapestryUtils.getTapestryPackage(getProject(), "pages" + 
+                        TapestryUtils.pathToPackageName(TapestryUtils.getRelativeFileName(getTemplateFile().getParent(), root), true));
+            }
+            
+            return TapestryUtils.pathToPackageName(TapestryUtils.getRelativeFileName(getTemplateFile().getParent(), root), false);
+        }
+        
+        return TapestryUtils.getPagesPackage(getProject());
     }
 
 }

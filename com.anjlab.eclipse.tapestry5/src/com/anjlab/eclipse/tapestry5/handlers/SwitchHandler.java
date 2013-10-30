@@ -35,7 +35,7 @@ public class SwitchHandler extends AbstractHandler
         
         try
         {
-            IFile file = EclipseUtils.getFileForTapestryContext(window);
+            IFile file = TapestryUtils.getFileForTapestryContext(window);
             
             if (file != null)
             {

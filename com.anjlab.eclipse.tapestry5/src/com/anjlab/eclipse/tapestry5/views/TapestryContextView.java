@@ -4,10 +4,15 @@ import java.util.List;
 
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
+import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.IResourceChangeEvent;
 import org.eclipse.core.resources.IResourceChangeListener;
 import org.eclipse.core.resources.IResourceDelta;
 import org.eclipse.core.resources.ResourcesPlugin;
+import org.eclipse.jface.action.Action;
+import org.eclipse.jface.action.ActionContributionItem;
+import org.eclipse.jface.action.IAction;
+import org.eclipse.jface.action.IToolBarManager;
 import org.eclipse.jface.viewers.DoubleClickEvent;
 import org.eclipse.jface.viewers.IDoubleClickListener;
 import org.eclipse.jface.viewers.ISelection;
@@ -17,16 +22,23 @@ import org.eclipse.jface.viewers.TreeSelection;
 import org.eclipse.jface.viewers.TreeViewer;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.widgets.Composite;
+import org.eclipse.swt.widgets.Menu;
+import org.eclipse.swt.widgets.MenuItem;
+import org.eclipse.ui.IActionBars;
 import org.eclipse.ui.ISelectionListener;
+import org.eclipse.ui.ISharedImages;
 import org.eclipse.ui.IWorkbenchPage;
 import org.eclipse.ui.IWorkbenchPart;
 import org.eclipse.ui.IWorkbenchWindow;
+import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.part.ViewPart;
 
 import com.anjlab.eclipse.tapestry5.Activator;
 import com.anjlab.eclipse.tapestry5.EclipseUtils;
 import com.anjlab.eclipse.tapestry5.TapestryContext;
 import com.anjlab.eclipse.tapestry5.TapestryUtils;
+import com.anjlab.eclipse.tapestry5.actions.NewFileWizardAction;
+import com.anjlab.eclipse.tapestry5.actions.NewJavaClassWizardAction;
 
 /**
  * This sample class demonstrates how to plug-in a new workbench view. The view
@@ -45,6 +57,8 @@ import com.anjlab.eclipse.tapestry5.TapestryUtils;
 
 public class TapestryContextView extends ViewPart
 {
+    private static final String DEFAULT_JAVA_SOURCE_FOLDER = "src/main/java";
+
     /**
      * The ID of the view as specified by the extension.
      */
@@ -60,23 +74,6 @@ public class TapestryContextView extends ViewPart
      */
     public void createPartControl(Composite parent)
     {
-        /*
-         * TODO Add 'Validate' toolbar icon:
-         *      [x] markers when asset files couldn't be resolved
-         *      [ ] markers when some properties are not localized (present in one file, but not in the others)
-         *
-         * TODO Create Java/TML/JS/CSS files
-         *      [ ] Quick fix to create missing imports
-         *      [ ] Create complement file if absent
-         *      [ ] Add simple naming convention for JS/CSS files. For example:
-         *          - files should be in the same folder and have the same name as the Java file
-         *          - or be in lower case with dashes instead of Pascal-casing
-         * 
-         * TODO [ ] Support Tapestry 5.4 assets
-         * 
-         * TODO [ ] Context menu for asset files (JS/CSS) -- 'Find references' in project
-         */
-        
         viewer = new TreeViewer(parent, SWT.MULTI | SWT.H_SCROLL | SWT.V_SCROLL);
         viewer.setContentProvider(new ViewContentProvider((IFile) null));
         viewer.setLabelProvider(new ViewLabelProvider());
@@ -187,6 +184,129 @@ public class TapestryContextView extends ViewPart
         };
         
         getSite().getPage().addSelectionListener(selectionListener);
+        
+        contributeToActionBars();
+    }
+    
+    private void contributeToActionBars()
+    {
+        IActionBars bars = getViewSite().getActionBars();
+        IToolBarManager localToolbar = bars.getToolBarManager();
+        
+        IAction createAction = new Action("Create...")
+        {
+            @Override
+            public void run()
+            {
+                Menu menu = new Menu(viewer.getControl());
+                
+                TapestryContext tapestryContext = Activator.getDefault().getTapestryContext();
+                
+                if (tapestryContext != null && !tapestryContext.isEmpty())
+                {
+                    newJavaClassMenuItem(menu, tapestryContext.getProject(),
+                            "Create " + tapestryContext.getName() + ".java...",
+                            tapestryContext.getPackageName(),
+                            tapestryContext.getName())
+                        .setEnabled(tapestryContext.getJavaFile() == null);
+                    
+                    String tmlFileName = tapestryContext.getName() + ".tml";
+                    newTextFileMenuItem(menu, tapestryContext, "Create " + tmlFileName + "...", tmlFileName)
+                        .setEnabled(!tapestryContext.contains(tmlFileName));
+                    
+                    String jsFileName = tapestryContext.getName() + ".js";
+                    newTextFileMenuItem(menu, tapestryContext, "Create " + jsFileName + "...", jsFileName)
+                        .setEnabled(!tapestryContext.contains(jsFileName));
+                    
+                    String cssFileName = tapestryContext.getName() + ".css";
+                    newTextFileMenuItem(menu, tapestryContext, "Create " + cssFileName + "...", cssFileName)
+                        .setEnabled(!tapestryContext.contains(cssFileName));
+                    
+                    newTextFileMenuItem(menu, tapestryContext, "Create other...", "");
+                }
+                
+                IProject contextProject = tapestryContext != null ? tapestryContext.getProject() : null;
+                
+                if (contextProject == null)
+                {
+                    IResource contextResource = TapestryUtils.getResourceForTapestryContext(getSite().getWorkbenchWindow());
+                    
+                    contextProject = contextResource != null ? contextResource.getProject() : null;
+                }
+                
+                if (contextProject != null && TapestryUtils.getAppPackage(contextProject) != null)
+                {
+                    if (menu.getItemCount() > 0)
+                    {
+                        new MenuItem(menu, SWT.SEPARATOR);
+                    }
+                    
+                    newJavaClassMenuItem(menu, contextProject,
+                            "New Page Class...",
+                            TapestryUtils.getPagesPackage(contextProject),
+                            null);
+                    
+                    newJavaClassMenuItem(menu, contextProject,
+                            "New Component Class...",
+                            TapestryUtils.getComponentsPackage(contextProject),
+                            null);
+                    
+                    newJavaClassMenuItem(menu, contextProject,
+                            "New Mixin Class...",
+                            TapestryUtils.getMixinsPackage(contextProject),
+                            null);
+                }
+                
+                if (menu.getItemCount() > 0)
+                {
+                    menu.setVisible(true);
+                }
+                else
+                {
+                    EclipseUtils.openInformation(getSite().getWorkbenchWindow(),
+                            "Try selecting your Tapestry5 project in the Package/Project Explorer.");
+                }
+            }
+
+            private IAction newTextFileMenuItem(Menu menu, TapestryContext tapestryContext, String title, String fileName)
+            {
+                NewFileWizardAction newFile = new NewFileWizardAction(tapestryContext.getProject(),
+                        tapestryContext,
+                        getSite().getShell(),
+                        getSite().getWorkbenchWindow());
+                
+                newFile.setFileName(fileName);
+                newFile.setFolder("src/main/resources/" + tapestryContext.getPackageName().replaceAll("\\.", "/"));
+                
+                newFile.setText(title);
+                newFile.setImageDescriptor(PlatformUI.getWorkbench().getEditorRegistry()
+                        .getImageDescriptor(fileName));
+                
+                return addActionToMenu(menu, newFile);
+            }
+
+            private IAction newJavaClassMenuItem(Menu menu, IProject project, String title, String packageName, String typeName)
+            {
+                NewJavaClassWizardAction newJavaClass = new NewJavaClassWizardAction(project);
+                newJavaClass.setText(title);
+                newJavaClass.setSourceFolder(DEFAULT_JAVA_SOURCE_FOLDER);
+                newJavaClass.setPackageName(packageName);
+                newJavaClass.setTypeName(typeName);
+                
+                return addActionToMenu(menu, newJavaClass);
+            }
+            
+            private IAction addActionToMenu(Menu menu, IAction action)
+            {
+                new ActionContributionItem(action).fill(menu, -1);
+                return action;
+            }
+        };
+        
+        createAction.setImageDescriptor(
+                PlatformUI.getWorkbench().getSharedImages().getImageDescriptor(ISharedImages.IMG_OBJ_ADD));
+        
+        localToolbar.add(createAction);
     }
     
     private void updateContext(IFile file)

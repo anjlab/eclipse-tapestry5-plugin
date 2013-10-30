@@ -1,6 +1,9 @@
 package com.anjlab.eclipse.tapestry5;
 
+import java.io.BufferedReader;
+import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -18,9 +21,13 @@ import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IPath;
+import org.eclipse.jdt.core.IAnnotation;
 import org.eclipse.jdt.core.IJavaProject;
 import org.eclipse.jdt.core.IPackageFragmentRoot;
 import org.eclipse.jdt.core.JavaCore;
+import org.eclipse.jdt.core.JavaModelException;
+import org.eclipse.jdt.core.dom.Annotation;
+import org.eclipse.ui.IWorkbenchWindow;
 
 public class TapestryUtils
 {
@@ -193,7 +200,7 @@ public class TapestryUtils
              : "";
     }
 
-    public synchronized static String getComponentsPath(IProject project)
+    public static String getComponentsPath(IProject project)
     {
         String appPackage = getAppPackage(project);
         
@@ -221,12 +228,35 @@ public class TapestryUtils
         return false;
     }
 
-    private static String getRelativeFileName(IFile file, IContainer ancestor)
+    public static String getRelativeFileName(IResource file, IContainer ancestor)
     {
         return file.getProjectRelativePath().toPortableString().substring(
                 ancestor.getProjectRelativePath().toPortableString().length());
     }
 
+    public static String getPagesPackage(IProject project)
+    {
+        return getTapestryPackage(project, "pages");
+    }
+
+    public static String getTapestryPackage(IProject project, String subpackage)
+    {
+        String appPackage = getAppPackage(project);
+        return appPackage != null
+             ? appPackage + "." + subpackage
+             : null;
+    }
+    
+    public static String getComponentsPackage(IProject project)
+    {
+        return getTapestryPackage(project, "components");
+    }
+
+    public static String getMixinsPackage(IProject project)
+    {
+        return getTapestryPackage(project, "mixins");
+    }
+    
     public static List<IFile> findMembers(IContainer container, String path)
     {
         List<IFile> resources = new ArrayList<IFile>();
@@ -275,6 +305,16 @@ public class TapestryUtils
         return resources;
     }
 
+    public static boolean isStyleSheetFile(IFile file)
+    {
+        return "css".equals(file.getFileExtension());
+    }
+
+    public static boolean isJavaScriptFile(IFile file)
+    {
+        return "js".equals(file.getFileExtension());
+    }
+
     public static boolean isTemplateFile(IFile file)
     {
         return "tml".equals(file.getFileExtension());
@@ -320,7 +360,7 @@ public class TapestryUtils
         return (IContainer) project.findMember("src/main/webapp");
     }
     
-    public static String getAppPackage(IProject project)
+    public synchronized static String getAppPackage(IProject project)
     {
         IContainer webapp = findWebapp(project);
         
@@ -407,4 +447,171 @@ public class TapestryUtils
         }
         return false;
     }
+
+    public static boolean isTapestryImportAnnotation(IAnnotation annotation)
+    {
+        return isTapestryImportAnnotationName(annotation.getElementName());
+    }
+
+    private static boolean isTapestryImportAnnotationName(String name)
+    {
+        return "org.apache.tapestry5.annotations.Import".equals(name) || "Import".equals(name);
+    }
+
+    public static boolean isTapestryImportAnnotation(Annotation annotation)
+    {
+        return isTapestryImportAnnotationName(annotation.getTypeName().getFullyQualifiedName());
+    }
+
+    public static IFile getFileForTapestryContext(IWorkbenchWindow window)
+    {
+        IFile file = null;
+        
+        try
+        {
+            file = EclipseUtils.getFileFromSelection(window.getSelectionService().getSelection());
+        }
+        catch (JavaModelException e)
+        {
+            //  Ignore
+        }
+        
+        if (file == null)
+        {
+            file = EclipseUtils.getFileFromPage(window.getActivePage());
+        }
+        
+        if (file == null)
+        {
+            try
+            {
+                file = EclipseUtils.getFileFromSelection(
+                        window.getSelectionService().getSelection("org.eclipse.jdt.ui.PackageExplorer"));
+            }
+            catch (JavaModelException e)
+            {
+                //  Ignore
+            }
+        }
+        
+        return file;
+    }
+
+    public static IResource getResourceForTapestryContext(IWorkbenchWindow window)
+    {
+        IResource resource = getFileForTapestryContext(window);
+        
+        if (resource == null)
+        {
+            try
+            {
+                resource = EclipseUtils.getResourceFromSelection(
+                        window.getSelectionService().getSelection("org.eclipse.jdt.ui.PackageExplorer"));
+            }
+            catch (JavaModelException e)
+            {
+                //  Ignore
+            }
+        }
+        
+        return resource;
+    }
+
+    public static IContainer getRoot(IFile forFile)
+    {
+        if (forFile == null)
+        {
+            return null;
+        }
+        
+        final IContainer webapp = findWebapp(forFile.getProject());
+        
+        RootDetector rootDetector = new RootDetector()
+        {
+            @Override
+            public boolean isRoot(IContainer container)
+            {
+                try
+                {
+                    return EclipseUtils.isSourceFolder(container) || container.equals(webapp);
+                }
+                catch (JavaModelException e)
+                {
+                    return false;
+                }
+            }
+        };
+        
+        return getRoot(forFile, rootDetector);
+    }
+    
+    private static interface RootDetector
+    {
+        boolean isRoot(IContainer container);
+    }
+    
+    private static IContainer getRoot(IFile forFile, RootDetector rootDetector)
+    {
+        if (forFile == null)
+        {
+            return null;
+        }
+        
+        IContainer container = forFile.getParent();
+        
+        while (container != null && !rootDetector.isRoot(container))
+        {
+            container = container.getParent();
+        }
+        
+        return container;
+    }
+
+    public static boolean isWebApp(IContainer root)
+    {
+        return root.equals(findWebapp(root.getProject()));
+    }
+
+    public static String pathToPackageName(String relativeFileName, boolean leadingDot)
+    {
+        return (!leadingDot && relativeFileName.startsWith("/")
+                    ? relativeFileName.substring(1)
+                    : relativeFileName)
+                 .replaceAll("/", ".");
+    }
+
+    public static String readToEnd(InputStream stream)
+    {
+        BufferedReader reader = new BufferedReader(new InputStreamReader(stream));
+        try
+        {
+            StringBuilder builder = new StringBuilder();
+            
+            int ch;
+            while ((ch = reader.read()) != -1)
+            {
+                builder.append((char) ch);
+            }
+            
+            return builder.toString();
+        }
+        catch (IOException e)
+        {
+            Activator.getDefault().logError("Error reading stream", e);
+        }
+        finally
+        {
+            try
+            {
+                reader.close();
+            }
+            catch (IOException e)
+            {
+                //  Ignore
+            }
+        }
+        
+        return null;
+    }
+
 }

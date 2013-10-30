@@ -56,12 +56,24 @@ public class EclipseUtils
 
     public static IFile getFileFromSelection(ISelection selection) throws JavaModelException
     {
-        return selection instanceof IStructuredSelection
-             ? getFileFromSelectionElement(((IStructuredSelection) selection).getFirstElement())
-             : null;
+        IResource resource = getResourceFromSelection(selection);
+        
+        if (resource == null)
+        {
+            return null;
+        }
+        
+        return (IFile) resource.getAdapter(IFile.class);
     }
 
-    private static IFile getFileFromSelectionElement(Object firstElement) throws JavaModelException
+    public static IResource getResourceFromSelection(ISelection selection) throws JavaModelException
+    {
+        return selection instanceof IStructuredSelection
+                ? getResourceFromSelectionElement(((IStructuredSelection) selection).getFirstElement())
+                : null;
+    }
+    
+    private static IResource getResourceFromSelectionElement(Object firstElement) throws JavaModelException
     {
         if (firstElement == null)
         {
@@ -72,30 +84,40 @@ public class EclipseUtils
         {
             ICompilationUnit compilationUnit = ((ICompilationUnit) firstElement);
             
-            return (IFile) compilationUnit.getCorrespondingResource().getAdapter(IFile.class);
+            return compilationUnit.getCorrespondingResource();
         }
         
         if (firstElement instanceof ITreeSelection)
         {
             ITreeSelection treeSelection = (ITreeSelection) firstElement;
             
-            return getFileFromSelectionElement(treeSelection.getFirstElement());
+            return getResourceFromSelectionElement(treeSelection.getFirstElement());
         }
         
-        IFile file = (IFile) Platform.getAdapterManager().getAdapter(firstElement, IFile.class);
+        IResource resource = (IResource) Platform.getAdapterManager().getAdapter(firstElement, IResource.class);
         
-        if (file == null)
+        if (resource == null)
         {
             if (firstElement instanceof IAdaptable)
             {
-                file = (IFile) ((IAdaptable) firstElement).getAdapter(IFile.class);
+                resource = (IResource) ((IAdaptable) firstElement).getAdapter(IResource.class);
             }
         }
         
-        return file;
+        return resource;
     }
 
+    public static interface EditorCallback
+    {
+        void editorOpened(IEditorPart editorPart);
+    }
+    
     public static void openFile(final IWorkbenchWindow window, final IFile file)
+    {
+        openFile(window, file, null);
+    }
+    
+    public static void openFile(final IWorkbenchWindow window, final IFile file, final EditorCallback editorCallback)
     {
         window.getShell().getDisplay().asyncExec(new Runnable()
         {
@@ -122,7 +144,12 @@ public class EclipseUtils
                         }
                     }
                     
-                    IDE.openEditor(window.getActivePage(), localFile, true);
+                    IEditorPart editor = IDE.openEditor(window.getActivePage(), localFile, true);
+                    
+                    if (editorCallback != null)
+                    {
+                        editorCallback.editorOpened(editor);
+                    }
                 }
                 catch (Exception e)
                 {
@@ -137,6 +164,14 @@ public class EclipseUtils
     public static void openError(final IWorkbenchWindow window, String message)
     {
         MessageDialog.openError(
+                window.getShell(),
+                "Eclipse Integration for Tapestry5",
+                message);
+    }
+
+    public static void openInformation(final IWorkbenchWindow window, String message)
+    {
+        MessageDialog.openInformation(
                 window.getShell(),
                 "Eclipse Integration for Tapestry5",
                 message);
@@ -225,27 +260,6 @@ public class EclipseUtils
             }
         }
         return null;
-    }
-
-    public static IFile getFileForTapestryContext(IWorkbenchWindow window)
-    {
-        IFile file = null;
-        
-        try
-        {
-            file = getFileFromSelection(window.getSelectionService().getSelection());
-        }
-        catch (JavaModelException e)
-        {
-            //  Ignore
-        }
-        
-        if (file == null)
-        {
-            file = getFileFromPage(window.getActivePage());
-        }
-        
-        return file;
     }
 
 }

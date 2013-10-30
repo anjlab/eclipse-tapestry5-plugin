@@ -169,6 +169,11 @@ public class Activator extends AbstractUIPlugin
     {
         getLog().log(new Status(Status.WARNING, PLUGIN_ID, message));
     }
+
+    public void logWarning(String message, Throwable t)
+    {
+        getLog().log(new Status(Status.WARNING, PLUGIN_ID, message, t));
+    }
     
     private XMLInputFactory factory = null;
     
@@ -179,6 +184,14 @@ public class Activator extends AbstractUIPlugin
             factory = XMLInputFactory.newInstance();
         }
         return factory;
+    }
+
+    public TapestryContext getTapestryContext()
+    {
+        ViewContentProvider contentProvider = getContentProvider();
+        return contentProvider != null
+             ? contentProvider.getContext()
+             : null;
     }
 
 }
