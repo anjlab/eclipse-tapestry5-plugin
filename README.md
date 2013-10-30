@@ -39,6 +39,34 @@ CMD+Hover over component reference to jump to one of its definitions:
 
 ![Screenshot](https://f.cloud.github.com/assets/76579/1147100/4ee57f58-1e96-11e3-957d-1f875797620b.png)
 
+### Quickly Create Files for Tapestry5
+
+#### Create new Tapestry5 pages, components and mixins quickly
+
+Click to open standard *New Java Class* dialog with pre-filled source folder and package name fields.
+
+![Tapestry5Toolbar](https://f.cloud.github.com/assets/76579/1435404/87d6ac0a-413d-11e3-89ec-00b4cd38a862.png)
+
+#### Create new files in context
+
+Create complement files for current Tapestry Context.
+
+![ViewToolbar](https://f.cloud.github.com/assets/76579/1435416/d336ec14-413d-11e3-9815-470af70305c6.png)
+
+Click to open standard *New File* dialog with pre-filled location and file-name fields:
+
+![NewFile](https://f.cloud.github.com/assets/76579/1435414/d334a58a-413d-11e3-8a93-edb847abca58.png)
+
+Tapestry templates and JavaScript files will be created with sample content.
+
+![TemplateContent](https://f.cloud.github.com/assets/76579/1435417/d338eef6-413d-11e3-917b-c42806ce9d90.png)
+
+Notice how cursor position is set in the new file -- it's right in the place you want to start extending it! :)
+
+Creating JavaScript or CSS assets for page/component will add/modify `@Import` annotation by putting the reference to new asset.
+
+![JavaScriptContent](https://f.cloud.github.com/assets/76579/1435415/d3352fe6-413d-11e3-9053-1a653c5840d8.png)
+
 ### Install
 
 In Eclipse go to *Help* -> *Install New Software...* -> *Add...*
