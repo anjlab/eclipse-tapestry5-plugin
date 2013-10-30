@@ -28,6 +28,11 @@ Default shortcut for this pop-up is `CMD+;`:
 
 ![Screenshot](https://f.cloud.github.com/assets/76579/1160288/8b93c87e-1fd6-11e3-8609-3ff77283dd38.png)
 
+**Tip:** If you installed Quick Switch feature, I recommend you to change key bindings vice versa:
+`CMD+;` for Code/Design switch and `CMD+R` for the Quick Switch pop-up:
+
+![Eclipse Preferences](https://f.cloud.github.com/assets/76579/1435240/a00a5b00-4138-11e3-9eed-603fa6359b59.png)
+
 ### Jump to Definition
 
 CMD+Hover over component reference to jump to one of its definitions:
