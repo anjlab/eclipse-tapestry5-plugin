@@ -1,5 +1,6 @@
 package com.anjlab.eclipse.tapestry5.hyperlink;
 
+import java.io.File;
 import java.util.List;
 
 import org.eclipse.core.filebuffers.FileBuffers;
@@ -7,6 +8,7 @@ import org.eclipse.core.filebuffers.ITextFileBuffer;
 import org.eclipse.core.filebuffers.ITextFileBufferManager;
 import org.eclipse.core.resources.IContainer;
 import org.eclipse.core.resources.IFile;
+import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.IPath;
@@ -126,10 +128,6 @@ public class TapestryComponentHyperlinkDetector extends AbstractHyperlinkDetecto
                 return null;
             }
             
-            String componentPath = TapestryUtils.joinPath(
-                    TapestryUtils.getComponentsPath(resource.getProject()),
-                    componentName.replace('.', '/') + ".java");
-            
             IJavaProject javaProject = JavaCore.create(resource.getProject());
             
             try
@@ -143,7 +141,21 @@ public class TapestryComponentHyperlinkDetector extends AbstractHyperlinkDetecto
                     
                     IContainer container = (IContainer) root.getCorrespondingResource().getAdapter(IContainer.class);
                     
-                    final IFile javaFile = EclipseUtils.findFileCaseInsensitive(container, componentPath);
+                    String componentPath = getComponentJavaFileName(componentName, resource.getProject());
+                    
+                    IFile javaFile = EclipseUtils.findFileCaseInsensitive(container, componentPath);
+                    
+                    if (javaFile == null)
+                    {
+                       File parentFile = new File(componentPath).getParentFile();
+                       
+                       if (parentFile != null)
+                       {
+                           componentPath = getComponentJavaFileName(componentName + parentFile.getName(), resource.getProject());
+                           
+                           javaFile = EclipseUtils.findFileCaseInsensitive(container, componentPath);
+                       }
+                    }
                     
                     if (javaFile != null)
                     {
@@ -196,6 +208,13 @@ public class TapestryComponentHyperlinkDetector extends AbstractHyperlinkDetecto
         }
         
         return null;
+    }
+
+    private String getComponentJavaFileName(final String componentName, IProject project)
+    {
+        return TapestryUtils.joinPath(
+                TapestryUtils.getComponentsPath(project),
+                componentName.replace('.', '/') + ".java");
     }
 
     private boolean checkPreconditions(String line, int leftIndex, int rightIndex)
