@@ -102,6 +102,7 @@
             targetID="com.anjlab.eclipse.tapestry5.views.TapestryContextView">
             <action id="com.anjlab.eclipse.tapestry5.actions.CreateAction"
                 toolbarPath="additions"
+                label="Create..."
                 tooltip="Create..."
                 icon="IMG_OBJ_ADD"
                 class="com.anjlab.eclipse.tapestry5.actions.CreateActionViewDelegate">

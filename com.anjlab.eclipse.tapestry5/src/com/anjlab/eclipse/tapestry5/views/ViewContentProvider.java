@@ -14,14 +14,14 @@ public class ViewContentProvider implements ITreeContentProvider
     private IFile file;
     private TapestryContext context;
 
-    public ViewContentProvider(IFile file, TapestryContext context)
+    public ViewContentProvider(TapestryContext context)
     {
-        this.file = file;
+        this.context = context;
     }
     
     public ViewContentProvider(IFile file)
     {
-        this(file, null);
+        this.file = file;
     }
 
     private void initialize()
@@ -31,7 +31,10 @@ public class ViewContentProvider implements ITreeContentProvider
         if (file != null)
         {
             context = TapestryUtils.createTapestryContext(file);
-            
+        }
+        
+        if (context != null)
+        {
             for (IFile relatedFile : context.getFiles())
             {
                 invisibleRoot.addChild(new TreeObject(relatedFile.getName(), relatedFile));

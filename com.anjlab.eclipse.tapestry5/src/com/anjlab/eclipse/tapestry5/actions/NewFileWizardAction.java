@@ -84,23 +84,49 @@ public class NewFileWizardAction extends Action
             @Override
             public boolean performCancel()
             {
+                deletePreCreatedFolders(null);
+                
+                return super.performCancel();
+            }
+
+            private void deletePreCreatedFolders(IContainer existingFolder)
+            {
                 while (!preCreatedFolders.isEmpty())
                 {
                     try
                     {
                         IFolder folder = preCreatedFolders.pop();
                         
-                        folder.delete(false, null);
+                        if (!overlaps(folder, existingFolder))
+                        {
+                            folder.delete(false, null);
+                        }
                     }
                     catch (CoreException e)
                     {
                         Activator.getDefault().logWarning("Unable to delete pre-created folder during cleanup", e);
                     }
                 }
-                return super.performCancel();
             }
             
-            private void createFolder(IFolder folder) throws CoreException
+            private boolean overlaps(IFolder folder, IContainer existingFolder)
+            {
+                if (existingFolder == null)
+                {
+                    return false;
+                }
+                while (existingFolder != null)
+                {
+                    if (existingFolder.equals(folder))
+                    {
+                        return true;
+                    }
+                    existingFolder = existingFolder.getParent();
+                }
+                return false;
+            }
+
+            private void preCreateFolder(IFolder folder) throws CoreException
             {
                 if (!folder.exists())
                 {
@@ -108,7 +134,7 @@ public class NewFileWizardAction extends Action
                     
                     if (parent instanceof IFolder)
                     {
-                        createFolder((IFolder) parent);
+                        preCreateFolder((IFolder) parent);
                     }
                     
                     folder.create(false, true, null);
@@ -136,7 +162,7 @@ public class NewFileWizardAction extends Action
                     {
                         try
                         {
-                            createFolder(segment);
+                            preCreateFolder(segment);
                         }
                         catch (CoreException e)
                         {
@@ -199,6 +225,8 @@ public class NewFileWizardAction extends Action
             public boolean performFinish()
             {
                 IFile file = fileCreationPage.createNewFile();
+                
+                deletePreCreatedFolders(file.getParent());
                 
                 try
                 {

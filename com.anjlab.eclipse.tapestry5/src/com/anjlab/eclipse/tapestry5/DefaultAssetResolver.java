@@ -11,27 +11,39 @@ public class DefaultAssetResolver implements AssetResolver
     @Override
     public IFile resolve(final String path, IFile relativeTo) throws AssetException
     {
-        List<IFile> files = TapestryUtils.findTapestryFiles(relativeTo, true, new FileNameBuilder()
+        try
         {
-            @Override
-            public String getFileName(String fileName, String fileExtension)
+            List<IFile> files = TapestryUtils.findTapestryFiles(relativeTo, true, new FileNameBuilder()
             {
-                int lastIndexOfDash = fileName.lastIndexOf('/');
-                
-                if (lastIndexOfDash <= 0)
+                @Override
+                public String getFileName(String fileName, String fileExtension)
                 {
-                    return path;
+                    int lastIndexOfDash = fileName.lastIndexOf('/');
+                    
+                    if (lastIndexOfDash <= 0)
+                    {
+                        return path;
+                    }
+                    
+                    return fileName.substring(0, lastIndexOfDash) + '/' + path;
                 }
-                
-                return fileName.substring(0, lastIndexOfDash) + '/' + path;
+            });
+            
+            if (!files.isEmpty())
+            {
+                return files.get(0);
             }
-        });
-        
-        if (!files.isEmpty())
-        {
-            return files.get(0);
+            
+            throw createAssetException(path, null);
         }
-        
-        throw new AssetException("Couldn't resolve asset from path '" + path + "'");
+        catch (Throwable t)
+        {
+            throw createAssetException(path, t);
+        }
+    }
+
+    private AssetException createAssetException(final String path, Throwable cause)
+    {
+        return new AssetException("Couldn't resolve asset from path '" + path + "'", cause);
     }
 }

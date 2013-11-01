@@ -2,6 +2,7 @@ package com.anjlab.eclipse.tapestry5;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -415,6 +416,27 @@ public class TapestryContext
         }
         
         return TapestryUtils.getPagesPackage(getProject());
+    }
+
+    public void remove(IFile file)
+    {
+        if (this.files.remove(file) && TapestryUtils.isJavaFile(file))
+        {
+            //  Remove all @Imports, because Java file removed
+            //  and assets could be only traversed from the Java file
+            
+            Iterator<IFile> iterator = files.iterator();
+            
+            while (iterator.hasNext())
+            {
+                IFile f = iterator.next();
+                
+                if (!TapestryUtils.isTemplateFile(f) && !TapestryUtils.isPropertiesFile(f))
+                {
+                    iterator.remove();
+                }
+            }
+        }
     }
 
 }

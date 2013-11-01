@@ -6,7 +6,6 @@ import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResourceChangeEvent;
 import org.eclipse.core.resources.IResourceChangeListener;
-import org.eclipse.core.resources.IResourceDelta;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.jface.viewers.DoubleClickEvent;
 import org.eclipse.jface.viewers.IDoubleClickListener;
@@ -92,23 +91,36 @@ public class TapestryContextView extends ViewPart
                     return;
                 }
                 
-                List<IFile> changedFiles = EclipseUtils.getAllAffectedResources(
-                        event.getDelta(), IFile.class, IResourceDelta.CHANGED);
+                TapestryContext context = null;
                 
-                for (IFile changedFile : changedFiles)
+                for (IFile affectedFile : EclipseUtils.getAllAffectedResources(
+                                            event.getDelta(), IFile.class))
                 {
-                    if (!TapestryUtils.isJavaFile(changedFile))
+                    if (getContentProvider().getContext().contains(affectedFile))
                     {
-                        continue;
+                        if (!affectedFile.exists())
+                        {
+                            getContentProvider().getContext().remove(affectedFile);
+                            
+                            //  Context changed
+                            context = getContentProvider().getContext();
+                        }
+                        else
+                        {
+                            context = TapestryUtils.createTapestryContext(affectedFile);
+                            
+                            if (!context.isEmpty())
+                            {
+                                break;
+                            }
+                        }
                     }
-                    
-                    if (getContentProvider().getContext().contains(changedFile))
-                    {
-                        //  Some @Imports may have changed
-                        updateContext(changedFile);
-                        
-                        break;
-                    }
+                }
+                
+                if (context != null)
+                {
+                    //  Some files changed in context
+                    updateContentProvider(new ViewContentProvider(context));
                 }
             }
         };
@@ -172,12 +184,12 @@ public class TapestryContextView extends ViewPart
         getSite().getPage().addSelectionListener(selectionListener);
     }
     
-    private void updateContext(IFile file)
+    private void updateContext(IFile fromFile)
     {
-        ViewContentProvider provider = new ViewContentProvider(file);
+        ViewContentProvider provider = new ViewContentProvider(fromFile);
         
         if (!provider.hasElements() && getContentProvider() != null
-                && getContentProvider().getContext().contains(file))
+                && getContentProvider().getContext().contains(fromFile))
         {
             //  In case if we clicked on @Import'ed asset (JS or CSS) file, then we can't obtain tapestry context for it
             //  because we don't have any naming conventions for these files, and also these files may be
@@ -187,6 +199,11 @@ public class TapestryContextView extends ViewPart
             provider = getContentProvider();
         }
         
+        updateContentProvider(provider);
+    }
+
+    private void updateContentProvider(ViewContentProvider provider)
+    {
         setContentProvider(provider);
         
         getViewSite().getWorkbenchWindow().getShell().getDisplay().syncExec(new Runnable()
