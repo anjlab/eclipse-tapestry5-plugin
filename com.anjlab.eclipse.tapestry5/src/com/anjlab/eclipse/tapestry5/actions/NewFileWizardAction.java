@@ -97,7 +97,7 @@ public class NewFileWizardAction extends Action
                     {
                         IFolder folder = preCreatedFolders.pop();
                         
-                        if (!overlaps(folder, existingFolder))
+                        if (isEmpty(folder))
                         {
                             folder.delete(false, null);
                         }
@@ -108,22 +108,10 @@ public class NewFileWizardAction extends Action
                     }
                 }
             }
-            
-            private boolean overlaps(IFolder folder, IContainer existingFolder)
+
+            private boolean isEmpty(IFolder folder) throws CoreException
             {
-                if (existingFolder == null)
-                {
-                    return false;
-                }
-                while (existingFolder != null)
-                {
-                    if (existingFolder.equals(folder))
-                    {
-                        return true;
-                    }
-                    existingFolder = existingFolder.getParent();
-                }
-                return false;
+                return folder.members().length == 0;
             }
 
             private void preCreateFolder(IFolder folder) throws CoreException
