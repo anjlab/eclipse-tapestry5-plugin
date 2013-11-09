@@ -1,6 +1,4 @@
-package com.anjlab.eclipse.tapestry5.views;
-
-import java.util.List;
+package com.anjlab.eclipse.tapestry5.views.project;
 
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
@@ -10,7 +8,6 @@ import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.jface.viewers.DoubleClickEvent;
 import org.eclipse.jface.viewers.IDoubleClickListener;
 import org.eclipse.jface.viewers.ISelection;
-import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.jface.viewers.TreePath;
 import org.eclipse.jface.viewers.TreeSelection;
 import org.eclipse.jface.viewers.TreeViewer;
@@ -22,10 +19,11 @@ import org.eclipse.ui.IWorkbenchPart;
 import org.eclipse.ui.IWorkbenchWindow;
 import org.eclipse.ui.part.ViewPart;
 
-import com.anjlab.eclipse.tapestry5.Activator;
 import com.anjlab.eclipse.tapestry5.EclipseUtils;
-import com.anjlab.eclipse.tapestry5.TapestryContext;
-import com.anjlab.eclipse.tapestry5.TapestryUtils;
+import com.anjlab.eclipse.tapestry5.views.NameSorter;
+import com.anjlab.eclipse.tapestry5.views.TapestryDecoratingLabelProvider;
+import com.anjlab.eclipse.tapestry5.views.TreeObject;
+import com.anjlab.eclipse.tapestry5.views.ViewLabelProvider;
 
 /**
  * This sample class demonstrates how to plug-in a new workbench view. The view
@@ -42,12 +40,12 @@ import com.anjlab.eclipse.tapestry5.TapestryUtils;
  * <p>
  */
 
-public class TapestryContextView extends ViewPart
+public class TapestryProjectOutlineView extends ViewPart
 {
     /**
      * The ID of the view as specified by the extension.
      */
-    public static final String ID = "com.anjlab.eclipse.tapestry5.views.TapestryOutlineView";
+    public static final String ID = "com.anjlab.eclipse.tapestry5.views.TapestryProjectOutlineView";
 
     private TreeViewer viewer;
     private ISelectionListener selectionListener;
@@ -60,24 +58,24 @@ public class TapestryContextView extends ViewPart
     public void createPartControl(Composite parent)
     {
         viewer = new TreeViewer(parent, SWT.MULTI | SWT.H_SCROLL | SWT.V_SCROLL);
-        viewer.setContentProvider(new ViewContentProvider((IFile) null));
-        viewer.setLabelProvider(new ViewLabelProvider());
+        viewer.setContentProvider(new TapestryProjectOutlineContentProvider(null));
+        viewer.setLabelProvider(new TapestryDecoratingLabelProvider(new ViewLabelProvider()));
         viewer.setSorter(new NameSorter());
         viewer.setInput(getViewSite());
         viewer.addDoubleClickListener(new IDoubleClickListener()
         {
             public void doubleClick(DoubleClickEvent event)
             {
-                ISelection selection = viewer.getSelection();
-                
-                Object obj = ((IStructuredSelection) selection).getFirstElement();
-                
-                if (obj instanceof TreeObject)
-                {
-                    IFile file = (IFile) ((TreeObject) obj).getData();
-                    
-                    EclipseUtils.openFile(getViewSite().getWorkbenchWindow(), file);
-                }
+//                ISelection selection = viewer.getSelection();
+//                
+//                Object obj = ((IStructuredSelection) selection).getFirstElement();
+//                
+//                if (obj instanceof TreeObject)
+//                {
+//                    IFile file = (IFile) ((TreeObject) obj).getData();
+//                    
+//                    EclipseUtils.openFile(getViewSite().getWorkbenchWindow(), file);
+//                }
             }
         });
         
@@ -86,42 +84,42 @@ public class TapestryContextView extends ViewPart
             @Override
             public void resourceChanged(IResourceChangeEvent event)
             {
-                if (getContentProvider() == null)
-                {
-                    return;
-                }
-                
-                TapestryContext context = null;
-                
-                for (IFile affectedFile : EclipseUtils.getAllAffectedResources(
-                                            event.getDelta(), IFile.class))
-                {
-                    if (getContentProvider().getContext().contains(affectedFile))
-                    {
-                        if (!affectedFile.exists())
-                        {
-                            getContentProvider().getContext().remove(affectedFile);
-                            
-                            //  Context changed
-                            context = getContentProvider().getContext();
-                        }
-                        else
-                        {
-                            context = TapestryUtils.createTapestryContext(affectedFile);
-                            
-                            if (!context.isEmpty())
-                            {
-                                break;
-                            }
-                        }
-                    }
-                }
-                
-                if (context != null)
-                {
-                    //  Some files changed in context
-                    updateContentProvider(new ViewContentProvider(context));
-                }
+//                if (getContentProvider() == null)
+//                {
+//                    return;
+//                }
+//                
+//                TapestryContext context = null;
+//                
+//                for (IFile affectedFile : EclipseUtils.getAllAffectedResources(
+//                                            event.getDelta(), IFile.class))
+//                {
+//                    if (getContentProvider().getContext().contains(affectedFile))
+//                    {
+//                        if (!affectedFile.exists())
+//                        {
+//                            getContentProvider().getContext().remove(affectedFile);
+//                            
+//                            //  Context changed
+//                            context = getContentProvider().getContext();
+//                        }
+//                        else
+//                        {
+//                            context = TapestryUtils.createTapestryContext(affectedFile);
+//                            
+//                            if (!context.isEmpty())
+//                            {
+//                                break;
+//                            }
+//                        }
+//                    }
+//                }
+//                
+//                if (context != null)
+//                {
+//                    //  Some files changed in context
+//                    updateContentProvider(new TapestryProjectOutlineContentProvider(context));
+//                }
             }
         };
         
@@ -132,17 +130,17 @@ public class TapestryContextView extends ViewPart
             @Override
             public void resourceChanged(IResourceChangeEvent event)
             {
-                if (getContentProvider() != null)
-                {
-                    List<IProject> projects = EclipseUtils.getAllAffectedResources(event.getDelta(), IProject.class);
-                    
-                    for (IProject project : projects)
-                    {
-                        TapestryContext.deleteMarkers(project);
-                    }
-                    
-                    getContentProvider().getContext().validate();
-                }
+//                if (getContentProvider() != null)
+//                {
+//                    List<IProject> projects = EclipseUtils.getAllAffectedResources(event.getDelta(), IProject.class);
+//                    
+//                    for (IProject project : projects)
+//                    {
+//                        TapestryContext.deleteMarkers(project);
+//                    }
+//                    
+//                    getContentProvider().getContext().validate();
+//                }
             }
         };
         ResourcesPlugin.getWorkspace().addResourceChangeListener(postBuildListener, IResourceChangeEvent.POST_BUILD);
@@ -158,6 +156,7 @@ public class TapestryContextView extends ViewPart
                 
                 IWorkbenchPage activePage = window.getActivePage();
                 
+                //  TODO What if a project is selected
                 IFile file = EclipseUtils.getFileFromPage(activePage);
                 
                 if (file != null)
@@ -166,7 +165,7 @@ public class TapestryContextView extends ViewPart
                     {
                         activeFile = file;
                         
-                        updateContext(file);
+                        updateContext(file.getProject());
                         
                         viewer.setSelection(
                                 new TreeSelection(
@@ -184,25 +183,16 @@ public class TapestryContextView extends ViewPart
         getSite().getPage().addSelectionListener(selectionListener);
     }
     
-    private void updateContext(IFile fromFile)
+    private void updateContext(IProject project)
     {
-        ViewContentProvider provider = new ViewContentProvider(fromFile);
-        
-        if (!provider.hasElements() && getContentProvider() != null
-                && getContentProvider().getContext().contains(fromFile))
+        //  TODO Check if project is in context's projects already
+        if (getContentProvider() == null || !getContentProvider().getProject().equals(project))
         {
-            //  In case if we clicked on @Import'ed asset (JS or CSS) file, then we can't obtain tapestry context for it
-            //  because we don't have any naming conventions for these files, and also these files may be
-            //  referenced from multiple components/pages, so they may belong to multiple contexts.
-            //  Anyway if we can't find any elements for the context -- we simply show the previous one.
-            
-            provider = getContentProvider();
+            updateContentProvider(new TapestryProjectOutlineContentProvider(project));
         }
-        
-        updateContentProvider(provider);
     }
 
-    private void updateContentProvider(ViewContentProvider provider)
+    private void updateContentProvider(TapestryProjectOutlineContentProvider provider)
     {
         setContentProvider(provider);
         
@@ -216,14 +206,16 @@ public class TapestryContextView extends ViewPart
         });
     }
     
-    private ViewContentProvider getContentProvider()
+    private TapestryProjectOutlineContentProvider outlineContentProvider;
+    
+    private TapestryProjectOutlineContentProvider getContentProvider()
     {
-        return Activator.getDefault().getContentProvider();
+        return outlineContentProvider;
     }
     
-    private void setContentProvider(ViewContentProvider contentProvider)
+    private void setContentProvider(TapestryProjectOutlineContentProvider provider)
     {
-        Activator.getDefault().setContentProvider(contentProvider);
+        outlineContentProvider = provider;
     }
     
     @Override

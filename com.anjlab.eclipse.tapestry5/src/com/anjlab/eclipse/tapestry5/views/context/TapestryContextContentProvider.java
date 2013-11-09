@@ -1,4 +1,4 @@
-package com.anjlab.eclipse.tapestry5.views;
+package com.anjlab.eclipse.tapestry5.views.context;
 
 import org.eclipse.core.resources.IFile;
 import org.eclipse.jface.viewers.ITreeContentProvider;
@@ -7,19 +7,21 @@ import org.eclipse.ui.IViewSite;
 
 import com.anjlab.eclipse.tapestry5.TapestryContext;
 import com.anjlab.eclipse.tapestry5.TapestryUtils;
+import com.anjlab.eclipse.tapestry5.views.TreeObject;
+import com.anjlab.eclipse.tapestry5.views.TreeParent;
 
-public class ViewContentProvider implements ITreeContentProvider
+public class TapestryContextContentProvider implements ITreeContentProvider
 {
     private TreeParent invisibleRoot;
     private IFile file;
     private TapestryContext context;
 
-    public ViewContentProvider(TapestryContext context)
+    public TapestryContextContentProvider(TapestryContext context)
     {
         this.context = context;
     }
     
-    public ViewContentProvider(IFile file)
+    public TapestryContextContentProvider(IFile file)
     {
         this.file = file;
     }

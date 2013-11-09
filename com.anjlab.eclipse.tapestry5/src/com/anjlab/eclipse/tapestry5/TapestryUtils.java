@@ -6,6 +6,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
@@ -360,92 +361,32 @@ public class TapestryUtils
         return (IContainer) project.findMember("src/main/webapp");
     }
     
-    public synchronized static String getAppPackage(IProject project)
+    public static String getAppPackage(IProject project)
     {
-        IContainer webapp = findWebapp(project);
+        return Activator.getDefault().getWebXmlCache(project).get(TAPESTRY_APP_PACKAGE);
+    }
+    
+    public static String getAppName(IProject project)
+    {
+        Map<String, String> cache = Activator.getDefault().getWebXmlCache(project);
         
-        if (webapp == null)
+        for (String key : cache.keySet())
         {
-            return null;
-        }
-        
-        IFile webXml = (IFile) webapp.findMember("/WEB-INF/web.xml");
-        
-        if (webXml == null)
-        {
-            return null;
-        }
-        
-        Map<String, Object> cache = Activator.getDefault().getWebXmlCache(project);
-        
-        String appPackage = (String) cache.get(TAPESTRY_APP_PACKAGE);
-        
-        if (appPackage != null)
-        {
-            return appPackage;
-        }
-        
-        XMLStreamReader reader = null;
-        InputStream input = null;
-        
-        try
-        {
-            input = webXml.getContents();
+            String value = cache.get(key);
             
-            reader = Activator.getDefault().getXMLInputFactory()
-                    .createXMLStreamReader(input);
-            
-            while (nextStartElement(reader))
+            if ("org.apache.tapestry5.TapestryFilter".equals(value))
             {
-                if ("param-name".equals(reader.getName().getLocalPart()))
-                {
-                    if (TAPESTRY_APP_PACKAGE.equals(reader.getElementText()))
-                    {
-                        if (nextStartElement(reader))
-                        {
-                            if ("param-value".equals(reader.getName().getLocalPart()))
-                            {
-                                appPackage = reader.getElementText();
-                                
-                                cache.put(TAPESTRY_APP_PACKAGE, appPackage);
-                                
-                                return appPackage;
-                            }
-                        }
-                        break;
-                    }
-                }
-            }
-        }
-        catch (Exception e)
-        {
-            Activator.getDefault().logError("Error reading value of 'tapestry.app-package' from web.xml", e);
-        }
-        finally
-        {
-            if (reader != null)
-            {
-                try { reader.close(); } catch (Exception e) {}
-            }
-            if (input != null)
-            {
-                try { input.close(); } catch (Exception e) {}
+                return key;
             }
         }
         
         return null;
     }
 
-    private static boolean nextStartElement(XMLStreamReader reader) throws XMLStreamException
+    public static boolean isTapestrySubModuleAnnotation(IAnnotation annotation)
     {
-        while (reader.hasNext())
-        {
-            if (reader.next() == XMLStreamConstants.START_ELEMENT)
-            {
-                return true;
-            }
-        }
-        return false;
+        return "org.apache.tapestry5.ioc.annotations.SubModule".equals(annotation.getElementName())
+            || "SubModule".equals(annotation.getElementName());
     }
 
     public static boolean isTapestryImportAnnotation(IAnnotation annotation)
@@ -612,6 +553,95 @@ public class TapestryUtils
         }
         
         return null;
+    }
+
+    public static Map<String, String> readWebXml(IProject project)
+    {
+        Map<String, String> params = new HashMap<String, String>();
+        
+        IContainer webapp = findWebapp(project);
+        
+        if (webapp == null)
+        {
+            return params;
+        }
+        
+        IFile webXml = (IFile) webapp.findMember("/WEB-INF/web.xml");
+        
+        if (webXml == null)
+        {
+            return params;
+        }
+        
+        XMLStreamReader reader = null;
+        InputStream input = null;
+        
+        try
+        {
+            input = webXml.getContents();
+            
+            reader = Activator.getDefault().getXMLInputFactory()
+                    .createXMLStreamReader(input);
+            
+            while (nextStartElement(reader))
+            {
+                String[] tags = new String[] { "param-name", "param-value",
+                                               "filter-name", "filter-class" };
+                
+                for (int i = 0; i < tags.length; i += 2)
+                {
+                    if (tags[i].equals(reader.getName().getLocalPart()))
+                    {
+                        String key = reader.getElementText();
+                        
+                        if (nextStartElement(reader))
+                        {
+                            if (tags[i+1].equals(reader.getName().getLocalPart()))
+                            {
+                                String value = reader.getElementText();
+                                
+                                params.put(key, value);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        catch (Exception e)
+        {
+            Activator.getDefault().logError("Error reading web.xml", e);
+        }
+        finally
+        {
+            if (reader != null)
+            {
+                try { reader.close(); } catch (Exception e) {}
+            }
+            if (input != null)
+            {
+                try { input.close(); } catch (Exception e) {}
+            }
+        }
+        
+        return params;
+    }
+
+    private static boolean nextStartElement(XMLStreamReader reader) throws XMLStreamException
+    {
+        while (reader.hasNext())
+        {
+            if (reader.next() == XMLStreamConstants.START_ELEMENT)
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public static String getSimpleName(String className)
+    {
+        String[] parts = className.split("\\.");
+        return parts[parts.length - 1];
     }
 
 }

@@ -34,8 +34,8 @@ import org.eclipse.ui.internal.PartPane;
 import com.anjlab.eclipse.tapestry5.Activator;
 import com.anjlab.eclipse.tapestry5.EclipseUtils;
 import com.anjlab.eclipse.tapestry5.TapestryContext;
-import com.anjlab.eclipse.tapestry5.views.ViewContentProvider;
 import com.anjlab.eclipse.tapestry5.views.ViewLabelProvider;
+import com.anjlab.eclipse.tapestry5.views.context.TapestryContextContentProvider;
 
 /**
  * Our sample handler extends AbstractHandler, an IHandler base class.
@@ -75,7 +75,7 @@ public class QuickSwitchHandler extends AbstractHandler
             return null;
         }
         
-        ViewContentProvider provider = null;
+        TapestryContextContentProvider provider = null;
         
         if (getContentProvider() != null)
         {
@@ -87,7 +87,7 @@ public class QuickSwitchHandler extends AbstractHandler
         
         if (provider == null)
         {
-            provider = new ViewContentProvider(file);
+            provider = new TapestryContextContentProvider(file);
         }
         
         setContentProvider(provider);
@@ -129,14 +129,14 @@ public class QuickSwitchHandler extends AbstractHandler
         return null;
     }
     
-    private ViewContentProvider getContentProvider()
+    private TapestryContextContentProvider getContentProvider()
     {
-        return Activator.getDefault().getContentProvider();
+        return Activator.getDefault().getContextContentProvider();
     }
     
-    private void setContentProvider(ViewContentProvider contentProvider)
+    private void setContentProvider(TapestryContextContentProvider contentProvider)
     {
-        Activator.getDefault().setContentProvider(contentProvider);
+        Activator.getDefault().setContextContentProvider(contentProvider);
     }
 
     private BasicPartList createEditorList(TapestryContext context, IWorkbenchWindow window)

@@ -17,7 +17,7 @@ import org.eclipse.jface.resource.ImageDescriptor;
 import org.eclipse.ui.plugin.AbstractUIPlugin;
 import org.osgi.framework.BundleContext;
 
-import com.anjlab.eclipse.tapestry5.views.ViewContentProvider;
+import com.anjlab.eclipse.tapestry5.views.context.TapestryContextContentProvider;
 
 /**
  * The activator class controls the plug-in life cycle
@@ -35,7 +35,7 @@ public class Activator extends AbstractUIPlugin
 
     private IResourceChangeListener postChangeListener;
 
-    private ViewContentProvider contentProvider;
+    private TapestryContextContentProvider contextContentProvider;
     
     /**
      * The constructor
@@ -44,14 +44,14 @@ public class Activator extends AbstractUIPlugin
     {
     }
 
-    public ViewContentProvider getContentProvider()
+    public TapestryContextContentProvider getContextContentProvider()
     {
-        return contentProvider;
+        return contextContentProvider;
     }
     
-    public void setContentProvider(ViewContentProvider contentProvider)
+    public void setContextContentProvider(TapestryContextContentProvider provider)
     {
-        this.contentProvider = contentProvider;
+        this.contextContentProvider = provider;
     }
     
     /*
@@ -103,13 +103,16 @@ public class Activator extends AbstractUIPlugin
     }
     
     @SuppressWarnings("unchecked")
-    public synchronized Map<String, Object> getWebXmlCache(IProject project)
+    public synchronized Map<String, String> getWebXmlCache(IProject project)
     {
         Map<String, Object> cache = getCache(project);
-        Map<String, Object> webXmlCache = (Map<String, Object>) cache.get(WEB_XML);
+        Map<String, String> webXmlCache = (Map<String, String>) cache.get(WEB_XML);
         if (webXmlCache == null)
         {
-            webXmlCache = new ConcurrentHashMap<String, Object>();
+            webXmlCache = new ConcurrentHashMap<String, String>();
+            
+            webXmlCache.putAll(TapestryUtils.readWebXml(project));
+            
             cache.put(WEB_XML, webXmlCache);
         }
         return webXmlCache;
@@ -188,7 +191,7 @@ public class Activator extends AbstractUIPlugin
 
     public TapestryContext getTapestryContext()
     {
-        ViewContentProvider contentProvider = getContentProvider();
+        TapestryContextContentProvider contentProvider = getContextContentProvider();
         return contentProvider != null
              ? contentProvider.getContext()
              : null;

@@ -18,7 +18,6 @@ import org.eclipse.jdt.core.IJavaElement;
 import org.eclipse.jdt.core.JavaModelException;
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
-import org.eclipse.jdt.core.dom.ASTParser;
 import org.eclipse.jdt.core.dom.ASTVisitor;
 import org.eclipse.jdt.core.dom.Annotation;
 import org.eclipse.jdt.core.dom.ArrayInitializer;
@@ -200,15 +199,6 @@ public class NewFileWizardAction extends Action
             
             private int caretPosition;
             
-            private CompilationUnit parse(ICompilationUnit unit)
-            {
-                ASTParser parser = ASTParser.newParser(AST.JLS4);
-                parser.setKind(ASTParser.K_COMPILATION_UNIT);
-                parser.setSource(unit);
-                parser.setResolveBindings(true);
-                return (CompilationUnit) parser.createAST(null);
-            }
-            
             @Override
             public boolean performFinish()
             {
@@ -264,7 +254,7 @@ public class NewFileWizardAction extends Action
                 
                 final ICompilationUnit compilationUnit = (ICompilationUnit) javaElement;
                 
-                CompilationUnit unit = parse(compilationUnit);
+                CompilationUnit unit = EclipseUtils.parse(compilationUnit);
                 
                 TapestryImportAnnotationContext rewriteContext = new TapestryImportAnnotationContext();
                 
