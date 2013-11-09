@@ -242,6 +242,24 @@ public class AssetPath implements IFile
         }
     }
     
+    @SuppressWarnings("rawtypes")
+    @Override
+    public Object getAdapter(Class clazz)
+    {
+        if (clazz.equals(IContributorResourceAdapter.class))
+        {
+            return new IContributorResourceAdapter()
+            {
+                @Override
+                public IResource getAdaptedResource(IAdaptable adaptable)
+                {
+                    return AssetPath.this;
+                }
+            };
+        }
+        return null;
+    }
+    
     @Override
     public void accept(IResourceVisitor arg0) throws CoreException
     {
@@ -733,24 +751,6 @@ public class AssetPath implements IFile
     {
         // TODO Auto-generated method stub
 
-    }
-
-    @SuppressWarnings("rawtypes")
-    @Override
-    public Object getAdapter(Class clazz)
-    {
-        if (clazz.equals(IContributorResourceAdapter.class))
-        {
-            return new IContributorResourceAdapter()
-            {
-                @Override
-                public IResource getAdaptedResource(IAdaptable adaptable)
-                {
-                    return AssetPath.this;
-                }
-            };
-        }
-        return null;
     }
 
     @Override

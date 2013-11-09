@@ -159,7 +159,7 @@ public class TapestryComponentHyperlinkDetector extends AbstractHyperlinkDetecto
                     
                     if (javaFile != null)
                     {
-                        TapestryContext context = new TapestryContext(javaFile);
+                        TapestryContext context = TapestryUtils.createTapestryContext(javaFile);
                         
                         final List<IFile> files = context.getFiles();
                         

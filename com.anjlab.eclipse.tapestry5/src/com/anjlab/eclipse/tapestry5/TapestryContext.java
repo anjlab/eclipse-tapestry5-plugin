@@ -45,7 +45,7 @@ public class TapestryContext
             initFromImportedFile(file);
         }
     }
-
+    
     private void addImports()
     {
         IFile javaFile = getJavaFile();
@@ -81,7 +81,7 @@ public class TapestryContext
             }
         }
     }
-
+    
     private void processImport(IAnnotation annotation, String type, Object value)
     {
         if (value instanceof Object[])
@@ -128,7 +128,7 @@ public class TapestryContext
         return null;
     }
     
-    public IFile getTemplateFile()
+    private IFile getTemplateFile()
     {
         for (IFile file : files)
         {
@@ -220,7 +220,7 @@ public class TapestryContext
         addPropertiesFiles(file);
         addImports();
     }
-
+    
     private void initFromJavaOrTemplateFile(IFile file)
     {
         addWithComplementFile(file);
@@ -259,12 +259,12 @@ public class TapestryContext
             this.files.add(properties);
         }
     }
-
+    
     private Pattern getLocalizedPropertiesPattern()
     {
         return Pattern.compile("([^_]*)(_.*)+\\.properties");
     }
-
+    
     public boolean contains(IFile file)
     {
         if (file == null)
@@ -297,7 +297,7 @@ public class TapestryContext
         }
         return false;
     }
-
+    
     public void validate()
     {
         for (IFile file : files)
@@ -340,7 +340,7 @@ public class TapestryContext
             Activator.getDefault().logError("Error deleting asset problem markers", e);
         }
     }
-
+    
     public IProject getProject()
     {
         for (IFile file : files)
@@ -352,7 +352,7 @@ public class TapestryContext
         }
         return null;
     }
-
+    
     public boolean contains(String fileName)
     {
         for (IFile file : files)
@@ -374,7 +374,7 @@ public class TapestryContext
         }
         return JavaCore.create(javaFile);
     }
-
+    
     public String getName()
     {
         for (IFile file : files)
@@ -386,12 +386,12 @@ public class TapestryContext
         }
         return null;
     }
-
+    
     public boolean isEmpty()
     {
         return files.isEmpty();
     }
-
+    
     public String getPackageName()
     {
         IContainer root = TapestryUtils.getRoot(getJavaFile());
@@ -417,7 +417,7 @@ public class TapestryContext
         
         return TapestryUtils.getPagesPackage(getProject());
     }
-
+    
     public void remove(IFile file)
     {
         if (this.files.remove(file) && TapestryUtils.isJavaFile(file))
@@ -438,5 +438,4 @@ public class TapestryContext
             }
         }
     }
-
 }
