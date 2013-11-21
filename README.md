@@ -43,7 +43,7 @@ CMD+Hover over component reference to jump to one of its definitions:
 
 Go to *Window* -> *Show View* -> *Other...*, filter by "Tapestry" and select "Tapestry Project Outline".
 
-![TapestryProjectOutline](https://f.cloud.github.com/assets/76579/1590336/f8ff942c-528c-11e3-90d2-594959e557ff.png)
+![TapestryProjectOutline](https://f.cloud.github.com/assets/76579/1591215/cb6da226-529e-11e3-8db7-e482f5aedb11.png)
 
 This view displays structure of your Tapestry5 project:
 
