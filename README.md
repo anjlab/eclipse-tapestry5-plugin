@@ -53,6 +53,11 @@ This view displays structure of your Tapestry5 project:
   - Double click on module name to open its source code
   - More to come...
 
+**Note:** Analysis of 3rd party modules will only work if you have sources attached to your JARs in Eclipse (which is the default if you import your project via `./gradlew eclipse` or `mvn eclipse:eclipse -DdownloadSources=true`).
+If you don't have sources attached to one of your module classes you will see warning icon near it in the Tapestry Project Outline view.
+
+**Note:** `CMD+Hover` feature won't be able to find components in the modules that don't have attached sources.
+
 ### Quickly Create Files for Tapestry5
 
 #### Create new Tapestry5 pages, components and mixins quickly
