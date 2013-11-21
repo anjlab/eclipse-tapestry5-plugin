@@ -18,6 +18,7 @@ import org.eclipse.jdt.core.JavaCore;
 import org.eclipse.jdt.core.JavaModelException;
 
 import com.anjlab.eclipse.tapestry5.TapestryModule.ModuleReference;
+import com.anjlab.eclipse.tapestry5.watchdog.WebXmlWatchdog.WebXml;
 
 public class TapestryProject
 {
@@ -60,25 +61,39 @@ public class TapestryProject
         modules = new ArrayList<TapestryModule>();
         
         String appPackage = TapestryUtils.getAppPackage(project);
-        String appName = TapestryUtils.getAppName(project);
         
-        if (appName == null || appPackage == null)
+        if (appPackage == null)
         {
             return;
         }
         
-        TapestryModule appModule = addModule(monitor, modules, project, appPackage + ".services." + appName + "Module", new ModuleReference()
-        {
-            @Override
-            public String getLabel()
-            {
-                return "Your Application's Module";
-            }
-        });
+        TapestryModule appModule = null;
         
-        if (appModule != null)
+        final WebXml webXml = Activator.getDefault().getWebXml(project);
+        
+        if (webXml == null)
         {
-            appModule.setAppModule(true);
+            return;
+        }
+        
+        for (String filterName : webXml.getFilterNames())
+        {
+            final String localFilterName = filterName;
+            
+            appModule = addModule(monitor, modules, project, appPackage + ".services." + filterName + "Module", new ModuleReference()
+            {
+                @Override
+                public String getLabel()
+                {
+                    return "Your Application's Module (via " + webXml.getFilterClassName(localFilterName) + " in web.xml)";
+                }
+            });
+            
+            if (appModule != null)
+            {
+                appModule.setAppModule(true);
+                break;
+            }
         }
         
         addModule(monitor, modules, project, "org.apache.tapestry5.services.TapestryModule", new ModuleReference()

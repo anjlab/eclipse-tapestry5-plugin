@@ -15,6 +15,7 @@ import org.osgi.framework.BundleContext;
 import com.anjlab.eclipse.tapestry5.watchdog.TapestryContextWatchdog;
 import com.anjlab.eclipse.tapestry5.watchdog.TapestryProjectWatchdog;
 import com.anjlab.eclipse.tapestry5.watchdog.WebXmlWatchdog;
+import com.anjlab.eclipse.tapestry5.watchdog.WebXmlWatchdog.WebXml;
 
 /**
  * The activator class controls the plug-in life cycle
@@ -170,26 +171,9 @@ public class Activator extends AbstractUIPlugin
         tapestryContextWatchdog.removeTapestryContextListener(window, listener);
     }
 
-    public String getWebXmlPropertyValue(IProject project, String propertyName)
+    public WebXml getWebXml(IProject project)
     {
-        return webXmlWatchdog.getWebXmlCache(project).get(propertyName);
-    }
-
-    public String getWebXmlPropertyName(IProject project, String propertyName)
-    {
-        Map<String, String> cache = webXmlWatchdog.getWebXmlCache(project);
-        
-        for (String key : cache.keySet())
-        {
-            String value = cache.get(key);
-            
-            if (propertyName.equals(value))
-            {
-                return key;
-            }
-        }
-        
-        return null;
+        return webXmlWatchdog.getWebXmlCache(project);
     }
     
     public TapestryProject getTapestryProject(IWorkbenchWindow window)

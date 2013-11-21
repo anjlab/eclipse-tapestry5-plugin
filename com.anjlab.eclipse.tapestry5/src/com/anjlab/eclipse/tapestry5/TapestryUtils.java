@@ -4,12 +4,6 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.util.HashMap;
-import java.util.Map;
-
-import javax.xml.stream.XMLStreamConstants;
-import javax.xml.stream.XMLStreamException;
-import javax.xml.stream.XMLStreamReader;
 
 import org.eclipse.core.resources.IContainer;
 import org.eclipse.core.resources.IFile;
@@ -160,20 +154,14 @@ public class TapestryUtils
     
     public static boolean isTapestryAppProject(IProject project)
     {
-        return getAppPackage(project) != null && getAppName(project) != null;
+        return getAppPackage(project) != null;
     }
     
     public static String getAppPackage(IProject project)
     {
-        return Activator.getDefault().getWebXmlPropertyValue(project, TAPESTRY_APP_PACKAGE);
+        return Activator.getDefault().getWebXml(project).getParamValue(TAPESTRY_APP_PACKAGE);
     }
     
-    public static String getAppName(IProject project)
-    {
-        return Activator.getDefault().getWebXmlPropertyName(
-                project, "org.apache.tapestry5.TapestryFilter");
-    }
-
     public static boolean isTapestrySubModuleAnnotation(IAnnotation annotation)
     {
         return "org.apache.tapestry5.ioc.annotations.SubModule".equals(annotation.getElementName())
@@ -331,89 +319,6 @@ public class TapestryUtils
         }
         
         return null;
-    }
-
-    public static Map<String, String> readWebXml(IProject project)
-    {
-        Map<String, String> params = new HashMap<String, String>();
-        
-        IContainer webapp = findWebapp(project);
-        
-        if (webapp == null)
-        {
-            return params;
-        }
-        
-        IFile webXml = (IFile) webapp.findMember("/WEB-INF/web.xml");
-        
-        if (webXml == null)
-        {
-            return params;
-        }
-        
-        XMLStreamReader reader = null;
-        InputStream input = null;
-        
-        try
-        {
-            input = webXml.getContents();
-            
-            reader = Activator.getDefault().getXMLInputFactory()
-                    .createXMLStreamReader(input);
-            
-            while (nextStartElement(reader))
-            {
-                String[] tags = new String[] { "param-name", "param-value",
-                                               "filter-name", "filter-class" };
-                
-                for (int i = 0; i < tags.length; i += 2)
-                {
-                    if (tags[i].equals(reader.getName().getLocalPart()))
-                    {
-                        String key = reader.getElementText();
-                        
-                        if (nextStartElement(reader))
-                        {
-                            if (tags[i+1].equals(reader.getName().getLocalPart()))
-                            {
-                                String value = reader.getElementText();
-                                
-                                params.put(key, value);
-                            }
-                        }
-                    }
-                }
-            }
-        }
-        catch (Exception e)
-        {
-            Activator.getDefault().logError("Error reading web.xml", e);
-        }
-        finally
-        {
-            if (reader != null)
-            {
-                try { reader.close(); } catch (Exception e) {}
-            }
-            if (input != null)
-            {
-                try { input.close(); } catch (Exception e) {}
-            }
-        }
-        
-        return params;
-    }
-
-    private static boolean nextStartElement(XMLStreamReader reader) throws XMLStreamException
-    {
-        while (reader.hasNext())
-        {
-            if (reader.next() == XMLStreamConstants.START_ELEMENT)
-            {
-                return true;
-            }
-        }
-        return false;
     }
 
     public static String getSimpleName(String className)
