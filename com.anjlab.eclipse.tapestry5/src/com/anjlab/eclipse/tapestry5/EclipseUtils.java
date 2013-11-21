@@ -5,106 +5,48 @@ import java.util.List;
 
 import org.eclipse.core.resources.IContainer;
 import org.eclipse.core.resources.IFile;
+import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.IResourceDelta;
 import org.eclipse.core.runtime.CoreException;
-import org.eclipse.core.runtime.IAdaptable;
 import org.eclipse.core.runtime.Platform;
 import org.eclipse.jdt.core.ICompilationUnit;
+import org.eclipse.jdt.core.IField;
 import org.eclipse.jdt.core.IJavaElement;
 import org.eclipse.jdt.core.IPackageFragmentRoot;
+import org.eclipse.jdt.core.IType;
+import org.eclipse.jdt.core.JavaCore;
 import org.eclipse.jdt.core.JavaModelException;
+import org.eclipse.jdt.core.dom.AST;
+import org.eclipse.jdt.core.dom.ASTParser;
+import org.eclipse.jdt.core.dom.CompilationUnit;
+import org.eclipse.jdt.core.dom.Name;
+import org.eclipse.jdt.core.search.IJavaSearchConstants;
+import org.eclipse.jdt.core.search.IJavaSearchScope;
+import org.eclipse.jdt.core.search.SearchEngine;
+import org.eclipse.jdt.core.search.SearchMatch;
+import org.eclipse.jdt.core.search.SearchParticipant;
+import org.eclipse.jdt.core.search.SearchPattern;
+import org.eclipse.jdt.core.search.SearchRequestor;
+import org.eclipse.jdt.internal.ui.javaeditor.EditorUtility;
 import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jface.viewers.ISelection;
-import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.jface.viewers.ITreeSelection;
-import org.eclipse.ui.IEditorInput;
 import org.eclipse.ui.IEditorPart;
-import org.eclipse.ui.IFileEditorInput;
-import org.eclipse.ui.IWorkbenchPage;
 import org.eclipse.ui.IWorkbenchWindow;
+import org.eclipse.ui.PartInitException;
 import org.eclipse.ui.ide.IDE;
 
+@SuppressWarnings("restriction")
 public class EclipseUtils
 {
-
-    public static IFile getFileFromPage(IWorkbenchPage page)
-    {
-        if (page == null)
-        {
-            return null;
-        }
-        
-        IEditorPart activeEditor = page.getActiveEditor();
-        
-        if (activeEditor == null)
-        {
-            return null;
-        }
-        
-        IEditorInput editorInput = activeEditor.getEditorInput();
-        
-        if (editorInput instanceof IFileEditorInput)
-        {
-            IFileEditorInput fileEditorInput = (IFileEditorInput) editorInput;
-            
-            return fileEditorInput.getFile();
-        }
-        
-        return null;
-    }
-
-    public static IFile getFileFromSelection(ISelection selection) throws JavaModelException
-    {
-        IResource resource = getResourceFromSelection(selection);
-        
-        if (resource == null)
-        {
-            return null;
-        }
-        
-        return (IFile) resource.getAdapter(IFile.class);
-    }
-
-    public static IResource getResourceFromSelection(ISelection selection) throws JavaModelException
-    {
-        return selection instanceof IStructuredSelection
-                ? getResourceFromSelectionElement(((IStructuredSelection) selection).getFirstElement())
-                : null;
-    }
+    public static final String ECLIPSE_INTEGRATION_FOR_TAPESTRY5 = "Eclipse Integration for Tapestry5";
     
-    private static IResource getResourceFromSelectionElement(Object firstElement) throws JavaModelException
+    public static final String SOURCE_NOT_FOUND = "source not found";
+
+    public static ISelection getProjectExplorerSelection(IWorkbenchWindow window)
     {
-        if (firstElement == null)
-        {
-            return null;
-        }
-        
-        if (firstElement instanceof ICompilationUnit)
-        {
-            ICompilationUnit compilationUnit = ((ICompilationUnit) firstElement);
-            
-            return compilationUnit.getCorrespondingResource();
-        }
-        
-        if (firstElement instanceof ITreeSelection)
-        {
-            ITreeSelection treeSelection = (ITreeSelection) firstElement;
-            
-            return getResourceFromSelectionElement(treeSelection.getFirstElement());
-        }
-        
-        IResource resource = (IResource) Platform.getAdapterManager().getAdapter(firstElement, IResource.class);
-        
-        if (resource == null)
-        {
-            if (firstElement instanceof IAdaptable)
-            {
-                resource = (IResource) ((IAdaptable) firstElement).getAdapter(IResource.class);
-            }
-        }
-        
-        return resource;
+        return window.getSelectionService().getSelection("org.eclipse.jdt.ui.PackageExplorer");
     }
 
     public static interface EditorCallback
@@ -117,6 +59,61 @@ public class EclipseUtils
         openFile(window, file, null);
     }
     
+    public static void openFile(final IWorkbenchWindow window, TapestryFile file)
+    {
+        openFile(window, file, null);
+    }
+    
+    public static void openFile(final IWorkbenchWindow window, TapestryFile file, final EditorCallback editorCallback)
+    {
+        if (file instanceof AssetReference)
+        {
+            AssetReference asset = (AssetReference) file;
+            try
+            {
+                file = asset.resolveFile(false);
+            }
+            catch (AssetException e)
+            {
+                EclipseUtils.openError(window,
+                        "Unable to resolve asset '" + asset.getAssetPath() + "': "
+                                + e.getLocalizedMessage());
+                
+                return;
+            }
+        }
+        
+        if (file instanceof LocalFile)
+        {
+            openFile(window, ((LocalFile) file).getFile(), editorCallback);
+        }
+        else if (file instanceof JarEntryFile)
+        {
+            openInEditor(((JarEntryFile) file).getJarEntry(), editorCallback);
+        }
+        else if (file instanceof ClassFile)
+        {
+            openInEditor(((ClassFile) file).getClassFile(), editorCallback);
+        }
+    }
+
+    private static void openInEditor(Object inputElement, final EditorCallback editorCallback)
+    {
+        try
+        {
+            IEditorPart editorPart = EditorUtility.openInEditor(inputElement);
+            
+            if (editorCallback != null)
+            {
+                editorCallback.editorOpened(editorPart);
+            }
+        }
+        catch (PartInitException e)
+        {
+            Activator.getDefault().logError("Unable to open editor", e);
+        }
+    }
+    
     public static void openFile(final IWorkbenchWindow window, final IFile file, final EditorCallback editorCallback)
     {
         window.getShell().getDisplay().asyncExec(new Runnable()
@@ -125,26 +122,7 @@ public class EclipseUtils
             {
                 try
                 {
-                    IFile localFile = file;
-                    
-                    if (localFile instanceof AssetPath)
-                    {
-                        AssetPath assetPath = (AssetPath) localFile;
-                        try
-                        {
-                            localFile = assetPath.resolveFile(false);
-                        }
-                        catch (AssetException e)
-                        {
-                            EclipseUtils.openError(window,
-                                    "Unable to resolve asset '" + assetPath.getAssetPath() + "': "
-                                            + e.getLocalizedMessage());
-                            
-                            return;
-                        }
-                    }
-                    
-                    IEditorPart editor = IDE.openEditor(window.getActivePage(), localFile, true);
+                    IEditorPart editor = IDE.openEditor(window.getActivePage(), file, true);
                     
                     if (editorCallback != null)
                     {
@@ -165,7 +143,7 @@ public class EclipseUtils
     {
         MessageDialog.openError(
                 window.getShell(),
-                "Eclipse Integration for Tapestry5",
+                ECLIPSE_INTEGRATION_FOR_TAPESTRY5,
                 message);
     }
 
@@ -173,7 +151,7 @@ public class EclipseUtils
     {
         MessageDialog.openInformation(
                 window.getShell(),
-                "Eclipse Integration for Tapestry5",
+                ECLIPSE_INTEGRATION_FOR_TAPESTRY5,
                 message);
     }
 
@@ -259,6 +237,120 @@ public class EclipseUtils
             {
             }
         }
+        return null;
+    }
+
+    public static IField findFieldDeclaration(IProject project, Name name)
+    {
+        SearchPattern pattern = SearchPattern.createPattern(name.getFullyQualifiedName(),
+                IJavaSearchConstants.FIELD, IJavaSearchConstants.DECLARATIONS, SearchPattern.R_FULL_MATCH);
+        
+        final List<SearchMatch> matches = searchJava(project, pattern);
+        
+        return exactMatchOrNull(matches, IField.class);
+    }
+
+    @SuppressWarnings("unchecked")
+    private static <T> T exactMatchOrNull(final List<SearchMatch> matches, Class<T> clazz)
+    {
+        for (SearchMatch match : matches)
+        {
+            if (match.isExact() && clazz.isAssignableFrom(match.getElement().getClass()))
+            {
+                return (T) match.getElement();
+            }
+        }
+        
+        return null;
+    }
+
+    public static IType findTypeDeclaration(IProject project, String moduleClassName)
+    {
+        SearchPattern pattern = SearchPattern.createPattern(moduleClassName,
+                IJavaSearchConstants.TYPE, IJavaSearchConstants.DECLARATIONS, SearchPattern.R_FULL_MATCH);
+        
+        final List<SearchMatch> matches = searchJava(project, pattern);
+        
+        return exactMatchOrNull(matches, IType.class);
+    }
+
+    private static List<SearchMatch> searchJava(IProject project,
+            SearchPattern pattern)
+    {
+        IJavaSearchScope scope = SearchEngine.createJavaSearchScope(
+                new IJavaElement[] { JavaCore.create(project) });
+        
+        final List<SearchMatch> matches = new ArrayList<SearchMatch>();
+        
+        SearchRequestor requestor = new SearchRequestor()
+        {
+            @Override
+            public void acceptSearchMatch(SearchMatch match) throws CoreException
+            {
+                matches.add(match);
+            }
+        };
+    
+        SearchEngine searchEngine = new SearchEngine();
+        
+        try
+        {
+            searchEngine.search(pattern, new SearchParticipant[] { SearchEngine.getDefaultSearchParticipant() },
+                                scope, requestor, null);
+        }
+        catch (CoreException e)
+        {
+            Activator.getDefault().logWarning("Error performing search", e);;
+        }
+        return matches;
+    }
+
+    public static CompilationUnit parse(ICompilationUnit unit)
+    {
+        String source;
+        try
+        {
+            source = unit.getSource();
+        }
+        catch (JavaModelException e)
+        {
+            throw new IllegalStateException(SOURCE_NOT_FOUND, e);
+        }
+        
+        return parse(source);
+    }
+
+    public static CompilationUnit parse(String source)
+    {
+        if (source == null)
+        {
+            throw new IllegalStateException(SOURCE_NOT_FOUND);
+        }
+        ASTParser parser = ASTParser.newParser(AST.JLS4);
+        parser.setKind(ASTParser.K_COMPILATION_UNIT);
+        parser.setSource(source.toCharArray());
+        parser.setResolveBindings(true);
+        return (CompilationUnit) parser.createAST(null);
+    }
+
+    public static IProject getProjectFromSelection(ISelection selection)
+    {
+        if (selection instanceof ITreeSelection)
+        {
+            Object firstElement = ((ITreeSelection) selection).getFirstElement();
+            
+            if (firstElement != null)
+            {
+                IResource resource = (IResource) Platform.getAdapterManager().getAdapter(
+                        firstElement, IResource.class);
+                
+                if (resource != null)
+                {
+                    return resource.getProject();
+                }
+            }
+        }
+        
         return null;
     }
 

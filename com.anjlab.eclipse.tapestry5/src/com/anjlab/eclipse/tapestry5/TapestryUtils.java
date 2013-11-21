@@ -4,194 +4,38 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.regex.Pattern;
-
-import javax.xml.stream.XMLStreamConstants;
-import javax.xml.stream.XMLStreamException;
-import javax.xml.stream.XMLStreamReader;
 
 import org.eclipse.core.resources.IContainer;
 import org.eclipse.core.resources.IFile;
-import org.eclipse.core.resources.IFolder;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
+import org.eclipse.core.resources.IStorage;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IPath;
+import org.eclipse.core.runtime.Platform;
 import org.eclipse.jdt.core.IAnnotation;
-import org.eclipse.jdt.core.IJavaProject;
-import org.eclipse.jdt.core.IPackageFragmentRoot;
-import org.eclipse.jdt.core.JavaCore;
+import org.eclipse.jdt.core.IClassFile;
+import org.eclipse.jdt.core.ICompilationUnit;
+import org.eclipse.jdt.core.IJarEntryResource;
 import org.eclipse.jdt.core.JavaModelException;
 import org.eclipse.jdt.core.dom.Annotation;
+import org.eclipse.jdt.internal.ui.javaeditor.IClassFileEditorInput;
+import org.eclipse.jface.viewers.ISelection;
+import org.eclipse.jface.viewers.IStructuredSelection;
+import org.eclipse.jface.viewers.ITreeSelection;
+import org.eclipse.ui.IEditorInput;
+import org.eclipse.ui.IEditorPart;
+import org.eclipse.ui.IFileEditorInput;
+import org.eclipse.ui.IStorageEditorInput;
+import org.eclipse.ui.IWorkbenchPage;
 import org.eclipse.ui.IWorkbenchWindow;
 
+@SuppressWarnings("restriction")
 public class TapestryUtils
 {
     private static final String TAPESTRY_APP_PACKAGE = "tapestry.app-package";
 
-    public static IFile findComplementFile(IFile forFile)
-    {
-        List<IFile> files = findTapestryFiles(forFile, true, new FileNameBuilder()
-        {
-            @Override
-            public String getFileName(String fileName, String fileExtension)
-            {
-                String complementExtension = "tml".equals(fileExtension) ? "java" : "java".equals(fileExtension) ? "tml" : null;
-                
-                if (complementExtension == null)
-                {
-                    throw new IllegalArgumentException();
-                }
-                
-                return fileName.substring(0, fileName.lastIndexOf(fileExtension)) + complementExtension;
-            }
-        });
-        
-        return !files.isEmpty() ? files.get(0) : null;
-    }
-    
-    public static interface FileNameBuilder
-    {
-        String getFileName(String fileName, String fileExtension);
-    }
-    
-    public static List<IFile> findTapestryFiles(IFile forFile, boolean findFirst, FileNameBuilder fileNameBuilder)
-    {
-        try
-        {
-            String complementFileName = null;
-            
-            //  Check if the file is in the web application context
-            
-            boolean fromWebapp = false;
-            
-            IProject project = forFile.getProject();
-            
-            IContainer webapp = findWebapp(project);
-            
-            if (isTemplateFile(forFile))
-            {
-                if (fromWebapp = isInFolder(forFile, webapp))
-                {
-                    String relativeFileName = getRelativeFileName(forFile, webapp);
-                    
-                    complementFileName = fileNameBuilder.getFileName(
-                            joinPath(getPagesPath(project), relativeFileName),
-                            forFile.getFileExtension());
-                }
-            }
-            
-            List<IFile> resources = new ArrayList<IFile>();
-            
-            if (!fromWebapp)
-            {
-                complementFileName = fileNameBuilder.getFileName(forFile.getName(), forFile.getFileExtension());
-                
-                //  Try searching in the same folder first
-                
-                resources = findMembers(forFile.getParent(), complementFileName);
-                
-                if (findFirst && !resources.isEmpty())
-                {
-                    return resources;
-                }
-            }
-            
-            //  Look in the source folders
-            
-            if (!forFile.getProject().hasNature(JavaCore.NATURE_ID))
-            {
-                Activator.getDefault().logError("'" + forFile.getProject() + "' is not a Java project");
-                
-                return Collections.emptyList();
-            }
-            
-            IJavaProject javaProject = JavaCore.create(forFile.getProject());
-            
-            IContainer container = null;
-            
-            if (!fromWebapp)
-            {
-                IContainer adaptedProject = (IContainer) javaProject.getCorrespondingResource().getAdapter(IContainer.class);
-                
-                IResource adaptedFile = adaptedProject.findMember(forFile.getProjectRelativePath());
-                
-                container = adaptedFile.getParent();
-                
-                while (container != null && !EclipseUtils.isSourceFolder(container))
-                {
-                    container = container.getParent();
-                }
-                
-                if (container == null)
-                {
-                    Activator.getDefault().logWarning("Unable to find source folder for file: " + forFile.getFullPath());
-                    
-                    return Collections.emptyList();
-                }
-                
-                //  Get the file name relative to source folder
-                String relativeFileName = getRelativeFileName(forFile, container);
-                
-                complementFileName = fileNameBuilder.getFileName(relativeFileName, forFile.getFileExtension());
-            }
-            
-            for (IPackageFragmentRoot root : javaProject.getAllPackageFragmentRoots())
-            {
-                if (!EclipseUtils.isSourceFolder(root))
-                {
-                    continue;
-                }
-                
-                IContainer resourceContainer = (IContainer) root.getCorrespondingResource().getAdapter(IContainer.class);
-                
-                if (container != null && resourceContainer.getFullPath().equals(container.getFullPath()))
-                {
-                    continue;
-                }
-                
-                List<IFile> resources2 = findMembers(resourceContainer, complementFileName);
-                
-                if (findFirst && !resources2.isEmpty())
-                {
-                    return resources2;
-                }
-                
-                resources.addAll(resources2);
-            }
-            
-            //  Look for TML files in web application context
-            //  https://github.com/anjlab/eclipse-tapestry5-plugin/issues/2
-            
-            if (complementFileName.endsWith(".tml"))
-            {
-                if (webapp != null)
-                {
-                    IResource file = webapp.findMember(
-                            complementFileName.substring(getPagesPath(project).length()));
-                    
-                    if (file instanceof IFile)
-                    {
-                        resources.add((IFile) file);
-                    }
-                }
-            }
-            
-            return resources;
-        }
-        catch (CoreException e)
-        {
-            Activator.getDefault().logError("Error finding complement file", e);
-            
-            return Collections.emptyList();
-        }
-    }
-
-    public synchronized static String getPagesPath(IProject project)
+    public static String getPagesPath(IProject project)
     {
         String appPackage = getAppPackage(project);
         
@@ -214,7 +58,7 @@ public class TapestryUtils
         return (part1 + '/' + part2).replaceAll("//", "/");
     }
 
-    private static boolean isInFolder(IFile file, IContainer folder)
+    public static boolean isInFolder(IFile file, IContainer folder)
     {
         IContainer parent = file.getParent();
         while (parent != null)
@@ -228,9 +72,9 @@ public class TapestryUtils
         return false;
     }
 
-    public static String getRelativeFileName(IResource file, IContainer ancestor)
+    public static String getRelativeFileName(IResource resource, IContainer ancestor)
     {
-        return file.getProjectRelativePath().toPortableString().substring(
+        return resource.getProjectRelativePath().toPortableString().substring(
                 ancestor.getProjectRelativePath().toPortableString().length());
     }
 
@@ -257,67 +101,14 @@ public class TapestryUtils
         return getTapestryPackage(project, "mixins");
     }
     
-    public static List<IFile> findMembers(IContainer container, String path)
+    public static boolean isStyleSheetFile(IPath path)
     {
-        List<IFile> resources = new ArrayList<IFile>();
-        
-        if (path.contains("*"))
-        {
-            //  Find files by mask
-            int slashIndex = path.lastIndexOf("/");
-            
-            String parentPath = slashIndex < 0 ? "/" : path.substring(0, slashIndex);
-            String mask = slashIndex < 0 ? path : path.substring(slashIndex + 1);
-            
-            Pattern pattern = Pattern.compile(mask);
-            
-            IResource resource = container.findMember(parentPath);
-            
-            if (resource instanceof IFolder)
-            {
-                try
-                {
-                    IResource[] members = ((IFolder) resource).members();
-                    
-                    for (IResource member : members)
-                    {
-                        if (pattern.matcher(member.getName()).matches())
-                        {
-                            resources.add((IFile) member);
-                        }
-                    }
-                }
-                catch (CoreException e)
-                {
-                    Activator.getDefault().logError("Error finding files by mask", e);
-                }
-            }
-        }
-        else
-        {
-            //  Exact match
-            IResource resource = container.findMember(path);
-            if (resource != null && resource instanceof IFile)
-            {
-                resources.add((IFile) resource);
-            }
-        }
-        return resources;
+        return "css".equals(path.getFileExtension());
     }
 
-    public static boolean isStyleSheetFile(IFile file)
-    {
-        return "css".equals(file.getFileExtension());
-    }
-
-    public static boolean isJavaScriptFile(IFile file)
+    public static boolean isJavaScriptFile(IPath file)
     {
         return "js".equals(file.getFileExtension());
-    }
-
-    public static boolean isTemplateFile(IFile file)
-    {
-        return "tml".equals(file.getFileExtension());
     }
 
     public static boolean isTemplateFile(IPath path)
@@ -325,19 +116,20 @@ public class TapestryUtils
         return "tml".equals(path.getFileExtension());
     }
 
-    public static boolean isJavaFile(IFile file)
+    public static boolean isClassFile(IPath path)
     {
-        return "java".equals(file.getFileExtension());
+        return "class".equals(path.getFileExtension());
     }
 
-    public static boolean isPropertiesFile(IFile file)
-    {
-        return "properties".equals(file.getFileExtension());
-    }
     
-    public static TapestryContext createTapestryContext(IFile forFile)
+    public static boolean isJavaFile(IPath path)
     {
-        return new TapestryContext(forFile);
+        return "java".equals(path.getFileExtension());
+    }
+
+    public static boolean isPropertiesFile(IPath path)
+    {
+        return "properties".equals(path.getFileExtension());
     }
 
     public static AssetResolver createAssetResolver(String bindingPrefix, String assetPath)
@@ -360,92 +152,20 @@ public class TapestryUtils
         return (IContainer) project.findMember("src/main/webapp");
     }
     
-    public synchronized static String getAppPackage(IProject project)
+    public static boolean isTapestryAppProject(IProject project)
     {
-        IContainer webapp = findWebapp(project);
-        
-        if (webapp == null)
-        {
-            return null;
-        }
-        
-        IFile webXml = (IFile) webapp.findMember("/WEB-INF/web.xml");
-        
-        if (webXml == null)
-        {
-            return null;
-        }
-        
-        Map<String, Object> cache = Activator.getDefault().getWebXmlCache(project);
-        
-        String appPackage = (String) cache.get(TAPESTRY_APP_PACKAGE);
-        
-        if (appPackage != null)
-        {
-            return appPackage;
-        }
-        
-        XMLStreamReader reader = null;
-        InputStream input = null;
-        
-        try
-        {
-            input = webXml.getContents();
-            
-            reader = Activator.getDefault().getXMLInputFactory()
-                    .createXMLStreamReader(input);
-            
-            while (nextStartElement(reader))
-            {
-                if ("param-name".equals(reader.getName().getLocalPart()))
-                {
-                    if (TAPESTRY_APP_PACKAGE.equals(reader.getElementText()))
-                    {
-                        if (nextStartElement(reader))
-                        {
-                            if ("param-value".equals(reader.getName().getLocalPart()))
-                            {
-                                appPackage = reader.getElementText();
-                                
-                                cache.put(TAPESTRY_APP_PACKAGE, appPackage);
-                                
-                                return appPackage;
-                            }
-                        }
-                        break;
-                    }
-                }
-            }
-        }
-        catch (Exception e)
-        {
-            Activator.getDefault().logError("Error reading value of 'tapestry.app-package' from web.xml", e);
-        }
-        finally
-        {
-            if (reader != null)
-            {
-                try { reader.close(); } catch (Exception e) {}
-            }
-            if (input != null)
-            {
-                try { input.close(); } catch (Exception e) {}
-            }
-        }
-        
-        return null;
+        return getAppPackage(project) != null;
     }
-
-    private static boolean nextStartElement(XMLStreamReader reader) throws XMLStreamException
+    
+    public static String getAppPackage(IProject project)
     {
-        while (reader.hasNext())
-        {
-            if (reader.next() == XMLStreamConstants.START_ELEMENT)
-            {
-                return true;
-            }
-        }
-        return false;
+        return Activator.getDefault().getWebXml(project).getParamValue(TAPESTRY_APP_PACKAGE);
+    }
+    
+    public static boolean isTapestrySubModuleAnnotation(IAnnotation annotation)
+    {
+        return "org.apache.tapestry5.ioc.annotations.SubModule".equals(annotation.getElementName())
+            || "SubModule".equals(annotation.getElementName());
     }
 
     public static boolean isTapestryImportAnnotation(IAnnotation annotation)
@@ -463,58 +183,45 @@ public class TapestryUtils
         return isTapestryImportAnnotationName(annotation.getTypeName().getFullyQualifiedName());
     }
 
-    public static IFile getFileForTapestryContext(IWorkbenchWindow window)
+    public static TapestryContext createTapestryContext(TapestryFile forFile)
     {
-        IFile file = null;
-        
-        try
+        if (forFile instanceof LocalFile)
         {
-            file = EclipseUtils.getFileFromSelection(window.getSelectionService().getSelection());
-        }
-        catch (JavaModelException e)
-        {
-            //  Ignore
+            return new LocalTapestryContext(forFile);
         }
         
-        if (file == null)
-        {
-            file = EclipseUtils.getFileFromPage(window.getActivePage());
-        }
-        
-        if (file == null)
-        {
-            try
-            {
-                file = EclipseUtils.getFileFromSelection(
-                        window.getSelectionService().getSelection("org.eclipse.jdt.ui.PackageExplorer"));
-            }
-            catch (JavaModelException e)
-            {
-                //  Ignore
-            }
-        }
-        
-        return file;
+        return TapestryContext.emptyContext();
     }
 
-    public static IResource getResourceForTapestryContext(IWorkbenchWindow window)
+    public static TapestryContext createTapestryContext(IFile file)
     {
-        IResource resource = getFileForTapestryContext(window);
+        return new LocalTapestryContext(file);
+    }
+
+    public static TapestryContext createTapestryContext(IWorkbenchWindow window)
+    {
+        TapestryFile file = getTapestryFileFromSelection(window.getSelectionService().getSelection());
         
-        if (resource == null)
+        if (file != null)
         {
-            try
-            {
-                resource = EclipseUtils.getResourceFromSelection(
-                        window.getSelectionService().getSelection("org.eclipse.jdt.ui.PackageExplorer"));
-            }
-            catch (JavaModelException e)
-            {
-                //  Ignore
-            }
+            return file.getContext();
         }
         
-        return resource;
+        file = TapestryUtils.getTapestryFileFromPage(window.getActivePage());
+        
+        if (file != null)
+        {
+            return file.getContext();
+        }
+        
+        file = getTapestryFileFromSelection(EclipseUtils.getProjectExplorerSelection(window));
+        
+        if (file != null)
+        {
+            return file.getContext();
+        }
+        
+        return TapestryContext.emptyContext();
     }
 
     public static IContainer getRoot(IFile forFile)
@@ -608,6 +315,179 @@ public class TapestryUtils
             catch (IOException e)
             {
                 //  Ignore
+            }
+        }
+        
+        return null;
+    }
+
+    public static String getSimpleName(String className)
+    {
+        String[] parts = className.split("\\.");
+        return parts[parts.length - 1];
+    }
+
+    public static TapestryContext createTapestryContext(IJarEntryResource jarEntry)
+    {
+        return new JarTapestryContext(jarEntry);
+    }
+
+    public static TapestryContext createTapestryContext(IClassFile classFile)
+    {
+        return new JarTapestryContext(classFile);
+    }
+
+    public static TapestryFile getTapestryFileFromPage(IWorkbenchPage page)
+    {
+        if (page == null)
+        {
+            return null;
+        }
+        
+        IEditorPart activeEditor = page.getActiveEditor();
+        
+        if (activeEditor == null)
+        {
+            return null;
+        }
+        
+        IEditorInput editorInput = activeEditor.getEditorInput();
+        
+        if (editorInput instanceof IFileEditorInput)
+        {
+            IFileEditorInput fileEditorInput = (IFileEditorInput) editorInput;
+            
+            return createTapestryContext(fileEditorInput.getFile()).getInitialFile();
+        }
+        
+        if (editorInput instanceof IStorageEditorInput)
+        {
+            try
+            {
+                IStorage storage = ((IStorageEditorInput) editorInput).getStorage();
+                
+                if (storage instanceof IJarEntryResource)
+                {
+                    return createTapestryContext((IJarEntryResource) storage).getInitialFile();
+                }
+            }
+            catch (CoreException e)
+            {
+                //  Ignore
+                Activator.getDefault().logError("Error getting file from JAR", e);
+            }
+        }
+        
+        if (editorInput instanceof IClassFileEditorInput)
+        {
+            IClassFile classFile = ((IClassFileEditorInput) editorInput).getClassFile();
+            
+            if (classFile != null)
+            {
+                return createTapestryContext(classFile).getInitialFile();
+            }
+        }
+        
+        return null;
+    }
+
+    static TapestryFile getTapestryFileFromSelectionElement(Object firstElement) throws JavaModelException
+    {
+        if (firstElement == null)
+        {
+            return null;
+        }
+        
+        if (firstElement instanceof ICompilationUnit)
+        {
+            ICompilationUnit compilationUnit = ((ICompilationUnit) firstElement);
+            
+            TapestryFile file = TapestryUtils.getFileFromResource(compilationUnit.getCorrespondingResource());
+            
+            if (file != null)
+            {
+                return file;
+            }
+        }
+        
+        if (firstElement instanceof IClassFile)
+        {
+            return createTapestryContext((IClassFile) firstElement).getInitialFile();
+        }
+        
+        if (firstElement instanceof IJarEntryResource)
+        {
+            return createTapestryContext((IJarEntryResource) firstElement).getInitialFile();
+        }
+        
+        if (firstElement instanceof ITreeSelection)
+        {
+            ITreeSelection treeSelection = (ITreeSelection) firstElement;
+            
+            return getTapestryFileFromSelectionElement(treeSelection.getFirstElement());
+        }
+        
+        IResource resource = (IResource) Platform.getAdapterManager().getAdapter(firstElement, IResource.class);
+        
+        if (resource != null)
+        {
+            TapestryFile file = TapestryUtils.getFileFromResource(resource);
+            
+            if (file != null)
+            {
+                return file;
+            }
+        }
+        
+        return null;
+    }
+
+    public static TapestryModule getTapestryModule(IWorkbenchWindow window, IProject project)
+    {
+        if (project != null)
+        {
+            TapestryProject tapestryProject = Activator.getDefault().getTapestryProject(window);
+            
+            if (tapestryProject != null)
+            {
+                for (TapestryModule module : tapestryProject.modules())
+                {
+                    if (project.equals(
+                            module.getModuleClass().getJavaProject().getProject()))
+                    {
+                        return module;
+                    }
+                }
+            }
+        }
+        
+        return null;
+    }
+
+    public static TapestryFile getTapestryFileFromSelection(ISelection selection)
+    {
+        try
+        {
+            return selection instanceof IStructuredSelection
+                    ? getTapestryFileFromSelectionElement(((IStructuredSelection) selection).getFirstElement())
+                    : null;
+        }
+        catch (JavaModelException e)
+        {
+            //  Ignore
+            return null;
+        }
+    }
+
+    protected static TapestryFile getFileFromResource(IResource resource)
+    {
+        if (resource != null)
+        {
+            IFile file = (IFile) resource.getAdapter(IFile.class);
+            
+            if (file != null)
+            {
+                return createTapestryContext(file).getInitialFile();
             }
         }
         

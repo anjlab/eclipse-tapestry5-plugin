@@ -7,7 +7,7 @@ import org.eclipse.core.resources.IResource;
 public class ContextAssetResolver implements AssetResolver
 {
     @Override
-    public IFile resolve(String path, IFile relativeTo) throws AssetException
+    public TapestryFile resolve(String path, TapestryFile relativeTo) throws AssetException
     {
         IContainer webapp = TapestryUtils.findWebapp(relativeTo.getProject());
         
@@ -32,6 +32,6 @@ public class ContextAssetResolver implements AssetResolver
         
         IFile file = (IFile) resource;
         
-        return file;
+        return new LocalFile(relativeTo.getContext(), file);
     }
 }

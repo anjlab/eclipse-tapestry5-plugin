@@ -68,10 +68,17 @@
       </category>
       <view
             category="com.anjlab.eclipse.tapestry5"
-            class="com.anjlab.eclipse.tapestry5.views.TapestryContextView"
+            class="com.anjlab.eclipse.tapestry5.views.context.TapestryContextView"
             icon="icons/tapestry-logo.png"
-            id="com.anjlab.eclipse.tapestry5.views.TapestryContextView"
+            id="com.anjlab.eclipse.tapestry5.views.context.TapestryContextView"
             name="Tapestry Context">
+      </view>
+      <view
+            category="com.anjlab.eclipse.tapestry5"
+            class="com.anjlab.eclipse.tapestry5.views.project.TapestryProjectOutlineView"
+            icon="icons/tapestry-logo.png"
+            id="com.anjlab.eclipse.tapestry5.views.project.TapestryProjectOutlineView"
+            name="Tapestry Project Outline">
       </view>
    </extension>
    <extension
@@ -79,7 +86,7 @@
       <perspectiveExtension
             targetID="org.eclipse.jdt.ui.JavaPerspective">
          <view
-               id="com.anjlab.eclipse.tapestry5.views.TapestryContextView"
+               id="com.anjlab.eclipse.tapestry5.views.context.TapestryContextView"
                ratio="0.5"
                relationship="top"
                relative="org.eclipse.ui.views.ContentOutline">
@@ -99,7 +106,7 @@
          point="org.eclipse.ui.viewActions">
          <viewContribution
             id="com.anjlab.eclipse.tapestry5.viewActions"
-            targetID="com.anjlab.eclipse.tapestry5.views.TapestryContextView">
+            targetID="com.anjlab.eclipse.tapestry5.views.context.TapestryContextView">
             <action id="com.anjlab.eclipse.tapestry5.actions.CreateAction"
                 toolbarPath="additions"
                 label="Create..."
@@ -108,5 +115,20 @@
                 class="com.anjlab.eclipse.tapestry5.actions.CreateActionViewDelegate">
             </action>
          </viewContribution>
+   </extension>
+   <extension
+         point="org.eclipse.ui.decorators">
+         <decorator
+             id="com.anjlab.eclipse.tapestry5.views.ViewLabelDecorator"
+             class="com.anjlab.eclipse.tapestry5.views.ViewLabelDecorator"
+             label="Tapestry View Label Decorator"
+             lightweight="true"
+             state="true">
+             <enablement>
+                 <objectClass
+                     name="com.anjlab.eclipse.tapestry5.views.TreeObject">
+                 </objectClass>
+             </enablement>
+         </decorator>
    </extension>
 </plugin>

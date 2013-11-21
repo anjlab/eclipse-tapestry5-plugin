@@ -1,7 +1,6 @@
 package com.anjlab.eclipse.tapestry5.actions;
 
 import org.eclipse.core.resources.IProject;
-import org.eclipse.core.resources.IResource;
 import org.eclipse.jface.action.ActionContributionItem;
 import org.eclipse.jface.action.IAction;
 import org.eclipse.jface.action.IMenuCreator;
@@ -18,6 +17,7 @@ import org.eclipse.ui.PlatformUI;
 import com.anjlab.eclipse.tapestry5.Activator;
 import com.anjlab.eclipse.tapestry5.EclipseUtils;
 import com.anjlab.eclipse.tapestry5.TapestryContext;
+import com.anjlab.eclipse.tapestry5.TapestryModule;
 import com.anjlab.eclipse.tapestry5.TapestryUtils;
 
 public class CreateActionViewDelegate implements IViewActionDelegate, IMenuCreator
@@ -91,64 +91,102 @@ public class CreateActionViewDelegate implements IViewActionDelegate, IMenuCreat
     {
         Menu menu = new Menu(parent);
         
-        TapestryContext tapestryContext = Activator.getDefault().getTapestryContext();
+        TapestryContext tapestryContext = fromView
+                ? Activator.getDefault().getTapestryContext(window)
+                : TapestryUtils.createTapestryContext(window); // From Main ToolBar
         
-        if (tapestryContext != null && !tapestryContext.isEmpty() && tapestryContext.getName() != null)
+        TapestryModule module;
+        
+        if (tapestryContext != null && !tapestryContext.isEmpty())
         {
+            fillMenuForTapestryContext(menu, tapestryContext);
+            
+            module = TapestryUtils.getTapestryModule(window, tapestryContext.getProject());
+        }
+        else
+        {
+            IProject project = EclipseUtils.getProjectFromSelection(
+                    EclipseUtils.getProjectExplorerSelection(window));
+            
+            module = TapestryUtils.getTapestryModule(window, project);
+        }
+        
+        fillMenuForTapestryModule(menu, module);
+        
+        return menu;
+    }
+
+    protected void fillMenuForTapestryContext(Menu menu, TapestryContext tapestryContext)
+    {
+        if (!tapestryContext.isEmpty() && tapestryContext.getName() != null)
+        {
+            if (tapestryContext.isReadOnly())
+            {
+                newTextFileMenuItem(menu, tapestryContext, "This Context is Read-Only", "")
+                    .setEnabled(false);
+                
+                return;
+            }
+            
+            String packageName = tapestryContext.getPackageName();
             newJavaClassMenuItem(menu, tapestryContext.getProject(),
                     "Create " + tapestryContext.getName() + ".java...",
-                    tapestryContext.getPackageName(),
+                    packageName != null ? packageName : TapestryUtils.getPagesPackage(tapestryContext.getProject()),
                     tapestryContext.getName())
                 .setEnabled(tapestryContext.getJavaFile() == null);
             
-            String tmlFileName = tapestryContext.getName() + ".tml";
-            newTextFileMenuItem(menu, tapestryContext, "Create " + tmlFileName + "...", tmlFileName)
-                .setEnabled(!tapestryContext.contains(tmlFileName));
+            String[] extensions = new String[] { ".tml", ".properties", ".js", ".css" };
             
-            String jsFileName = tapestryContext.getName() + ".js";
-            newTextFileMenuItem(menu, tapestryContext, "Create " + jsFileName + "...", jsFileName)
-                .setEnabled(!tapestryContext.contains(jsFileName));
-            
-            String cssFileName = tapestryContext.getName() + ".css";
-            newTextFileMenuItem(menu, tapestryContext, "Create " + cssFileName + "...", cssFileName)
-                .setEnabled(!tapestryContext.contains(cssFileName));
-            
-            newTextFileMenuItem(menu, tapestryContext, "Create other...", "");
-        }
-        
-        IProject contextProject = tapestryContext != null ? tapestryContext.getProject() : null;
-        
-        if (contextProject == null)
-        {
-            IResource contextResource = TapestryUtils.getResourceForTapestryContext(window);
-            
-            contextProject = contextResource != null ? contextResource.getProject() : null;
-        }
-        
-        if (contextProject != null && TapestryUtils.getAppPackage(contextProject) != null)
-        {
-            if (menu.getItemCount() > 0)
+            for (String extension : extensions)
             {
-                new MenuItem(menu, SWT.SEPARATOR);
+                String fileName = tapestryContext.getName() + extension;
+                newTextFileMenuItem(menu, tapestryContext, "Create " + fileName + "...", fileName)
+                    .setEnabled(!tapestryContext.contains(fileName));
             }
             
-            newJavaClassMenuItem(menu, contextProject,
-                    "New Page Class...",
-                    TapestryUtils.getPagesPackage(contextProject),
-                    null);
-            
-            newJavaClassMenuItem(menu, contextProject,
-                    "New Component Class...",
-                    TapestryUtils.getComponentsPackage(contextProject),
-                    null);
-            
-            newJavaClassMenuItem(menu, contextProject,
-                    "New Mixin Class...",
-                    TapestryUtils.getMixinsPackage(contextProject),
-                    null);
+            newTextFileMenuItem(menu, tapestryContext, "Create other...", tapestryContext.getName());
+        }
+    }
+
+    protected void fillMenuForTapestryModule(Menu menu, TapestryModule module)
+    {
+        IProject project = module != null ? module.getEclipseProject() : null;
+        
+        if (module == null
+                || module.isReadOnly()
+                //  TODO Support creating classes for any non-ReadOnly TapestryModules,
+                //  not only for the AppModule
+                || !TapestryUtils.isTapestryAppProject(project))
+        {
+            return;
         }
         
-        return menu;
+        if (menu.getItemCount() > 0)
+        {
+            new MenuItem(menu, SWT.SEPARATOR);
+        }
+        
+        newJavaClassMenuItem(menu, project,
+                "New Page Class...",
+                //  TODO Get package for TapestryModule
+                //  Check if TapestryModule.isAppModule() then resolve package via IProject,
+                //  otherwise via LibraryMappings
+                //  TODO Support LibraryMappings for workspace projects -- they usually don't provide MANIFEST.MF
+                //  maybe try searching manifests in build folders of the projects?
+                TapestryUtils.getPagesPackage(project),
+                null);
+        
+        newJavaClassMenuItem(menu, project,
+                "New Component Class...",
+                //  TODO Get package for TapestryModule
+                TapestryUtils.getComponentsPackage(project),
+                null);
+        
+        newJavaClassMenuItem(menu, project,
+                "New Mixin Class...",
+                //  TODO Get package for TapestryModule
+                TapestryUtils.getMixinsPackage(project),
+                null);
     }
 
     @Override
@@ -157,17 +195,20 @@ public class CreateActionViewDelegate implements IViewActionDelegate, IMenuCreat
         return null;
     }
 
+    private boolean fromView;
     private IWorkbenchWindow window;
     
     @Override
     public void init(IViewPart view)
     {
         this.window = view.getSite().getWorkbenchWindow();
+        this.fromView = true;
     }
 
     public void init(IWorkbenchWindow window)
     {
         this.window = window;
+        this.fromView = false;
     }
 
 }

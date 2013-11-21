@@ -6,26 +6,26 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.eclipse.core.resources.IFile;
 import org.eclipse.e4.ui.model.application.ui.MElementContainer;
 import org.eclipse.e4.ui.model.application.ui.MExpression;
 import org.eclipse.e4.ui.model.application.ui.MUIElement;
 import org.eclipse.e4.ui.model.application.ui.advanced.MPlaceholder;
 
 import com.anjlab.eclipse.tapestry5.TapestryContext;
+import com.anjlab.eclipse.tapestry5.TapestryFile;
 
 public class MElementContainerImpl implements MElementContainer<MStackElementImpl>
 {
     private List<MStackElementImpl> children;
     
-    private Map<String, IFile> lookupCache;
+    private Map<String, TapestryFile> lookupCache;
     
     public MElementContainerImpl(TapestryContext context)
     {
         children = new ArrayList<MStackElementImpl>();
-        lookupCache = new HashMap<String, IFile>();
+        lookupCache = new HashMap<String, TapestryFile>();
         
-        for (IFile file : context.getFiles())
+        for (TapestryFile file : context.getFiles())
         {
             children.add(new MStackElementImpl(file));
             lookupCache.put(file.toString(), file);
@@ -38,7 +38,7 @@ public class MElementContainerImpl implements MElementContainer<MStackElementImp
         return Collections.unmodifiableList(children);
     }
     
-    public IFile lookupFile(String str)
+    public TapestryFile lookupFile(String str)
     {
         return lookupCache.get(str);
     }
