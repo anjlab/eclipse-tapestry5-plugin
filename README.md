@@ -39,6 +39,20 @@ CMD+Hover over component reference to jump to one of its definitions:
 
 ![Screenshot](https://f.cloud.github.com/assets/76579/1147100/4ee57f58-1e96-11e3-957d-1f875797620b.png)
 
+### Tapestry Project Outline
+
+Go to *Window* -> *Show View* -> *Other...*, filter by "Tapestry" and select "Tapestry Project Outline".
+
+![TapestryProjectOutline](https://f.cloud.github.com/assets/76579/1590336/f8ff942c-528c-11e3-90d2-594959e557ff.png)
+
+This view displays structure of your Tapestry5 project:
+
+  - Select your main Tapestry5 project (i.e. the project with `web.xml`) in the "Project Explorer" to see its outline
+  - View all Tapestry5 modules available in classpath of the main Tapestry5 project
+  - View [library mappings](http://tapestry.apache.org/component-libraries.html#ComponentLibraries-Step4%3AConfigurethevirtualfolder) declared in each module (only available if source code attached to the module class)
+  - Double click on module name to open its source code
+  - More to come...
+
 ### Quickly Create Files for Tapestry5
 
 #### Create new Tapestry5 pages, components and mixins quickly
