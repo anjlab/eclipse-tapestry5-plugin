@@ -1,20 +1,7 @@
 package com.anjlab.eclipse.tapestry5.hyperlink;
 
-import java.io.File;
 import java.util.List;
 
-import org.eclipse.core.filebuffers.FileBuffers;
-import org.eclipse.core.filebuffers.ITextFileBuffer;
-import org.eclipse.core.filebuffers.ITextFileBufferManager;
-import org.eclipse.core.resources.IContainer;
-import org.eclipse.core.resources.IFile;
-import org.eclipse.core.resources.IProject;
-import org.eclipse.core.resources.IResource;
-import org.eclipse.core.resources.ResourcesPlugin;
-import org.eclipse.core.runtime.IPath;
-import org.eclipse.jdt.core.IJavaProject;
-import org.eclipse.jdt.core.IPackageFragmentRoot;
-import org.eclipse.jdt.core.JavaCore;
 import org.eclipse.jdt.core.JavaModelException;
 import org.eclipse.jface.text.BadLocationException;
 import org.eclipse.jface.text.IDocument;
@@ -23,10 +10,14 @@ import org.eclipse.jface.text.ITextViewer;
 import org.eclipse.jface.text.Region;
 import org.eclipse.jface.text.hyperlink.AbstractHyperlinkDetector;
 import org.eclipse.jface.text.hyperlink.IHyperlink;
+import org.eclipse.ui.IWorkbenchWindow;
 import org.eclipse.ui.PlatformUI;
 
+import com.anjlab.eclipse.tapestry5.Activator;
 import com.anjlab.eclipse.tapestry5.EclipseUtils;
 import com.anjlab.eclipse.tapestry5.TapestryContext;
+import com.anjlab.eclipse.tapestry5.TapestryFile;
+import com.anjlab.eclipse.tapestry5.TapestryModule;
 import com.anjlab.eclipse.tapestry5.TapestryUtils;
 
 public class TapestryComponentHyperlinkDetector extends AbstractHyperlinkDetector
@@ -50,18 +41,25 @@ public class TapestryComponentHyperlinkDetector extends AbstractHyperlinkDetecto
             return null;
         }
         
-        ITextFileBufferManager bufferManager = FileBuffers.getTextFileBufferManager();
-        
-        ITextFileBuffer fileBuffer = bufferManager.getTextFileBuffer(document);
-        
-        if (fileBuffer == null)
+        if (!isTapestryTemplate(document))
         {
             return null;
         }
         
-        IPath fileLocation = fileBuffer.getLocation();
+        TapestryContext tapestryContext = null;
+        IWorkbenchWindow currentWindow = null;
         
-        if (fileLocation == null || !TapestryUtils.isTemplateFile(fileLocation))
+        for (IWorkbenchWindow window : PlatformUI.getWorkbench().getWorkbenchWindows())
+        {
+            if (textViewer.getTextWidget().getShell() == window.getShell())
+            {
+                currentWindow = window;
+                tapestryContext = Activator.getDefault().getTapestryContext(window);
+                break;
+            }
+        }
+        
+        if (tapestryContext == null)
         {
             return null;
         }
@@ -112,6 +110,13 @@ public class TapestryComponentHyperlinkDetector extends AbstractHyperlinkDetecto
             int leftOffset = 0;
             int rightOffset = 0;
             
+            //  <t:alerts/>
+            //           ^
+            if (text.endsWith("/"))
+            {
+                rightOffset = 1;
+            }
+            
             final int componentOffset = lineInfo.getOffset() + leftIndex + leftOffset;
             
             if (offsetInLine < leftIndex + leftOffset || offsetInLine >= rightIndex - rightOffset)
@@ -121,100 +126,85 @@ public class TapestryComponentHyperlinkDetector extends AbstractHyperlinkDetecto
             
             final String componentName = text.substring(leftOffset, text.length() - rightOffset);
             
-            IResource resource = ResourcesPlugin.getWorkspace().getRoot().findMember(fileLocation);
+            TapestryModule tapestryModule = TapestryUtils.getTapestryModule(currentWindow, tapestryContext.getProject());
             
-            if (resource == null || resource.getProject() == null)
+            if (tapestryModule == null)
             {
                 return null;
             }
             
-            IJavaProject javaProject = JavaCore.create(resource.getProject());
-            
+            TapestryContext targetContext;
             try
             {
-                for (IPackageFragmentRoot root : javaProject.getAllPackageFragmentRoots())
-                {
-                    if (!EclipseUtils.isSourceFolder(root))
-                    {
-                        continue;
-                    }
-                    
-                    IContainer container = (IContainer) root.getCorrespondingResource().getAdapter(IContainer.class);
-                    
-                    String componentPath = getComponentJavaFileName(componentName, resource.getProject());
-                    
-                    IFile javaFile = EclipseUtils.findFileCaseInsensitive(container, componentPath);
-                    
-                    if (javaFile == null)
-                    {
-                       File parentFile = new File(componentPath).getParentFile();
-                       
-                       if (parentFile != null)
-                       {
-                           componentPath = getComponentJavaFileName(componentName + parentFile.getName(), resource.getProject());
-                           
-                           javaFile = EclipseUtils.findFileCaseInsensitive(container, componentPath);
-                       }
-                    }
-                    
-                    if (javaFile != null)
-                    {
-                        TapestryContext context = TapestryUtils.createTapestryContext(javaFile);
-                        
-                        final List<IFile> files = context.getFiles();
-                        
-                        IHyperlink[] links = new IHyperlink[files.size()];
-                        
-                        for (int i = 0; i < files.size(); i++)
-                        {
-                            final int index = i;
-                            
-                            links[index] = new IHyperlink()
-                            {
-                                @Override
-                                public void open()
-                                {
-                                    EclipseUtils.openFile(PlatformUI.getWorkbench().getActiveWorkbenchWindow(), files.get(index));
-                                }
-                                
-                                @Override
-                                public String getTypeLabel()
-                                {
-                                    return files.get(index).getName();
-                                }
-                                
-                                @Override
-                                public String getHyperlinkText()
-                                {
-                                    return files.get(index).getName();
-                                }
-                                
-                                @Override
-                                public IRegion getHyperlinkRegion()
-                                {
-                                    return new Region(componentOffset, componentName.length());
-                                }
-                            };
-                        }
-                        
-                        return links;
-                    }
-                }
+                targetContext = tapestryModule.getProject().findComponentContext(componentName);
             }
             catch (JavaModelException e)
             {
                 return null;
             }
+            
+            if (targetContext == null)
+            {
+                return null;
+            }
+            
+            final List<TapestryFile> files = targetContext.getFiles();
+            
+            IHyperlink[] links = new IHyperlink[files.size()];
+            
+            for (int i = 0; i < files.size(); i++)
+            {
+                final int index = i;
+                
+                links[index] = new IHyperlink()
+                {
+                    @Override
+                    public void open()
+                    {
+                        EclipseUtils.openFile(PlatformUI.getWorkbench().getActiveWorkbenchWindow(), files.get(index));
+                    }
+                    
+                    @Override
+                    public String getTypeLabel()
+                    {
+                        return files.get(index).getName();
+                    }
+                    
+                    @Override
+                    public String getHyperlinkText()
+                    {
+                        return files.get(index).getName();
+                    }
+                    
+                    @Override
+                    public IRegion getHyperlinkRegion()
+                    {
+                        return new Region(componentOffset, componentName.length());
+                    }
+                };
+            }
+            
+            return links;
         }
         
         return null;
     }
 
-    private String getComponentJavaFileName(final String componentName, IProject project)
+    protected boolean isTapestryTemplate(IDocument document)
     {
-        return TapestryUtils.joinPath(
-                TapestryUtils.getComponentsPath(project),
-                componentName.replace('.', '/') + ".java");
+        //  If we take current TapestryContext we couldn't know if current file is a TML file
+        //  This is probably OK, because the overhead shouldn't be that big in this case.
+        //  Though we can check first char of current document to see if it is '<', then we probably in TML file
+        
+        try
+        {
+            return (document.getChar(0) == '<');
+        }
+        catch (BadLocationException e)
+        {
+            //  Ignore
+        }
+        return false;
     }
 
     private boolean checkPreconditions(String line, int leftIndex, int rightIndex)
@@ -240,7 +230,7 @@ public class TapestryComponentHyperlinkDetector extends AbstractHyperlinkDetecto
             return true;
         }
         
-        if (rightIndex >= line.length())
+        if (rightIndex + 1 >= line.length())
         {
             return false;
         }

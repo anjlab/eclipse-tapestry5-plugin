@@ -1,43 +1,31 @@
 package com.anjlab.eclipse.tapestry5.views.context;
 
-import org.eclipse.core.resources.IFile;
 import org.eclipse.jface.viewers.ITreeContentProvider;
 import org.eclipse.jface.viewers.Viewer;
 import org.eclipse.ui.IViewSite;
 
 import com.anjlab.eclipse.tapestry5.TapestryContext;
-import com.anjlab.eclipse.tapestry5.TapestryUtils;
+import com.anjlab.eclipse.tapestry5.TapestryFile;
 import com.anjlab.eclipse.tapestry5.views.TreeObject;
 import com.anjlab.eclipse.tapestry5.views.TreeParent;
 
 public class TapestryContextContentProvider implements ITreeContentProvider
 {
     private TreeParent invisibleRoot;
-    private IFile file;
     private TapestryContext context;
 
     public TapestryContextContentProvider(TapestryContext context)
     {
         this.context = context;
     }
-    
-    public TapestryContextContentProvider(IFile file)
-    {
-        this.file = file;
-    }
 
     private void initialize()
     {
         invisibleRoot = new TreeParent("", new Object());
         
-        if (file != null)
-        {
-            context = TapestryUtils.createTapestryContext(file);
-        }
-        
         if (context != null)
         {
-            for (IFile relatedFile : context.getFiles())
+            for (TapestryFile relatedFile : context.getFiles())
             {
                 invisibleRoot.addChild(new TreeObject(relatedFile.getName(), relatedFile));
             }

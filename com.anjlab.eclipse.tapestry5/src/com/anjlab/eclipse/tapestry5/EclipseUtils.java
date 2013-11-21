@@ -9,7 +9,6 @@ import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.IResourceDelta;
 import org.eclipse.core.runtime.CoreException;
-import org.eclipse.core.runtime.IAdaptable;
 import org.eclipse.core.runtime.Platform;
 import org.eclipse.jdt.core.ICompilationUnit;
 import org.eclipse.jdt.core.IField;
@@ -29,99 +28,25 @@ import org.eclipse.jdt.core.search.SearchMatch;
 import org.eclipse.jdt.core.search.SearchParticipant;
 import org.eclipse.jdt.core.search.SearchPattern;
 import org.eclipse.jdt.core.search.SearchRequestor;
+import org.eclipse.jdt.internal.ui.javaeditor.EditorUtility;
 import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jface.viewers.ISelection;
-import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.jface.viewers.ITreeSelection;
-import org.eclipse.ui.IEditorInput;
 import org.eclipse.ui.IEditorPart;
-import org.eclipse.ui.IFileEditorInput;
-import org.eclipse.ui.IWorkbenchPage;
 import org.eclipse.ui.IWorkbenchWindow;
+import org.eclipse.ui.PartInitException;
 import org.eclipse.ui.ide.IDE;
 
+@SuppressWarnings("restriction")
 public class EclipseUtils
 {
-
-    private static final String SOURCE_NOT_FOUND = "source not found";
-
-    public static IFile getFileFromPage(IWorkbenchPage page)
-    {
-        if (page == null)
-        {
-            return null;
-        }
-        
-        IEditorPart activeEditor = page.getActiveEditor();
-        
-        if (activeEditor == null)
-        {
-            return null;
-        }
-        
-        IEditorInput editorInput = activeEditor.getEditorInput();
-        
-        if (editorInput instanceof IFileEditorInput)
-        {
-            IFileEditorInput fileEditorInput = (IFileEditorInput) editorInput;
-            
-            return fileEditorInput.getFile();
-        }
-        
-        return null;
-    }
-
-    public static IFile getFileFromSelection(ISelection selection) throws JavaModelException
-    {
-        IResource resource = getResourceFromSelection(selection);
-        
-        if (resource == null)
-        {
-            return null;
-        }
-        
-        return (IFile) resource.getAdapter(IFile.class);
-    }
-
-    public static IResource getResourceFromSelection(ISelection selection) throws JavaModelException
-    {
-        return selection instanceof IStructuredSelection
-                ? getResourceFromSelectionElement(((IStructuredSelection) selection).getFirstElement())
-                : null;
-    }
+    public static final String ECLIPSE_INTEGRATION_FOR_TAPESTRY5 = "Eclipse Integration for Tapestry5";
     
-    private static IResource getResourceFromSelectionElement(Object firstElement) throws JavaModelException
+    public static final String SOURCE_NOT_FOUND = "source not found";
+
+    public static ISelection getProjectExplorerSelection(IWorkbenchWindow window)
     {
-        if (firstElement == null)
-        {
-            return null;
-        }
-        
-        if (firstElement instanceof ICompilationUnit)
-        {
-            ICompilationUnit compilationUnit = ((ICompilationUnit) firstElement);
-            
-            return compilationUnit.getCorrespondingResource();
-        }
-        
-        if (firstElement instanceof ITreeSelection)
-        {
-            ITreeSelection treeSelection = (ITreeSelection) firstElement;
-            
-            return getResourceFromSelectionElement(treeSelection.getFirstElement());
-        }
-        
-        IResource resource = (IResource) Platform.getAdapterManager().getAdapter(firstElement, IResource.class);
-        
-        if (resource == null)
-        {
-            if (firstElement instanceof IAdaptable)
-            {
-                resource = (IResource) ((IAdaptable) firstElement).getAdapter(IResource.class);
-            }
-        }
-        
-        return resource;
+        return window.getSelectionService().getSelection("org.eclipse.jdt.ui.PackageExplorer");
     }
 
     public static interface EditorCallback
@@ -134,6 +59,61 @@ public class EclipseUtils
         openFile(window, file, null);
     }
     
+    public static void openFile(final IWorkbenchWindow window, TapestryFile file)
+    {
+        openFile(window, file, null);
+    }
+    
+    public static void openFile(final IWorkbenchWindow window, TapestryFile file, final EditorCallback editorCallback)
+    {
+        if (file instanceof AssetReference)
+        {
+            AssetReference asset = (AssetReference) file;
+            try
+            {
+                file = asset.resolveFile(false);
+            }
+            catch (AssetException e)
+            {
+                EclipseUtils.openError(window,
+                        "Unable to resolve asset '" + asset.getAssetPath() + "': "
+                                + e.getLocalizedMessage());
+                
+                return;
+            }
+        }
+        
+        if (file instanceof LocalFile)
+        {
+            openFile(window, ((LocalFile) file).getFile(), editorCallback);
+        }
+        else if (file instanceof JarEntryFile)
+        {
+            openInEditor(((JarEntryFile) file).getJarEntry(), editorCallback);
+        }
+        else if (file instanceof ClassFile)
+        {
+            openInEditor(((ClassFile) file).getClassFile(), editorCallback);
+        }
+    }
+
+    private static void openInEditor(Object inputElement, final EditorCallback editorCallback)
+    {
+        try
+        {
+            IEditorPart editorPart = EditorUtility.openInEditor(inputElement);
+            
+            if (editorCallback != null)
+            {
+                editorCallback.editorOpened(editorPart);
+            }
+        }
+        catch (PartInitException e)
+        {
+            Activator.getDefault().logError("Unable to open editor", e);
+        }
+    }
+    
     public static void openFile(final IWorkbenchWindow window, final IFile file, final EditorCallback editorCallback)
     {
         window.getShell().getDisplay().asyncExec(new Runnable()
@@ -142,26 +122,7 @@ public class EclipseUtils
             {
                 try
                 {
-                    IFile localFile = file;
-                    
-                    if (localFile instanceof AssetPath)
-                    {
-                        AssetPath assetPath = (AssetPath) localFile;
-                        try
-                        {
-                            localFile = assetPath.resolveFile(false);
-                        }
-                        catch (AssetException e)
-                        {
-                            EclipseUtils.openError(window,
-                                    "Unable to resolve asset '" + assetPath.getAssetPath() + "': "
-                                            + e.getLocalizedMessage());
-                            
-                            return;
-                        }
-                    }
-                    
-                    IEditorPart editor = IDE.openEditor(window.getActivePage(), localFile, true);
+                    IEditorPart editor = IDE.openEditor(window.getActivePage(), file, true);
                     
                     if (editorCallback != null)
                     {
@@ -182,7 +143,7 @@ public class EclipseUtils
     {
         MessageDialog.openError(
                 window.getShell(),
-                "Eclipse Integration for Tapestry5",
+                ECLIPSE_INTEGRATION_FOR_TAPESTRY5,
                 message);
     }
 
@@ -190,7 +151,7 @@ public class EclipseUtils
     {
         MessageDialog.openInformation(
                 window.getShell(),
-                "Eclipse Integration for Tapestry5",
+                ECLIPSE_INTEGRATION_FOR_TAPESTRY5,
                 message);
     }
 
@@ -370,6 +331,27 @@ public class EclipseUtils
         parser.setSource(source.toCharArray());
         parser.setResolveBindings(true);
         return (CompilationUnit) parser.createAST(null);
+    }
+
+    public static IProject getProjectFromSelection(ISelection selection)
+    {
+        if (selection instanceof ITreeSelection)
+        {
+            Object firstElement = ((ITreeSelection) selection).getFirstElement();
+            
+            if (firstElement != null)
+            {
+                IResource resource = (IResource) Platform.getAdapterManager().getAdapter(
+                        firstElement, IResource.class);
+                
+                if (resource != null)
+                {
+                    return resource.getProject();
+                }
+            }
+        }
+        
+        return null;
     }
 
 }

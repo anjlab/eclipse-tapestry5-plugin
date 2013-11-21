@@ -1,23 +1,20 @@
 package com.anjlab.eclipse.tapestry5;
 
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 import javax.xml.stream.XMLInputFactory;
 
-import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
-import org.eclipse.core.resources.IResourceChangeEvent;
-import org.eclipse.core.resources.IResourceChangeListener;
-import org.eclipse.core.resources.IResourceDelta;
-import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.jface.resource.ImageDescriptor;
+import org.eclipse.ui.IWorkbenchWindow;
 import org.eclipse.ui.plugin.AbstractUIPlugin;
 import org.osgi.framework.BundleContext;
 
-import com.anjlab.eclipse.tapestry5.views.context.TapestryContextContentProvider;
+import com.anjlab.eclipse.tapestry5.watchdog.TapestryContextWatchdog;
+import com.anjlab.eclipse.tapestry5.watchdog.TapestryProjectWatchdog;
+import com.anjlab.eclipse.tapestry5.watchdog.WebXmlWatchdog;
 
 /**
  * The activator class controls the plug-in life cycle
@@ -25,17 +22,15 @@ import com.anjlab.eclipse.tapestry5.views.context.TapestryContextContentProvider
 public class Activator extends AbstractUIPlugin
 {
 
-    private static final String WEB_XML = "web.xml";
-
     // The plug-in ID
     public static final String PLUGIN_ID = "com.anjlab.eclipse.tapestry5"; //$NON-NLS-1$
 
     // The shared instance
     private static Activator plugin;
 
-    private IResourceChangeListener postChangeListener;
-
-    private TapestryContextContentProvider contextContentProvider;
+    private TapestryContextWatchdog tapestryContextWatchdog;
+    private WebXmlWatchdog webXmlWatchdog;
+    private TapestryProjectWatchdog tapestryProjectWatchdog;
     
     /**
      * The constructor
@@ -43,16 +38,7 @@ public class Activator extends AbstractUIPlugin
     public Activator()
     {
     }
-
-    public TapestryContextContentProvider getContextContentProvider()
-    {
-        return contextContentProvider;
-    }
     
-    public void setContextContentProvider(TapestryContextContentProvider provider)
-    {
-        this.contextContentProvider = provider;
-    }
     
     /*
      * (non-Javadoc)
@@ -68,25 +54,14 @@ public class Activator extends AbstractUIPlugin
         
         projectCache = new ConcurrentHashMap<String, Map<String,Object>>();
         
-        postChangeListener = new IResourceChangeListener()
-        {
-            @Override
-            public void resourceChanged(IResourceChangeEvent event)
-            {
-                List<IFile> changedFiles = EclipseUtils.getAllAffectedResources(
-                        event.getDelta(), IFile.class, IResourceDelta.CHANGED);
-                
-                for (IFile changedFile : changedFiles)
-                {
-                    if (WEB_XML.equals(changedFile.getName()))
-                    {
-                        getWebXmlCache(changedFile.getProject()).clear();
-                    }
-                }
-            }
-        };
+        tapestryContextWatchdog = new TapestryContextWatchdog();
+        tapestryContextWatchdog.start();
         
-        ResourcesPlugin.getWorkspace().addResourceChangeListener(postChangeListener, IResourceChangeEvent.POST_CHANGE);
+        webXmlWatchdog = new WebXmlWatchdog();
+        webXmlWatchdog.start();
+        
+        tapestryProjectWatchdog = new TapestryProjectWatchdog();
+        tapestryProjectWatchdog.start();
     }
 
     private Map<String, Map<String, Object>> projectCache;
@@ -102,22 +77,6 @@ public class Activator extends AbstractUIPlugin
         return cache;
     }
     
-    @SuppressWarnings("unchecked")
-    public synchronized Map<String, String> getWebXmlCache(IProject project)
-    {
-        Map<String, Object> cache = getCache(project);
-        Map<String, String> webXmlCache = (Map<String, String>) cache.get(WEB_XML);
-        if (webXmlCache == null)
-        {
-            webXmlCache = new ConcurrentHashMap<String, String>();
-            
-            webXmlCache.putAll(TapestryUtils.readWebXml(project));
-            
-            cache.put(WEB_XML, webXmlCache);
-        }
-        return webXmlCache;
-    }
-    
     /*
      * (non-Javadoc)
      * 
@@ -127,7 +86,14 @@ public class Activator extends AbstractUIPlugin
      */
     public void stop(BundleContext context) throws Exception
     {
-        ResourcesPlugin.getWorkspace().removeResourceChangeListener(postChangeListener);
+        tapestryContextWatchdog.stop();
+        tapestryContextWatchdog = null;
+        
+        webXmlWatchdog.stop();
+        webXmlWatchdog = null;
+        
+        tapestryProjectWatchdog.stop();
+        tapestryProjectWatchdog = null;
         
         projectCache = null;
         
@@ -189,12 +155,55 @@ public class Activator extends AbstractUIPlugin
         return factory;
     }
 
-    public TapestryContext getTapestryContext()
+    public TapestryContext getTapestryContext(IWorkbenchWindow window)
     {
-        TapestryContextContentProvider contentProvider = getContextContentProvider();
-        return contentProvider != null
-             ? contentProvider.getContext()
-             : null;
+        return tapestryContextWatchdog.getTapestryContext(window);
     }
 
+    public void addTapestryContextListener(IWorkbenchWindow window, ITapestryContextListener listener)
+    {
+        tapestryContextWatchdog.addTapestryContextListener(window, listener);
+    }
+
+    public void removeTapestryContextListener(IWorkbenchWindow window, ITapestryContextListener listener)
+    {
+        tapestryContextWatchdog.removeTapestryContextListener(window, listener);
+    }
+
+    public String getWebXmlPropertyValue(IProject project, String propertyName)
+    {
+        return webXmlWatchdog.getWebXmlCache(project).get(propertyName);
+    }
+
+    public String getWebXmlPropertyName(IProject project, String propertyName)
+    {
+        Map<String, String> cache = webXmlWatchdog.getWebXmlCache(project);
+        
+        for (String key : cache.keySet())
+        {
+            String value = cache.get(key);
+            
+            if (propertyName.equals(value))
+            {
+                return key;
+            }
+        }
+        
+        return null;
+    }
+    
+    public TapestryProject getTapestryProject(IWorkbenchWindow window)
+    {
+        return tapestryProjectWatchdog.getTapestryProject(window);
+    }
+
+    public void addTapestryProjectListener(IWorkbenchWindow window, ITapestryContextListener listener)
+    {
+        tapestryProjectWatchdog.addTapestryContextListener(window, listener);
+    }
+
+    public void removeTapestryProjectListener(IWorkbenchWindow window, ITapestryContextListener listener)
+    {
+        tapestryProjectWatchdog.removeTapestryContextListener(window, listener);
+    }
 }

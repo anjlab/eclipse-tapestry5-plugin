@@ -3,7 +3,6 @@ package com.anjlab.eclipse.e4.tapestry5.handlers;
 import java.util.List;
 import java.util.Map;
 
-import org.eclipse.core.resources.IFile;
 import org.eclipse.e4.core.contexts.IEclipseContext;
 import org.eclipse.e4.ui.model.application.commands.MBindingContext;
 import org.eclipse.e4.ui.model.application.commands.MHandler;
@@ -16,16 +15,18 @@ import org.eclipse.e4.ui.model.application.ui.basic.MStackElement;
 import org.eclipse.e4.ui.model.application.ui.menu.MMenu;
 import org.eclipse.e4.ui.model.application.ui.menu.MToolBar;
 
+import com.anjlab.eclipse.tapestry5.TapestryFile;
+
 public class MStackElementImpl implements MStackElement, MPart
 {
-    private IFile file;
+    private TapestryFile file;
     
-    public MStackElementImpl(IFile file)
+    public MStackElementImpl(TapestryFile file)
     {
         this.file = file;
     }
     
-    public IFile getFile()
+    public TapestryFile getFile()
     {
         return file;
     }

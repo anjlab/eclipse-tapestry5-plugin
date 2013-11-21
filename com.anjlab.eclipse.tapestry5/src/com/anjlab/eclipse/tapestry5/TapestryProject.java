@@ -1,24 +1,29 @@
 package com.anjlab.eclipse.tapestry5;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.jar.Manifest;
 
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.jdt.core.IJarEntryResource;
 import org.eclipse.jdt.core.IPackageFragmentRoot;
 import org.eclipse.jdt.core.IType;
 import org.eclipse.jdt.core.JavaCore;
+import org.eclipse.jdt.core.JavaModelException;
 
 import com.anjlab.eclipse.tapestry5.TapestryModule.ModuleReference;
 
 public class TapestryProject
 {
     private IProject project;
+    
+    private volatile List<TapestryModule> modules;
     
     public TapestryProject(IProject project)
     {
@@ -32,17 +37,37 @@ public class TapestryProject
     
     public List<TapestryModule> modules()
     {
+        if (modules == null)
+        {
+            initialize(new NullProgressMonitor());
+        }
+        
+        return modules;
+    }
+
+    public void initialize(IProgressMonitor monitor)
+    {
+        findModules(monitor);
+    }
+
+    private synchronized void findModules(IProgressMonitor monitor)
+    {
+        if (modules != null)
+        {
+            return;
+        }
+        
+        modules = new ArrayList<TapestryModule>();
+        
         String appPackage = TapestryUtils.getAppPackage(project);
         String appName = TapestryUtils.getAppName(project);
         
         if (appName == null || appPackage == null)
         {
-            return Collections.emptyList();
+            return;
         }
         
-        List<TapestryModule> modules = new ArrayList<TapestryModule>();
-        
-        addModule(modules, project, appPackage + ".services." + appName + "Module", new ModuleReference()
+        TapestryModule appModule = addModule(monitor, modules, project, appPackage + ".services." + appName + "Module", new ModuleReference()
         {
             @Override
             public String getLabel()
@@ -50,7 +75,13 @@ public class TapestryProject
                 return "Your Application's Module";
             }
         });
-        addModule(modules, project, "org.apache.tapestry5.services.TapestryModule", new ModuleReference()
+        
+        if (appModule != null)
+        {
+            appModule.setAppModule(true);
+        }
+        
+        addModule(monitor, modules, project, "org.apache.tapestry5.services.TapestryModule", new ModuleReference()
         {
             @Override
             public String getLabel()
@@ -63,20 +94,20 @@ public class TapestryProject
         {
             for (IPackageFragmentRoot root : JavaCore.create(project).getAllPackageFragmentRoots())
             {
-                findModules(modules, root);
+                findModules(monitor, modules, root);
             }
         }
         catch (CoreException e)
         {
             Activator.getDefault().logError("Error searching tapestry modules", e);
         }
-        
-        return modules;
     }
 
-    private void findModules(List<TapestryModule> modules, final IPackageFragmentRoot root)
+    private void findModules(IProgressMonitor monitor, List<TapestryModule> modules, final IPackageFragmentRoot root)
             throws CoreException
     {
+        monitor.subTask("Reading " + root.getElementName() + "...");
+        
         for (Object obj : root.getNonJavaResources())
         {
             if (obj instanceof IJarEntryResource)
@@ -101,7 +132,7 @@ public class TapestryProject
                                 {
                                     for (String className : classes.split(","))
                                     {
-                                        addModule(modules, project, className, new ModuleReference()
+                                        addModule(monitor, modules, project, className, new ModuleReference()
                                         {
                                             @Override
                                             public String getLabel()
@@ -126,26 +157,132 @@ public class TapestryProject
         }
     }
 
-    private void addModule(List<TapestryModule> modules, IProject project, String moduleClassName, ModuleReference reference)
+    private TapestryModule addModule(IProgressMonitor monitor, List<TapestryModule> modules, IProject project, String moduleClassName, ModuleReference reference)
     {
-        IType moduleType = EclipseUtils.findTypeDeclaration(project, moduleClassName);
+        monitor.subTask("Locating " + moduleClassName + "...");
         
-        if (moduleType == null)
+        IType moduleClass = EclipseUtils.findTypeDeclaration(project, moduleClassName);
+        
+        if (moduleClass == null)
         {
-            return;
+            return null;
         }
         
-        addModule(modules, new TapestryModule(this, moduleType, reference));
+        TapestryModule module = TapestryModule.createTapestryModule(this, moduleClass, reference);
+        
+        addModule(monitor, modules, module);
+        
+        return module;
     }
 
-    private void addModule(List<TapestryModule> modules, TapestryModule module)
+    private void addModule(IProgressMonitor monitor, List<TapestryModule> modules, TapestryModule module)
     {
+        module.initialize(monitor);
+        
         modules.add(module);
         
         for (TapestryModule subModule :  module.subModules())
         {
-            addModule(modules, subModule);
+            addModule(monitor, modules, subModule);
         }
+    }
+
+    public boolean contains(IProject project)
+    {
+        for (TapestryModule module : modules())
+        {
+            if (project.equals(module.getModuleClass().getJavaProject().getProject()))
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public TapestryContext findComponentContext(String componentName) throws JavaModelException
+    {
+        String libraryPrefix = "";
+        String componentNameWithoutPrefix = componentName;
+        
+        int index = componentName.indexOf('.');
+        if (index < 0)
+        {
+            index = componentName.indexOf('/');
+        }
+        if (index >= 0)
+        {
+            libraryPrefix = componentName.substring(0, index);
+            
+            if (index + 1 >= componentName.length())
+            {
+                return null;
+            }
+            
+            componentNameWithoutPrefix = componentName.substring(index + 1);
+        }
+        
+        for (TapestryModule module : modules)
+        {
+            if ("".equals(libraryPrefix) && module.isAppModule())
+            {
+                TapestryContext context = findComponentContext(
+                        module, TapestryUtils.getComponentsPackage(module.getEclipseProject()), componentNameWithoutPrefix);
+                
+                if (context != null)
+                {
+                    return context;
+                }
+            }
+            
+            for (LibraryMapping mapping : module.libraryMappings())
+            {
+                if (libraryPrefix.equals(mapping.getPathPrefix()))
+                {
+                    TapestryContext context = findComponentContext(
+                            module, mapping.getRootPackage() + ".components", componentNameWithoutPrefix);
+                    
+                    if (context != null)
+                    {
+                        return context;
+                    }
+                }
+            }
+        }
+        
+        if ("".equals(libraryPrefix))
+        {
+            return findComponentContext("core/" + componentNameWithoutPrefix);
+        }
+        return null;
+    }
+
+    private TapestryContext findComponentContext(TapestryModule module, String appPackage, String componentNameWithoutPrefix)
+    {
+        String componentPath = getComponentPath(module, appPackage, componentNameWithoutPrefix);
+        
+        TapestryFile file = module.findJavaFileCaseInsensitive(componentPath);
+        
+        if (file == null)
+        {
+            File parentFile = new File(componentPath).getParentFile();
+            
+            if (parentFile != null)
+            {
+                componentPath = getComponentPath(module, appPackage, componentNameWithoutPrefix + parentFile.getName());
+                
+                file = module.findJavaFileCaseInsensitive(componentPath);
+            }
+        }
+        
+        return file != null ? file.getContext() : null;
+    }
+
+    protected String getComponentPath(TapestryModule module, String appPackage,
+            String componentNameWithoutPrefix)
+    {
+        return TapestryUtils.joinPath(appPackage.replace('.', '/'),
+                componentNameWithoutPrefix.replace('.', '/')
+                    + (module instanceof LocalTapestryModule ? ".java" : ".class"));
     }
 
 }

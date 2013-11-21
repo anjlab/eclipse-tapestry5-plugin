@@ -7,7 +7,6 @@ import java.util.List;
 import org.eclipse.core.commands.AbstractHandler;
 import org.eclipse.core.commands.ExecutionEvent;
 import org.eclipse.core.commands.ExecutionException;
-import org.eclipse.core.resources.IFile;
 import org.eclipse.e4.ui.internal.workbench.renderers.swt.BasicPartList;
 import org.eclipse.e4.ui.model.application.ui.MElementContainer;
 import org.eclipse.e4.ui.model.application.ui.basic.MPart;
@@ -32,10 +31,9 @@ import org.eclipse.ui.internal.EditorReference;
 import org.eclipse.ui.internal.PartPane;
 
 import com.anjlab.eclipse.tapestry5.Activator;
-import com.anjlab.eclipse.tapestry5.EclipseUtils;
 import com.anjlab.eclipse.tapestry5.TapestryContext;
+import com.anjlab.eclipse.tapestry5.TapestryFile;
 import com.anjlab.eclipse.tapestry5.views.ViewLabelProvider;
-import com.anjlab.eclipse.tapestry5.views.context.TapestryContextContentProvider;
 
 /**
  * Our sample handler extends AbstractHandler, an IHandler base class.
@@ -68,36 +66,14 @@ public class QuickSwitchHandler extends AbstractHandler
             return null;
         }
         
-        IFile file = EclipseUtils.getFileFromPage(window.getActivePage());
+        TapestryContext context = Activator.getDefault().getTapestryContext(window);
         
-        if (file == null)
+        if (context == null || context.isEmpty())
         {
             return null;
         }
         
-        TapestryContextContentProvider provider = null;
-        
-        if (getContentProvider() != null)
-        {
-            if (getContentProvider().getContext().contains(file))
-            {
-                provider = getContentProvider();
-            }
-        }
-        
-        if (provider == null)
-        {
-            provider = new TapestryContextContentProvider(file);
-        }
-        
-        setContentProvider(provider);
-        
-        if (provider.getContext().getFiles().size() == 0)
-        {
-            return null;
-        }
-        
-        final BasicPartList editorList = createEditorList(provider.getContext(), window);
+        final BasicPartList editorList = createEditorList(context, window);
         
         if (editorList == null)
         {
@@ -128,16 +104,6 @@ public class QuickSwitchHandler extends AbstractHandler
         
         return null;
     }
-    
-    private TapestryContextContentProvider getContentProvider()
-    {
-        return Activator.getDefault().getContextContentProvider();
-    }
-    
-    private void setContentProvider(TapestryContextContentProvider contentProvider)
-    {
-        Activator.getDefault().setContextContentProvider(contentProvider);
-    }
 
     private BasicPartList createEditorList(TapestryContext context, IWorkbenchWindow window)
     {
@@ -163,7 +129,7 @@ public class QuickSwitchHandler extends AbstractHandler
                     @Override
                     public ImageDescriptor imageDescriptorFromURI(URI uri)
                     {
-                        IFile file = mElementContainerImpl.lookupFile(uri.toString());
+                        TapestryFile file = mElementContainerImpl.lookupFile(uri.toString());
                         
                         return labelProvider.getImageDescriptor(file);
                     }

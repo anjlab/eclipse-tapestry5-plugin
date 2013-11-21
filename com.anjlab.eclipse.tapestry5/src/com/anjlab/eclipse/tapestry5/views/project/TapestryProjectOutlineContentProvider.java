@@ -2,11 +2,12 @@ package com.anjlab.eclipse.tapestry5.views.project;
 
 import java.util.List;
 
-import org.eclipse.core.resources.IProject;
+import org.eclipse.jdt.core.JavaModelException;
 import org.eclipse.jface.viewers.ITreeContentProvider;
 import org.eclipse.jface.viewers.Viewer;
 import org.eclipse.ui.IViewSite;
 
+import com.anjlab.eclipse.tapestry5.EclipseUtils;
 import com.anjlab.eclipse.tapestry5.LibraryMapping;
 import com.anjlab.eclipse.tapestry5.TapestryModule;
 import com.anjlab.eclipse.tapestry5.TapestryProject;
@@ -16,14 +17,14 @@ import com.anjlab.eclipse.tapestry5.views.TreeParent;
 public class TapestryProjectOutlineContentProvider implements ITreeContentProvider
 {
     private TreeParent invisibleRoot;
-    private IProject project;
+    private TapestryProject project;
 
-    public TapestryProjectOutlineContentProvider(IProject project)
+    public TapestryProjectOutlineContentProvider(TapestryProject project)
     {
         this.project = project;
     }
     
-    public IProject getProject()
+    public TapestryProject getProject()
     {
         return project;
     }
@@ -38,29 +39,34 @@ public class TapestryProjectOutlineContentProvider implements ITreeContentProvid
             
             invisibleRoot.addChild(modulesRoot);
             
-            TapestryProject tapestryProject = new TapestryProject(project);
-            
-            for (TapestryModule module : tapestryProject.modules())
+            for (TapestryModule module : project.modules())
             {
                 TreeParent moduleRoot = new TreeParent(module.getName(), module);
                 
                 modulesRoot.addChild(moduleRoot);
                 
-                try
+                if (module.isSourceAvailable())
                 {
-                    List<LibraryMapping> libraryMappings = module.libraryMappings();
-                    
-                    TreeParent mappingsRoot = newLibraryMappingNode(moduleRoot, new Object());
-                    
-                    for (LibraryMapping libraryMapping : libraryMappings)
+                    try
                     {
-                        String pathPrefix = libraryMapping.getPathPrefix();
-                        mappingsRoot.addChild(new TreeObject("".equals(pathPrefix) ? "(default)" : pathPrefix, libraryMapping));
+                        List<LibraryMapping> libraryMappings = module.libraryMappings();
+                        
+                        TreeParent mappingsRoot = newLibraryMappingNode(moduleRoot, new Object());
+                        
+                        for (LibraryMapping libraryMapping : libraryMappings)
+                        {
+                            String pathPrefix = libraryMapping.getPathPrefix();
+                            mappingsRoot.addChild(new TreeObject("".equals(pathPrefix) ? "(default)" : pathPrefix, libraryMapping));
+                        }
+                    }
+                    catch (JavaModelException e)
+                    {
+                        newLibraryMappingNode(moduleRoot, e);
                     }
                 }
-                catch (Exception e)
+                else
                 {
-                    newLibraryMappingNode(moduleRoot, e);
+                    newLibraryMappingNode(moduleRoot, EclipseUtils.SOURCE_NOT_FOUND);
                 }
             }
         }

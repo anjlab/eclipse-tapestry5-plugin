@@ -4,6 +4,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.eclipse.core.resources.IProject;
+import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.jdt.core.IAnnotation;
 import org.eclipse.jdt.core.IClassFile;
 import org.eclipse.jdt.core.IField;
@@ -20,22 +22,34 @@ import org.eclipse.jdt.core.dom.SimpleType;
 import org.eclipse.jdt.core.dom.StringLiteral;
 import org.eclipse.jdt.core.dom.Type;
 
-public class TapestryModule
+public abstract class TapestryModule
 {
     private TapestryProject project;
-    private IType type;
+    private IType moduleClass;
     private ModuleReference reference;
+    
+    private boolean sourceAvailable;
+    private boolean appModule;
     
     public static interface ModuleReference
     {
         String getLabel();
     }
     
-    public TapestryModule(TapestryProject project, IType type, ModuleReference reference)
+    public TapestryModule(TapestryProject project, IType moduleClass, ModuleReference reference)
     {
         this.project = project;
-        this.type = type;
+        this.moduleClass = moduleClass;
         this.reference = reference;
+    }
+    
+    public static TapestryModule createTapestryModule(TapestryProject project, IType moduleClass, ModuleReference reference)
+    {
+        if (moduleClass.getResource() != null)
+        {
+            return new LocalTapestryModule(project, moduleClass, reference);
+        }
+        return new JarTapestryModule(project, moduleClass, reference);
     }
     
     public TapestryProject getProject()
@@ -43,23 +57,59 @@ public class TapestryModule
         return project;
     }
     
+    public IProject getEclipseProject()
+    {
+        return moduleClass.getJavaProject().getProject();
+    }
+    
     public ModuleReference getReference()
     {
         return reference;
     }
     
+    public IType getModuleClass()
+    {
+        return moduleClass;
+    }
+    
     public String getName()
     {
-        return type.getElementName();
+        return moduleClass.getElementName();
     }
+    
+    public void initialize(IProgressMonitor monitor)
+    {
+        monitor.subTask("Analyzing " + moduleClass.getFullyQualifiedName() + "...");
+        
+        findSubModules(monitor);
+        
+        findLibraryMappings(monitor);
+    }
+    
+    private List<TapestryModule> subModules;
     
     public List<TapestryModule> subModules()
     {
-        List<TapestryModule> subModules = new ArrayList<TapestryModule>();
+        if (subModules == null)
+        {
+            findSubModules(new NullProgressMonitor());
+        }
+        
+        return subModules;
+    }
+
+    private synchronized void findSubModules(IProgressMonitor monitor)
+    {
+        if (subModules != null)
+        {
+            return;
+        }
+        
+        subModules = new ArrayList<TapestryModule>();
         
         try
         {
-            for (IAnnotation annotation : type.getAnnotations())
+            for (IAnnotation annotation : moduleClass.getAnnotations())
             {
                 if (TapestryUtils.isTapestrySubModuleAnnotation(annotation))
                 {
@@ -68,12 +118,12 @@ public class TapestryModule
                         Object[] classes = (Object[]) pair.getValue();
                         for (Object className : classes)
                         {
-                            IType subModule = EclipseUtils.findTypeDeclaration(
-                                    type.getJavaProject().getProject(), (String) className);
+                            IType subModuleClass = EclipseUtils.findTypeDeclaration(
+                                    moduleClass.getJavaProject().getProject(), (String) className);
                             
-                            if (subModule != null)
+                            if (subModuleClass != null)
                             {
-                                subModules.add(new TapestryModule(project, subModule, new ModuleReference()
+                                subModules.add(createTapestryModule(project, subModuleClass, new ModuleReference()
                                 {
                                     @Override
                                     public String getLabel()
@@ -91,19 +141,49 @@ public class TapestryModule
         {
             Activator.getDefault().logError("Error getting submodules for " + getName(), e);
         }
-        
-        return subModules;
+    }
+    
+    private List<LibraryMapping> libraryMappings;
+
+    public List<LibraryMapping> libraryMappings() throws JavaModelException
+    {
+        if (libraryMappings == null)
+        {
+            findLibraryMappings(new NullProgressMonitor());
+        }
+        return libraryMappings;
     }
 
-    public List<LibraryMapping> libraryMappings() throws IllegalStateException, JavaModelException
+    private synchronized void findLibraryMappings(IProgressMonitor monitor)
     {
-        final List<LibraryMapping> mappings = new ArrayList<LibraryMapping>();
+        if (libraryMappings != null)
+        {
+            return;
+        }
         
-        IClassFile classFile = type.getClassFile();
+        libraryMappings = new ArrayList<LibraryMapping>();
         
-        String source = classFile != null
-                      ? classFile.getSource()
-                      : type.getCompilationUnit().getSource();
+        IClassFile classFile = moduleClass.getClassFile();
+        
+        String source = null;
+        
+        try
+        {
+            source = classFile != null
+                          ? classFile.getSource()
+                          : moduleClass.getCompilationUnit().getSource();
+        }
+        catch (JavaModelException e)
+        {
+            Activator.getDefault().logError("Error getting source file", e);
+        }
+        
+        this.sourceAvailable = source != null;
+        
+        if (!sourceAvailable)
+        {
+            return;
+        }
         
         CompilationUnit compilationUnit = EclipseUtils.parse(source);
         
@@ -138,7 +218,7 @@ public class TapestryModule
                                                    ? TapestryUtils.getAppPackage(project.getProject())
                                                    : evalExpression(project.getProject(), creation.arguments().get(1));
                                         
-                                        mappings.add(new LibraryMapping(prefix, pkg));
+                                        libraryMappings.add(new LibraryMapping(prefix, pkg));
                                     }
                                 }
                             }
@@ -175,7 +255,40 @@ public class TapestryModule
                 return "<" + expr.toString() + ">";
             }
         });
-        
-        return mappings;
     }
+
+    public abstract TapestryFile getModuleFile();
+
+    public abstract boolean isReadOnly();
+    
+    public boolean isSourceAvailable()
+    {
+        return sourceAvailable;
+    }
+
+    public void setAppModule(boolean appModule)
+    {
+        this.appModule = appModule;
+    }
+    
+    public boolean isAppModule()
+    {
+        return appModule;
+    }
+
+    public List<LibraryMapping> libraryMappings(String libraryPrefix) throws JavaModelException
+    {
+        List<LibraryMapping> result = new ArrayList<LibraryMapping>();
+        for (LibraryMapping mapping : libraryMappings())
+        {
+            if (mapping.getPathPrefix().equals(libraryPrefix))
+            {
+                result.add(mapping);
+            }
+        }
+        return result;
+    }
+
+    public abstract TapestryFile findJavaFileCaseInsensitive(String path);
+
 }

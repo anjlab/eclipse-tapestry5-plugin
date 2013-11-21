@@ -29,6 +29,10 @@ public class ViewLabelDecorator extends LabelProvider implements ILightweightLab
             {
                 decoration.addSuffix(" " + ((Throwable) data).getMessage());
             }
+            else if (data instanceof String)
+            {
+                decoration.addSuffix(" " + data);
+            }
         }
     }
 

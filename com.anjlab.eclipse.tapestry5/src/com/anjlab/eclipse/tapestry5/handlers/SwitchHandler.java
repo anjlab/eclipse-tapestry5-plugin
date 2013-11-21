@@ -3,12 +3,13 @@ package com.anjlab.eclipse.tapestry5.handlers;
 import org.eclipse.core.commands.AbstractHandler;
 import org.eclipse.core.commands.ExecutionEvent;
 import org.eclipse.core.commands.ExecutionException;
-import org.eclipse.core.resources.IFile;
 import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.ui.IWorkbenchWindow;
 import org.eclipse.ui.handlers.HandlerUtil;
 
 import com.anjlab.eclipse.tapestry5.EclipseUtils;
+import com.anjlab.eclipse.tapestry5.TapestryContext;
+import com.anjlab.eclipse.tapestry5.TapestryFile;
 import com.anjlab.eclipse.tapestry5.TapestryUtils;
 
 /**
@@ -35,24 +36,38 @@ public class SwitchHandler extends AbstractHandler
         
         try
         {
-            IFile file = TapestryUtils.getFileForTapestryContext(window);
+            //  Create new context from window (this includes search in Package Explorer)
+            //  Activator#getTapestryContext() only holds context for ActivePage,
+            //  so we can't use it here
+            TapestryContext tapestryContext = TapestryUtils.createTapestryContext(window);
             
-            if (file != null)
+            if (!tapestryContext.isEmpty())
             {
-                if (!TapestryUtils.isTemplateFile(file) && !TapestryUtils.isJavaFile(file))
+                TapestryFile currentFile = tapestryContext.getInitialFile();
+                
+                TapestryFile switchTarget = null;
+                
+                if (currentFile.isJavaFile())
                 {
-                    throw new ExecutionException("This feature only works for *.java and *.tml files");
+                    switchTarget = tapestryContext.getTemplateFile();
+                }
+                else if (currentFile.isTemplateFile())
+                {
+                    switchTarget = tapestryContext.getJavaFile();
+                }
+                else
+                {
+                    //  Switch to Java file by default
+                    switchTarget = tapestryContext.getJavaFile();
                 }
                 
-                IFile complementFile = TapestryUtils.findComplementFile(file);
-                
-                if (complementFile == null)
+                if (switchTarget == null)
                 {
                     throw new ExecutionException("Complement file not found for "
-                                + file.getProjectRelativePath().toPortableString());
+                                + currentFile.getPath().toPortableString());
                 }
                 
-                EclipseUtils.openFile(window, complementFile);
+                EclipseUtils.openFile(window, switchTarget);
             }
         }
         catch (ExecutionException e)

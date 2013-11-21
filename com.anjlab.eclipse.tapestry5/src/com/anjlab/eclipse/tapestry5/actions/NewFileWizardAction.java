@@ -15,6 +15,7 @@ import org.eclipse.core.runtime.Path;
 import org.eclipse.jdt.core.ICompilationUnit;
 import org.eclipse.jdt.core.IImportDeclaration;
 import org.eclipse.jdt.core.IJavaElement;
+import org.eclipse.jdt.core.JavaCore;
 import org.eclipse.jdt.core.JavaModelException;
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
@@ -47,6 +48,7 @@ import org.eclipse.ui.texteditor.ITextEditor;
 
 import com.anjlab.eclipse.tapestry5.Activator;
 import com.anjlab.eclipse.tapestry5.EclipseUtils;
+import com.anjlab.eclipse.tapestry5.LocalFile;
 import com.anjlab.eclipse.tapestry5.EclipseUtils.EditorCallback;
 import com.anjlab.eclipse.tapestry5.TapestryContext;
 import com.anjlab.eclipse.tapestry5.TapestryUtils;
@@ -250,8 +252,8 @@ public class NewFileWizardAction extends Action
 
             private void addImport(IFile file, String resourceType)
             {
-                IJavaElement javaElement = tapestryContext.getJavaElement();
-                
+                IJavaElement javaElement = JavaCore.create(((LocalFile) tapestryContext.getJavaFile()).getFile());
+
                 final ICompilationUnit compilationUnit = (ICompilationUnit) javaElement;
                 
                 CompilationUnit unit = EclipseUtils.parse(compilationUnit);
@@ -387,9 +389,9 @@ public class NewFileWizardAction extends Action
 
             private String getImportResourceType(IFile file)
             {
-                String resourceType = TapestryUtils.isStyleSheetFile(file)
+                String resourceType = TapestryUtils.isStyleSheetFile(file.getProjectRelativePath())
                                     ? "stylesheet"
-                                    : TapestryUtils.isJavaScriptFile(file)
+                                    : TapestryUtils.isJavaScriptFile(file.getProjectRelativePath())
                                         ? "library"
                                         : null;
                 return resourceType;

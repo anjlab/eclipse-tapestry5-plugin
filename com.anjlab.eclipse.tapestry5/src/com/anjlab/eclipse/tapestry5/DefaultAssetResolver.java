@@ -2,18 +2,15 @@ package com.anjlab.eclipse.tapestry5;
 
 import java.util.List;
 
-import org.eclipse.core.resources.IFile;
-
-import com.anjlab.eclipse.tapestry5.TapestryUtils.FileNameBuilder;
-
 public class DefaultAssetResolver implements AssetResolver
 {
     @Override
-    public IFile resolve(final String path, IFile relativeTo) throws AssetException
+    public TapestryFile resolve(final String path, TapestryFile relativeTo) throws AssetException
     {
         try
         {
-            List<IFile> files = TapestryUtils.findTapestryFiles(relativeTo, true, new FileNameBuilder()
+            List<TapestryFile> files = relativeTo.getContext().findTapestryFiles(
+                    relativeTo, true, new TapestryContext.FileNameBuilder()
             {
                 @Override
                 public String getFileName(String fileName, String fileExtension)
