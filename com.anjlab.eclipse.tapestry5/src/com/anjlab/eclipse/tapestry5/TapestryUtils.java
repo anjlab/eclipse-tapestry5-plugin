@@ -20,6 +20,7 @@ import org.eclipse.jdt.core.IJarEntryResource;
 import org.eclipse.jdt.core.JavaModelException;
 import org.eclipse.jdt.core.dom.Annotation;
 import org.eclipse.jdt.internal.ui.javaeditor.IClassFileEditorInput;
+import org.eclipse.jface.text.ITextViewer;
 import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.jface.viewers.ITreeSelection;
@@ -29,6 +30,7 @@ import org.eclipse.ui.IFileEditorInput;
 import org.eclipse.ui.IStorageEditorInput;
 import org.eclipse.ui.IWorkbenchPage;
 import org.eclipse.ui.IWorkbenchWindow;
+import org.eclipse.ui.PlatformUI;
 
 @SuppressWarnings("restriction")
 public class TapestryUtils
@@ -492,6 +494,46 @@ public class TapestryUtils
         }
         
         return null;
+    }
+
+    public static TapestryContext getTapestryContext(ITextViewer textViewer, String componentName)
+    {
+        TapestryContext tapestryContext = null;
+        IWorkbenchWindow currentWindow = null;
+        
+        for (IWorkbenchWindow window : PlatformUI.getWorkbench().getWorkbenchWindows())
+        {
+            if (textViewer.getTextWidget().getShell() == window.getShell())
+            {
+                currentWindow = window;
+                tapestryContext = Activator.getDefault().getTapestryContext(window);
+                break;
+            }
+        }
+        
+        if (tapestryContext == null)
+        {
+            return null;
+        }
+        
+        TapestryModule tapestryModule = getTapestryModule(currentWindow, tapestryContext.getProject());
+        
+        if (tapestryModule == null)
+        {
+            return null;
+        }
+        
+        TapestryContext targetContext;
+        try
+        {
+            targetContext = tapestryModule.getProject().findComponentContext(componentName);
+        }
+        catch (JavaModelException e)
+        {
+            return null;
+        }
+        
+        return targetContext;
     }
 
 }

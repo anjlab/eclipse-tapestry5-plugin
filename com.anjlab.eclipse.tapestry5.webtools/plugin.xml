@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?eclipse version="3.4"?>
+<plugin>
+
+   <extension point="org.eclipse.core.contenttype.contentTypes">
+        <content-type
+                priority="high"
+                name="Tapestry5 Markup Content Type"
+                id="com.anjlab.tapestry5.webtools.tmlsource"
+                base-type="org.eclipse.core.runtime.xml"
+                default-charset="UTF-8"
+                file-extensions="tml" />
+   </extension>
+   
+   <!-- TODO Add Validation & Quick Fixes -->
+   
+   <extension
+         point="org.eclipse.wst.sse.ui.completionProposal">
+         
+         <proposalCategory
+            icon="icons/tapestry-logo.png"
+            id="com.anjlab.tapestry5.webtools.proposalCategory.tml"
+            name="Tapestry Proposals">
+         </proposalCategory>
+        
+         <proposalComputer
+            activate="true"
+            categoryId="com.anjlab.tapestry5.webtools.proposalCategory.tml"
+            class="com.anjlab.tapestry5.webtools.contentassist.TapestryCompletionProposalComputer"
+            id="com.anjlab.tapestry5.webtools.proposalComputer.tml">
+            
+            <contentType
+               id="com.anjlab.tapestry5.webtools.tmlsource">
+            </contentType>
+            
+            <!-- Also show Tapestry proposals in XML, JSP, and HTML editors -->
+            
+            <contentType
+               id="org.eclipse.jst.jsp.core.jspsource">
+            </contentType>
+            
+            <contentType
+               id="org.eclipse.wst.html.core.htmlsource">
+            </contentType>
+            
+            <contentType
+               id="org.eclipse.wst.xml.core.xmlsource">
+            </contentType>
+            
+            <contentType
+               id="org.eclipse.core.runtime.xml">
+            </contentType>
+            
+         </proposalComputer>
+        
+   </extension>
+
+</plugin>

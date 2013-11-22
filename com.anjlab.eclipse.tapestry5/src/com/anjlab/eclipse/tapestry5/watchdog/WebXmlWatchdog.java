@@ -69,7 +69,7 @@ public class WebXmlWatchdog extends AbstractWatchdog
         Map<String, Object> cache = Activator.getDefault().getCache(project);
         
         WebXml webXmlCache = (WebXml) cache.get(WEB_XML);
-        if (webXmlCache == null)
+        if (webXmlCache == null || webXmlCache.isEmpty())
         {
             webXmlCache = readWebXml(project);
             
@@ -88,6 +88,11 @@ public class WebXmlWatchdog extends AbstractWatchdog
             return params.get(paramName);
         }
         
+        public boolean isEmpty()
+        {
+            return params.isEmpty() && filters.isEmpty();
+        }
+
         public void clear()
         {
             params.clear();

@@ -2,7 +2,6 @@ package com.anjlab.eclipse.tapestry5.hyperlink;
 
 import java.util.List;
 
-import org.eclipse.jdt.core.JavaModelException;
 import org.eclipse.jface.text.BadLocationException;
 import org.eclipse.jface.text.IDocument;
 import org.eclipse.jface.text.IRegion;
@@ -10,22 +9,83 @@ import org.eclipse.jface.text.ITextViewer;
 import org.eclipse.jface.text.Region;
 import org.eclipse.jface.text.hyperlink.AbstractHyperlinkDetector;
 import org.eclipse.jface.text.hyperlink.IHyperlink;
-import org.eclipse.ui.IWorkbenchWindow;
 import org.eclipse.ui.PlatformUI;
 
-import com.anjlab.eclipse.tapestry5.Activator;
 import com.anjlab.eclipse.tapestry5.EclipseUtils;
 import com.anjlab.eclipse.tapestry5.TapestryContext;
 import com.anjlab.eclipse.tapestry5.TapestryFile;
-import com.anjlab.eclipse.tapestry5.TapestryModule;
 import com.anjlab.eclipse.tapestry5.TapestryUtils;
 
 public class TapestryComponentHyperlinkDetector extends AbstractHyperlinkDetector
 {
 
     @Override
-    public IHyperlink[] detectHyperlinks(ITextViewer textViewer,
-            IRegion region, boolean canShowMultipleHyperlinks)
+    public IHyperlink[] detectHyperlinks(ITextViewer textViewer, IRegion region, boolean canShowMultipleHyperlinks)
+    {
+        final IRegion componentRegion = getComponentNameRegion(textViewer, region);
+        
+        if (componentRegion == null)
+        {
+            return null;
+        }
+        
+        final String componentName;
+        try
+        {
+            componentName = textViewer.getDocument().get(componentRegion.getOffset(), componentRegion.getLength());
+        }
+        catch (BadLocationException e)
+        {
+            return null;
+        }
+        
+        TapestryContext targetContext = TapestryUtils.getTapestryContext(textViewer, componentName);
+        
+        if (targetContext == null)
+        {
+            return null;
+        }
+        
+        final List<TapestryFile> files = targetContext.getFiles();
+        
+        IHyperlink[] links = new IHyperlink[files.size()];
+        
+        for (int i = 0; i < files.size(); i++)
+        {
+            final int index = i;
+            
+            links[index] = new IHyperlink()
+            {
+                @Override
+                public void open()
+                {
+                    EclipseUtils.openFile(PlatformUI.getWorkbench().getActiveWorkbenchWindow(), files.get(index));
+                }
+                
+                @Override
+                public String getTypeLabel()
+                {
+                    return files.get(index).getName();
+                }
+                
+                @Override
+                public String getHyperlinkText()
+                {
+                    return files.get(index).getName();
+                }
+                
+                @Override
+                public IRegion getHyperlinkRegion()
+                {
+                    return componentRegion;
+                }
+            };
+        }
+        
+        return links;
+    }
+
+    protected IRegion getComponentNameRegion(ITextViewer textViewer, IRegion region)
     {
         if (region == null || textViewer == null)
         {
@@ -42,24 +102,6 @@ public class TapestryComponentHyperlinkDetector extends AbstractHyperlinkDetecto
         }
         
         if (!isTapestryTemplate(document))
-        {
-            return null;
-        }
-        
-        TapestryContext tapestryContext = null;
-        IWorkbenchWindow currentWindow = null;
-        
-        for (IWorkbenchWindow window : PlatformUI.getWorkbench().getWorkbenchWindows())
-        {
-            if (textViewer.getTextWidget().getShell() == window.getShell())
-            {
-                currentWindow = window;
-                tapestryContext = Activator.getDefault().getTapestryContext(window);
-                break;
-            }
-        }
-        
-        if (tapestryContext == null)
         {
             return null;
         }
@@ -105,89 +147,31 @@ public class TapestryComponentHyperlinkDetector extends AbstractHyperlinkDetecto
         
         String text = line.substring(leftIndex, rightIndex + 1);
         
-        if (checkPreconditions(line, leftIndex, rightIndex))
+        if (!isValidLocationForComponentName(line, leftIndex, rightIndex))
         {
-            int leftOffset = 0;
-            int rightOffset = 0;
-            
-            //  <t:alerts/>
-            //           ^
-            if (text.endsWith("/"))
-            {
-                rightOffset = 1;
-            }
-            
-            final int componentOffset = lineInfo.getOffset() + leftIndex + leftOffset;
-            
-            if (offsetInLine < leftIndex + leftOffset || offsetInLine >= rightIndex - rightOffset)
-            {
-                return null;
-            }
-            
-            final String componentName = text.substring(leftOffset, text.length() - rightOffset);
-            
-            TapestryModule tapestryModule = TapestryUtils.getTapestryModule(currentWindow, tapestryContext.getProject());
-            
-            if (tapestryModule == null)
-            {
-                return null;
-            }
-            
-            TapestryContext targetContext;
-            try
-            {
-                targetContext = tapestryModule.getProject().findComponentContext(componentName);
-            }
-            catch (JavaModelException e)
-            {
-                return null;
-            }
-            
-            if (targetContext == null)
-            {
-                return null;
-            }
-            
-            final List<TapestryFile> files = targetContext.getFiles();
-            
-            IHyperlink[] links = new IHyperlink[files.size()];
-            
-            for (int i = 0; i < files.size(); i++)
-            {
-                final int index = i;
-                
-                links[index] = new IHyperlink()
-                {
-                    @Override
-                    public void open()
-                    {
-                        EclipseUtils.openFile(PlatformUI.getWorkbench().getActiveWorkbenchWindow(), files.get(index));
-                    }
-                    
-                    @Override
-                    public String getTypeLabel()
-                    {
-                        return files.get(index).getName();
-                    }
-                    
-                    @Override
-                    public String getHyperlinkText()
-                    {
-                        return files.get(index).getName();
-                    }
-                    
-                    @Override
-                    public IRegion getHyperlinkRegion()
-                    {
-                        return new Region(componentOffset, componentName.length());
-                    }
-                };
-            }
-            
-            return links;
+            return null;
         }
         
-        return null;
+        int leftOffset = 0;
+        int rightOffset = 0;
+        
+        //  <t:alerts/>
+        //           ^
+        if (text.endsWith("/"))
+        {
+            rightOffset = 1;
+        }
+        
+        final int componentOffset = lineInfo.getOffset() + leftIndex + leftOffset;
+        
+        if (offsetInLine < leftIndex + leftOffset || offsetInLine >= rightIndex - rightOffset)
+        {
+            return null;
+        }
+        
+        final String componentName = text.substring(leftOffset, text.length() - rightOffset);
+        
+        return new Region(componentOffset, componentName.length());
     }
 
     protected boolean isTapestryTemplate(IDocument document)
@@ -207,7 +191,7 @@ public class TapestryComponentHyperlinkDetector extends AbstractHyperlinkDetecto
         return false;
     }
 
-    private boolean checkPreconditions(String line, int leftIndex, int rightIndex)
+    private boolean isValidLocationForComponentName(String line, int leftIndex, int rightIndex)
     {
         if (leftIndex <= 0)
         {
