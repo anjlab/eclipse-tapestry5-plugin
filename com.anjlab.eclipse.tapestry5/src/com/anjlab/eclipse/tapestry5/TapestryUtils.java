@@ -20,10 +20,10 @@ import org.eclipse.jdt.core.IJarEntryResource;
 import org.eclipse.jdt.core.JavaModelException;
 import org.eclipse.jdt.core.dom.Annotation;
 import org.eclipse.jdt.internal.ui.javaeditor.IClassFileEditorInput;
-import org.eclipse.jface.text.ITextViewer;
 import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.jface.viewers.ITreeSelection;
+import org.eclipse.swt.widgets.Shell;
 import org.eclipse.ui.IEditorInput;
 import org.eclipse.ui.IEditorPart;
 import org.eclipse.ui.IFileEditorInput;
@@ -496,27 +496,16 @@ public class TapestryUtils
         return null;
     }
 
-    public static TapestryContext getTapestryContext(ITextViewer textViewer, String componentName)
+    public static TapestryContext getTapestryContext(IWorkbenchWindow window, String componentName)
     {
-        TapestryContext tapestryContext = null;
-        IWorkbenchWindow currentWindow = null;
-        
-        for (IWorkbenchWindow window : PlatformUI.getWorkbench().getWorkbenchWindows())
-        {
-            if (textViewer.getTextWidget().getShell() == window.getShell())
-            {
-                currentWindow = window;
-                tapestryContext = Activator.getDefault().getTapestryContext(window);
-                break;
-            }
-        }
+        TapestryContext tapestryContext = Activator.getDefault().getTapestryContext(window);
         
         if (tapestryContext == null)
         {
             return null;
         }
         
-        TapestryModule tapestryModule = getTapestryModule(currentWindow, tapestryContext.getProject());
+        TapestryModule tapestryModule = getTapestryModule(window, tapestryContext.getProject());
         
         if (tapestryModule == null)
         {
@@ -534,6 +523,21 @@ public class TapestryUtils
         }
         
         return targetContext;
+    }
+
+    public static IWorkbenchWindow getWorkbenchWindow(Shell shell)
+    {
+        IWorkbenchWindow currentWindow = null;
+        
+        for (IWorkbenchWindow window : PlatformUI.getWorkbench().getWorkbenchWindows())
+        {
+            if (shell == window.getShell())
+            {
+                currentWindow = window;
+                break;
+            }
+        }
+        return currentWindow;
     }
 
 }

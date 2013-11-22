@@ -9,6 +9,7 @@ import org.eclipse.jface.text.ITextViewer;
 import org.eclipse.jface.text.Region;
 import org.eclipse.jface.text.hyperlink.AbstractHyperlinkDetector;
 import org.eclipse.jface.text.hyperlink.IHyperlink;
+import org.eclipse.ui.IWorkbenchWindow;
 import org.eclipse.ui.PlatformUI;
 
 import com.anjlab.eclipse.tapestry5.EclipseUtils;
@@ -39,7 +40,14 @@ public class TapestryComponentHyperlinkDetector extends AbstractHyperlinkDetecto
             return null;
         }
         
-        TapestryContext targetContext = TapestryUtils.getTapestryContext(textViewer, componentName);
+        IWorkbenchWindow window = TapestryUtils.getWorkbenchWindow(textViewer.getTextWidget().getShell());
+        
+        if (window == null)
+        {
+            return null;
+        }
+        
+        TapestryContext targetContext = TapestryUtils.getTapestryContext(window, componentName);
         
         if (targetContext == null)
         {
