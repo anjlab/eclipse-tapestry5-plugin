@@ -115,7 +115,10 @@ public abstract class TapestryModule
                 {
                     for (IMemberValuePair pair : annotation.getMemberValuePairs())
                     {
-                        Object[] classes = (Object[]) pair.getValue();
+                        Object[] classes = pair.getValue().getClass().isArray()
+                                         ? (Object[]) pair.getValue()
+                                         : new Object[] { pair.getValue() };
+                        
                         for (Object className : classes)
                         {
                             IType subModuleClass = EclipseUtils.findTypeDeclaration(
