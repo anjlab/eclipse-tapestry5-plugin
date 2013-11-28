@@ -238,10 +238,10 @@ public class TapestryProject
         
         for (TapestryModule module : modules)
         {
-            if ("".equals(libraryPrefix) && module.isAppModule())
+            if (module.isAppModule())
             {
                 TapestryContext context = findComponentContext(
-                        module, TapestryUtils.getComponentsPackage(module.getEclipseProject()), componentNameWithoutPrefix);
+                        module, TapestryUtils.getComponentsPackage(module.getEclipseProject()), componentName);
                 
                 if (context != null)
                 {
