@@ -294,4 +294,17 @@ public abstract class TapestryModule
 
     public abstract TapestryFile findJavaFileCaseInsensitive(String path);
 
+    @Override
+    public boolean equals(Object obj)
+    {
+        if (obj == this)
+        {
+            return true;
+        }
+        if (!(obj instanceof TapestryModule))
+        {
+            return false;
+        }
+        return this.moduleClass.equals(((TapestryModule) obj).moduleClass);
+    }
 }

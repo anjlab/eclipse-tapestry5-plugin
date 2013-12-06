@@ -192,6 +192,11 @@ public class TapestryProject
 
     private void addModule(IProgressMonitor monitor, List<TapestryModule> modules, TapestryModule module)
     {
+        if (modules.contains(module))
+        {
+            return;
+        }
+        
         module.initialize(monitor);
         
         modules.add(module);
