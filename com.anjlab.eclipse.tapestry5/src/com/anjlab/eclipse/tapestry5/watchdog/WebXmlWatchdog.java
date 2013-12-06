@@ -108,6 +108,11 @@ public class WebXmlWatchdog extends AbstractWatchdog
         {
             return filters.get(filterName);
         }
+
+        public Set<String> getParamNames()
+        {
+            return params.keySet();
+        }
     }
     
     private static WebXml readWebXml(IProject project)

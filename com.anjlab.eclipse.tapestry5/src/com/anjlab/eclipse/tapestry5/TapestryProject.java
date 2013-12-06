@@ -96,6 +96,28 @@ public class TapestryProject
             }
         }
         
+        for (String paramName : webXml.getParamNames())
+        {
+            if (paramName.matches("tapestry\\.[^-]+-modules"))
+            {
+                final String tapestryModeModules = paramName;
+                
+                String modeModules = webXml.getParamValue(tapestryModeModules);
+                
+                for (String moduleClassName : modeModules.split(","))
+                {
+                    addModule(monitor, modules, project, moduleClassName.trim(), new ModuleReference()
+                    {
+                        @Override
+                        public String getLabel()
+                        {
+                            return "via " + tapestryModeModules + " in web.xml";
+                        }
+                    });
+                }
+            }
+        }
+        
         addModule(monitor, modules, project, "org.apache.tapestry5.services.TapestryModule", new ModuleReference()
         {
             @Override
