@@ -39,6 +39,15 @@ CMD+Hover over component reference to jump to one of its definitions:
 
 ![Screenshot](https://f.cloud.github.com/assets/76579/1147100/4ee57f58-1e96-11e3-957d-1f875797620b.png)
 
+### Completion Proposals
+
+Tapestry5 completion proposals now available for all WTP Editors.
+
+![parameter-proposal](https://f.cloud.github.com/assets/76579/1703919/dca5a70e-60be-11e3-8fe8-58f31f3b1a30.png)
+![property-code](https://f.cloud.github.com/assets/76579/1703921/dca6dfe8-60be-11e3-8619-719382359ad6.png)
+![property-proposal](https://f.cloud.github.com/assets/76579/1703920/dca65370-60be-11e3-87be-2c4c8137ec38.png)
+
+
 ### Tapestry Project Outline
 
 Go to *Window* -> *Show View* -> *Other...*, filter by "Tapestry" and select "Tapestry Project Outline".
