@@ -28,3 +28,11 @@ curl -vT plugins/com.anjlab.eclipse.e4.tapestry5_$VERSION_NAME.jar \
     -udmitrygusev:$bintray_api_key \
     https://api.bintray.com/content/anjlab/$REPO_NAME/$PACKAGE_NAME/$VERSION_NAME/plugins/
 
+curl -vT features/com.anjlab.eclipse.tapestry5.webtools.feature_$VERSION_NAME.jar \
+    -udmitrygusev:$bintray_api_key \
+    https://api.bintray.com/content/anjlab/$REPO_NAME/$PACKAGE_NAME/$VERSION_NAME/features/
+
+curl -vT plugins/com.anjlab.eclipse.tapestry5.webtools_$VERSION_NAME.jar \
+    -udmitrygusev:$bintray_api_key \
+    https://api.bintray.com/content/anjlab/$REPO_NAME/$PACKAGE_NAME/$VERSION_NAME/plugins/
+
