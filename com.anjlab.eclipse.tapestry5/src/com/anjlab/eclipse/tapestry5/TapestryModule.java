@@ -8,7 +8,6 @@ import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.jdt.core.IAnnotation;
 import org.eclipse.jdt.core.IClassFile;
-import org.eclipse.jdt.core.IField;
 import org.eclipse.jdt.core.IMemberValuePair;
 import org.eclipse.jdt.core.IType;
 import org.eclipse.jdt.core.JavaModelException;
@@ -19,7 +18,6 @@ import org.eclipse.jdt.core.dom.MethodInvocation;
 import org.eclipse.jdt.core.dom.Name;
 import org.eclipse.jdt.core.dom.SimpleName;
 import org.eclipse.jdt.core.dom.SimpleType;
-import org.eclipse.jdt.core.dom.StringLiteral;
 import org.eclipse.jdt.core.dom.Type;
 
 public abstract class TapestryModule
@@ -148,7 +146,7 @@ public abstract class TapestryModule
     
     private List<LibraryMapping> libraryMappings;
 
-    public List<LibraryMapping> libraryMappings() throws JavaModelException
+    public List<LibraryMapping> libraryMappings()
     {
         if (libraryMappings == null)
         {
@@ -216,10 +214,10 @@ public abstract class TapestryModule
                                 {
                                     if ("LibraryMapping".equals(((SimpleName) name).getIdentifier()))
                                     {
-                                        String prefix = evalExpression(project.getProject(), creation.arguments().get(0));
+                                        String prefix = EclipseUtils.evalExpression(project.getProject(), creation.arguments().get(0));
                                         String pkg = "".equals(prefix)
                                                    ? TapestryUtils.getAppPackage(project.getProject())
-                                                   : evalExpression(project.getProject(), creation.arguments().get(1));
+                                                   : EclipseUtils.evalExpression(project.getProject(), creation.arguments().get(1));
                                         
                                         libraryMappings.add(new LibraryMapping(prefix, pkg));
                                     }
@@ -229,33 +227,6 @@ public abstract class TapestryModule
                     }
                 }
                 return super.visit(node);
-            }
-
-            private String evalExpression(IProject project, Object expr)
-            {
-                if (expr instanceof StringLiteral)
-                {
-                    return ((StringLiteral) expr).getLiteralValue();
-                }
-                
-                if (expr instanceof Name)
-                {
-                    IField field = EclipseUtils.findFieldDeclaration(project, ((Name) expr));
-                    
-                    if (field != null)
-                    {
-                        try
-                        {
-                            return (String) field.getConstant();
-                        }
-                        catch (JavaModelException e)
-                        {
-                            //  Ignore
-                        }
-                    }
-                }
-                
-                return "<" + expr.toString() + ">";
             }
         });
     }

@@ -2,7 +2,6 @@ package com.anjlab.eclipse.tapestry5.views.project;
 
 import java.util.List;
 
-import org.eclipse.jdt.core.JavaModelException;
 import org.eclipse.jface.viewers.ITreeContentProvider;
 import org.eclipse.jface.viewers.Viewer;
 import org.eclipse.ui.IViewSite;
@@ -47,21 +46,14 @@ public class TapestryProjectOutlineContentProvider implements ITreeContentProvid
                 
                 if (module.isSourceAvailable())
                 {
-                    try
+                    List<LibraryMapping> libraryMappings = module.libraryMappings();
+                    
+                    TreeParent mappingsRoot = newLibraryMappingNode(moduleRoot, new Object());
+                    
+                    for (LibraryMapping libraryMapping : libraryMappings)
                     {
-                        List<LibraryMapping> libraryMappings = module.libraryMappings();
-                        
-                        TreeParent mappingsRoot = newLibraryMappingNode(moduleRoot, new Object());
-                        
-                        for (LibraryMapping libraryMapping : libraryMappings)
-                        {
-                            String pathPrefix = libraryMapping.getPathPrefix();
-                            mappingsRoot.addChild(new TreeObject("".equals(pathPrefix) ? "(default)" : pathPrefix, libraryMapping));
-                        }
-                    }
-                    catch (JavaModelException e)
-                    {
-                        newLibraryMappingNode(moduleRoot, e);
+                        String pathPrefix = libraryMapping.getPathPrefix();
+                        mappingsRoot.addChild(new TreeObject("".equals(pathPrefix) ? "(default)" : pathPrefix, libraryMapping));
                     }
                 }
                 else

@@ -12,6 +12,7 @@ import org.eclipse.jdt.core.ICompilationUnit;
 import org.eclipse.jdt.core.IJarEntryResource;
 import org.eclipse.jdt.core.IJavaElement;
 import org.eclipse.jdt.core.IPackageFragment;
+import org.eclipse.jdt.core.IType;
 import org.eclipse.jdt.core.JavaModelException;
 import org.eclipse.jdt.core.WorkingCopyOwner;
 
@@ -171,5 +172,19 @@ public class JarTapestryContext extends TapestryContext
     public boolean isReadOnly()
     {
         return true;
+    }
+    
+    @Override
+    public TapestryComponentSpecification getSpecification()
+    {
+        TapestryFile javaFile = getJavaFile();
+        
+        if (javaFile == null)
+        {
+            return TapestryComponentSpecification.EMPTY;
+        }
+        
+        IType type = ((ClassFile)javaFile).getClassFile().findPrimaryType();
+        return new TapestryComponentSpecification(type);
     }
 }

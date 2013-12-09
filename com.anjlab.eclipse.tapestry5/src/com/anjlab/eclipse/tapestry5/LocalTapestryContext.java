@@ -16,6 +16,7 @@ import org.eclipse.core.runtime.CoreException;
 import org.eclipse.jdt.core.ICompilationUnit;
 import org.eclipse.jdt.core.IJavaProject;
 import org.eclipse.jdt.core.IPackageFragmentRoot;
+import org.eclipse.jdt.core.IType;
 import org.eclipse.jdt.core.JavaCore;
 
 
@@ -282,5 +283,29 @@ public class LocalTapestryContext extends TapestryContext
     public boolean isReadOnly()
     {
         return false;
+    }
+    
+    @Override
+    public TapestryComponentSpecification getSpecification()
+    {
+        TapestryFile javaFile = getJavaFile();
+        
+        if (javaFile == null)
+        {
+            return TapestryComponentSpecification.EMPTY;
+        }
+        
+        IFile file = ((LocalFile)javaFile).getFile();
+        
+        ICompilationUnit compilationUnit = (ICompilationUnit) JavaCore.create(file);
+        
+        IType type = compilationUnit.findPrimaryType();
+        
+        if (type == null)
+        {
+            return TapestryComponentSpecification.EMPTY;
+        }
+        
+        return new TapestryComponentSpecification(type);
     }
 }

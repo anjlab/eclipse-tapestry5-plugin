@@ -65,6 +65,12 @@ public abstract class TapestryContext
             {
                 return true;
             }
+            
+            @Override
+            public TapestryComponentSpecification getSpecification()
+            {
+                return TapestryComponentSpecification.EMPTY;
+            }
         };
     }
     
@@ -513,4 +519,6 @@ public abstract class TapestryContext
     }
 
     public abstract boolean isReadOnly();
+    
+    public abstract TapestryComponentSpecification getSpecification();
 }

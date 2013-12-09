@@ -21,6 +21,7 @@ import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTParser;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.Name;
+import org.eclipse.jdt.core.dom.StringLiteral;
 import org.eclipse.jdt.core.search.IJavaSearchConstants;
 import org.eclipse.jdt.core.search.IJavaSearchScope;
 import org.eclipse.jdt.core.search.SearchEngine;
@@ -352,6 +353,38 @@ public class EclipseUtils
         }
         
         return null;
+    }
+
+    public static String evalExpression(IProject project, Object expr)
+    {
+        if (expr instanceof String)
+        {
+            return (String) expr;
+        }
+        
+        if (expr instanceof StringLiteral)
+        {
+            return ((StringLiteral) expr).getLiteralValue();
+        }
+        
+        if (expr instanceof Name)
+        {
+            IField field = findFieldDeclaration(project, ((Name) expr));
+            
+            if (field != null)
+            {
+                try
+                {
+                    return (String) field.getConstant();
+                }
+                catch (JavaModelException e)
+                {
+                    //  Ignore
+                }
+            }
+        }
+        
+        return "<" + expr.toString() + ">";
     }
 
 }
