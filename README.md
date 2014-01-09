@@ -108,3 +108,5 @@ Or drag &amp; drop this icon into a running Eclipse:
 <a href="http://marketplace.eclipse.org/marketplace-client-intro?mpc_install=1125032" title="Drag and drop into a running Eclipse workspace to install Eclipse Integration for Tapestry5">
   <img src="https://marketplace.eclipse.org/sites/all/modules/custom/marketplace/images/installbutton.png"/>
 </a>
+
+**Note:** Not sure if this is an Eclipse Marketplace bug, but for some reason when you install the plugin using drag &amp; drop you will only see one feature (Basic). If you install using update site then you should see all 3 features available.
