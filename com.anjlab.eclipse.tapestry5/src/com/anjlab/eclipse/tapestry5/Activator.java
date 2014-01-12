@@ -8,6 +8,7 @@ import javax.xml.stream.XMLInputFactory;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.jface.resource.ImageDescriptor;
+import org.eclipse.swt.graphics.Image;
 import org.eclipse.ui.IWorkbenchWindow;
 import org.eclipse.ui.plugin.AbstractUIPlugin;
 import org.osgi.framework.BundleContext;
@@ -189,5 +190,14 @@ public class Activator extends AbstractUIPlugin
     public void removeTapestryProjectListener(IWorkbenchWindow window, ITapestryContextListener listener)
     {
         tapestryProjectWatchdog.removeTapestryContextListener(window, listener);
+    }
+
+    private static Image tapestryLogoIcon;
+    
+    public static Image getTapestryLogoIcon()
+    {
+        return tapestryLogoIcon != null
+             ? tapestryLogoIcon
+             : (tapestryLogoIcon = getImageDescriptor("icons/tapestry-logo.png").createImage());
     }
 }

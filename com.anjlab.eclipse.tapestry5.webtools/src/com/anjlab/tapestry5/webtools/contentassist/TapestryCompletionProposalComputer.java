@@ -1,11 +1,11 @@
 package com.anjlab.tapestry5.webtools.contentassist;
 
-import org.eclipse.jface.text.contentassist.CompletionProposal;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.ui.IWorkbenchWindow;
 import org.eclipse.wst.sse.ui.contentassist.CompletionProposalInvocationContext;
 import org.eclipse.wst.xml.ui.internal.contentassist.ContentAssistRequest;
 import org.eclipse.wst.xml.ui.internal.contentassist.DefaultXMLCompletionProposalComputer;
+import org.eclipse.wst.xml.ui.internal.contentassist.MarkupCompletionProposal;
 import org.w3c.dom.NamedNodeMap;
 
 import com.anjlab.eclipse.tapestry5.Activator;
@@ -86,20 +86,29 @@ public class TapestryCompletionProposalComputer
         for (Member parameter : specification.getParameters())
         {
             //  Filter out parameters that are already present in this tag
-            if (attributes.getNamedItem(parameter.getName()) == null)
+            if (attributes.getNamedItem(parameter.getName()) != null)
             {
-                String replacementString = parameter.getName() + "=\"\"";
-                contentAssistRequest.addProposal(new CompletionProposal(
-                        replacementString,
-                        contentAssistRequest.getReplacementBeginPosition(),
-                        contentAssistRequest.getReplacementLength(),
-                        replacementString.length() - 1,
-                        null, // image
-                        parameter.getName(), // displayString
-                        null, // contextInfo
-                        parameter.getJavadoc()  // additionalProposalInfo
-                        ));
+                continue;
             }
+            
+            if (!parameter.getName().startsWith(contentAssistRequest.getMatchString()))
+            {
+                continue;
+            }
+            
+            String replacementString = parameter.getName() + "=\"\"";
+            contentAssistRequest.addProposal(new MarkupCompletionProposal(
+                    replacementString,
+                    contentAssistRequest.getReplacementBeginPosition(),
+                    contentAssistRequest.getReplacementLength(),
+                    replacementString.length() - 1,
+                    Activator.getTapestryLogoIcon(), // image
+                    parameter.getName(), // displayString
+                    null, // contextInfo
+                    parameter.getJavadoc(),  // additionalProposalInfo
+                    3000, // relevance
+                    true  // updateReplacementLengthOnValidate
+                    ));
         }
     }
 
@@ -186,16 +195,23 @@ public class TapestryCompletionProposalComputer
         
         for (Property property : specification.getProperties())
         {
+            if (!property.getName().startsWith(contentAssistRequest.getMatchString().replaceAll("\"|'", "")))
+            {
+                continue;
+            }
+            
             String replacementString = '"' + property.getName() + '"';
-            contentAssistRequest.addProposal(new CompletionProposal(
+            contentAssistRequest.addProposal(new MarkupCompletionProposal(
                     replacementString,
                     contentAssistRequest.getReplacementBeginPosition(),
                     contentAssistRequest.getReplacementLength(),
                     replacementString.length() - 1,
-                    null, // image
+                    Activator.getTapestryLogoIcon(), // image
                     property.getName(), // displayString
                     null, // contextInfo
-                    property.getJavadoc()  // additionalProposalInfo
+                    property.getJavadoc(),  // additionalProposalInfo
+                    3000, // relevance
+                    true  // updateReplacementLengthOnValidate
                     ));
         }
     }
