@@ -79,7 +79,7 @@ public class TapestryProject
         {
             final String localFilterName = filterName;
             
-            addModule(monitor, modules, project, appPackage + ".services." + filterName + "Module", new ModuleReference()
+            TapestryModule appModule = addModule(monitor, modules, project, appPackage + ".services." + filterName + "Module", new ModuleReference()
             {
                 @Override
                 public String getLabel()
@@ -95,6 +95,11 @@ public class TapestryProject
                     module.setAppModule(true);
                 }
             });
+            
+            if (appModule != null)
+            {
+                break;
+            }
         }
         
         for (String paramName : webXml.getParamNames())

@@ -1,5 +1,6 @@
 package com.anjlab.tapestry5.webtools.contentassist;
 
+import org.apache.commons.lang.StringUtils;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.ui.IWorkbenchWindow;
 import org.eclipse.wst.sse.ui.contentassist.CompletionProposalInvocationContext;
@@ -48,24 +49,30 @@ public class TapestryCompletionProposalComputer
         {
             for (TapestryContext tapestryContext : tapestryModule.getComponents())
             {
-                String replacementString = "t:" + tapestryContext.getName();
+                String replacementString = "t:" + tapestryModule.getComponentName(tapestryContext);
+                
+                if (!StringUtils.startsWithIgnoreCase(replacementString, contentAssistRequest.getMatchString())
+                        && !StringUtils.containsIgnoreCase(tapestryContext.getName(), contentAssistRequest.getMatchString()))
+                {
+                    continue;
+                }
                 
                 contentAssistRequest.addProposal(new MarkupCompletionProposal(
                         replacementString,
                         contentAssistRequest.getReplacementBeginPosition(),
                         contentAssistRequest.getReplacementLength(),
-                        replacementString.length() - 1,
+                        replacementString.length(),
                         Activator.getTapestryLogoIcon(), // image
-                        tapestryContext.getName(), // displayString
+                        replacementString, // displayString
                         null, // contextInfo
                         null,  // additionalProposalInfo
-                        3000, // relevance
+                        3000 - (StringUtils.countMatches(replacementString, ".") > 0 ? 1 : 0), // relevance
                         true  // updateReplacementLengthOnValidate
                         ));
             }
         }
     }
-    
+
     @Override
     protected void addAttributeNameProposals(
             ContentAssistRequest contentAssistRequest,
@@ -196,6 +203,8 @@ public class TapestryCompletionProposalComputer
         {
             return;
         }
+        
+        //  TODO Support t:type=""
         
         for (Property property : specification.getProperties())
         {

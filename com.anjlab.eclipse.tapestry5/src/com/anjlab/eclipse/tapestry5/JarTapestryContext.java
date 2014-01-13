@@ -66,8 +66,11 @@ public class JarTapestryContext extends TapestryContext
     @Override
     public String getPackageName()
     {
-        //  XXX Not used so far
-        return "";
+        TapestryFile javaFile = getJavaFile();
+        
+        return (javaFile instanceof ClassFile)
+             ? ((ClassFile) javaFile).getClassFile().getParent().getElementName()
+             : "unknown";
     }
 
     @Override
@@ -76,11 +79,6 @@ public class JarTapestryContext extends TapestryContext
         List<TapestryFile> files = new ArrayList<TapestryFile>();
         
         IPackageFragment pkg = null;
-        
-//        IPackageFragmentRoot root = (IPackageFragmentRoot)
-//                ((IPackageFragment) parent).getAncestor(IJavaElement.PACKAGE_FRAGMENT_ROOT);
-//        
-//        root.getPackageFragment(arg0);
         
         if (forFile instanceof ClassFile)
         {

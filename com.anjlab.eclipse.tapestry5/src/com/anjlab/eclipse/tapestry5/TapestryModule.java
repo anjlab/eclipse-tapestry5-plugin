@@ -260,6 +260,46 @@ public abstract class TapestryModule
         
         components = new ArrayList<TapestryContext>();
         
+        if (intermediateComponents != null)
+        {
+            components.addAll(intermediateComponents);
+        }
+        
+        ObjectCallback<Object> componentClassFound = createComponentClassFoundHandler();
+        
+        for (LibraryMapping mapping : libraryMappings())
+        {
+            String componentsPackage = mapping.getRootPackage() + ".components";
+            
+            if (mapping.getPathPrefix().isEmpty() && isTapestryCoreModule())
+            {
+                //  This package is from the AppModule
+                for (TapestryModule module : getProject().modules())
+                {
+                    if (module.isAppModule())
+                    {
+                        //  Components should go to AppModule by using its own componentClassFound handler
+                        module.enumJavaClassesRecursively(componentsPackage);
+                        break;
+                    }
+                }
+            }
+            else
+            {
+                enumJavaClassesRecursively(componentsPackage, componentClassFound);
+            }
+        }
+    }
+    
+    private void enumJavaClassesRecursively(String componentsPackage)
+    {
+        enumJavaClassesRecursively(componentsPackage, createComponentClassFoundHandler());
+    }
+
+    private List<TapestryContext> intermediateComponents;
+
+    private ObjectCallback<Object> createComponentClassFoundHandler()
+    {
         ObjectCallback<Object> componentClassFound = new ObjectCallback<Object>()
         {
             @Override
@@ -284,32 +324,24 @@ public abstract class TapestryModule
                 
                 if (componentContext != null)
                 {
-                    components.add(componentContext);
-                }
-            }
-        };
-        
-        for (LibraryMapping mapping : libraryMappings())
-        {
-            String componentsPackage = mapping.getRootPackage() + ".components";
-            
-            if (mapping.getPathPrefix().isEmpty() && isTapestryCoreModule())
-            {
-                //  This package is from the AppModule
-                for (TapestryModule module : getProject().modules())
-                {
-                    if (module.isAppModule())
+                    if (components != null)
                     {
-                        module.enumJavaClassesRecursively(componentsPackage, componentClassFound);
-                        break;
+                        //  XXX Make this structure synchronized?
+                        components.add(componentContext);
+                    }
+                    else
+                    {
+                        if (intermediateComponents == null)
+                        {
+                            intermediateComponents = new ArrayList<TapestryContext>();
+                        }
+                        
+                        intermediateComponents.add(componentContext);
                     }
                 }
             }
-            else
-            {
-                enumJavaClassesRecursively(componentsPackage, componentClassFound);
-            }
-        }
+        };
+        return componentClassFound;
     }
 
     protected abstract void enumJavaClassesRecursively(String rootPackage, ObjectCallback<Object> callback);
@@ -370,5 +402,36 @@ public abstract class TapestryModule
             return false;
         }
         return this.moduleClass.equals(((TapestryModule) obj).moduleClass);
+    }
+
+    public String getComponentName(TapestryContext context)
+    {
+        String packageName = context.getPackageName();
+        String componentFullName = packageName + "." + context.getName();
+        
+        String componentsPackage;
+        
+        for (LibraryMapping mapping : libraryMappings())
+        {
+            if (!mapping.getPathPrefix().isEmpty() && packageName.startsWith(mapping.getRootPackage()))
+            {
+                componentsPackage = mapping.getRootPackage() + ".components";
+                
+                String pathPrefix = mapping.getPathPrefix().equals("core") ? "" : mapping.getPathPrefix() + ".";
+                
+                return pathPrefix + getComponentName(componentFullName, componentsPackage);
+            }
+        }
+        
+        componentsPackage = TapestryUtils.getComponentsPackage(getEclipseProject());
+        
+        return componentsPackage != null && packageName.startsWith(componentsPackage)
+             ? getComponentName(componentFullName, componentsPackage)
+             : componentFullName;
+    }
+
+    private String getComponentName(String componentFullName, String componentsPackage)
+    {
+        return componentFullName.substring((componentsPackage + ".").length());
     }
 }

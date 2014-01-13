@@ -38,11 +38,12 @@ public class JarTapestryModule extends TapestryModule
         
         try
         {
-            IPackageFragment packageFragment = findPackage(rootPackage, root);
-            
-            if (packageFragment != null)
+            for (IJavaElement child : root.getChildren())
             {
-                enumJavaClassesRecursively(packageFragment, callback);
+                if (child instanceof IPackageFragment && child.getElementName().startsWith(rootPackage))
+                {
+                    enumJavaClassesRecursively((IPackageFragment) child, callback);
+                }
             }
         }
         catch (JavaModelException e)
@@ -51,24 +52,6 @@ public class JarTapestryModule extends TapestryModule
         }
     }
 
-    private IPackageFragment findPackage(String packageName, IParent container) throws JavaModelException
-    {
-        for (IJavaElement child : container.getChildren())
-        {
-            if (child instanceof IPackageFragment)
-            {
-                IPackageFragment packageFragment = (IPackageFragment) child;
-                
-                if (packageFragment.getElementName().equals(packageName))
-                {
-                    return packageFragment;
-                }
-            }
-        }
-        
-        return null;
-    }
-    
     private void enumJavaClassesRecursively(IPackageFragment packageFragment, ObjectCallback<Object> callback) throws JavaModelException
     {
         for (IJavaElement child : packageFragment.getChildren())

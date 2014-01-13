@@ -53,20 +53,13 @@ public class LocalTapestryModule extends TapestryModule
                     continue;
                 }
                 
-                IContainer container = (IContainer) root.getCorrespondingResource().getAdapter(IContainer.class);
-                
-                IResource resource = container.findMember(rootPackage.replace('.', '/'));
-                
-                IJavaElement javaElement = resource != null
-                                         ? (IJavaElement) resource.getAdapter(IJavaElement.class)
-                                         : null;
-                
-                if (!(javaElement instanceof IPackageFragment))
+                for (IJavaElement child : root.getChildren())
                 {
-                    continue;
+                    if (child instanceof IPackageFragment && child.getElementName().startsWith(rootPackage))
+                    {
+                        enumJavaClassesRecursively((IPackageFragment) child, callback);
+                    }
                 }
-                
-                enumJavaClassesRecursively((IPackageFragment) resource.getAdapter(IJavaElement.class), callback);
             }
         }
         catch (JavaModelException e)
@@ -79,11 +72,6 @@ public class LocalTapestryModule extends TapestryModule
     {
         for (IJavaElement child : packageFragment.getChildren())
         {
-            if (child instanceof IPackageFragment)
-            {
-                enumJavaClassesRecursively((IPackageFragment) child, callback);
-            }
-            
             IResource resource = child.getCorrespondingResource();
             
             if (resource != null && TapestryUtils.isJavaFile(resource.getProjectRelativePath()))
