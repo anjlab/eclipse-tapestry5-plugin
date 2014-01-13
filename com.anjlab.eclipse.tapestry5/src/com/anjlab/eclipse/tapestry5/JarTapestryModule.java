@@ -32,6 +32,59 @@ public class JarTapestryModule extends TapestryModule
     }
     
     @Override
+    protected void enumJavaClassesRecursively(String rootPackage, ObjectCallback<Object> callback)
+    {
+        IParent root = (IParent) getModuleClass().getAncestor(IJavaElement.PACKAGE_FRAGMENT_ROOT);
+        
+        try
+        {
+            IPackageFragment packageFragment = findPackage(rootPackage, root);
+            
+            if (packageFragment != null)
+            {
+                enumJavaClassesRecursively(packageFragment, callback);
+            }
+        }
+        catch (JavaModelException e)
+        {
+            Activator.getDefault().logError("Error performing search", e);
+        }
+    }
+
+    private IPackageFragment findPackage(String packageName, IParent container) throws JavaModelException
+    {
+        for (IJavaElement child : container.getChildren())
+        {
+            if (child instanceof IPackageFragment)
+            {
+                IPackageFragment packageFragment = (IPackageFragment) child;
+                
+                if (packageFragment.getElementName().equals(packageName))
+                {
+                    return packageFragment;
+                }
+            }
+        }
+        
+        return null;
+    }
+    
+    private void enumJavaClassesRecursively(IPackageFragment packageFragment, ObjectCallback<Object> callback) throws JavaModelException
+    {
+        for (IJavaElement child : packageFragment.getChildren())
+        {
+            if (child instanceof IClassFile)
+            {
+                callback.callback(child);
+            }
+            else if (child instanceof IPackageFragment)
+            {
+                enumJavaClassesRecursively((IPackageFragment) child, callback);
+            }
+        }
+    }
+
+    @Override
     public TapestryFile findJavaFileCaseInsensitive(String path)
     {
         int index = path.lastIndexOf('/');

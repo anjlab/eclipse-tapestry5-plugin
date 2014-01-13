@@ -3,6 +3,8 @@ package com.anjlab.eclipse.tapestry5;
 import org.eclipse.core.resources.IContainer;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IResource;
+import org.eclipse.jdt.core.IJavaElement;
+import org.eclipse.jdt.core.IPackageFragment;
 import org.eclipse.jdt.core.IPackageFragmentRoot;
 import org.eclipse.jdt.core.IType;
 import org.eclipse.jdt.core.JavaModelException;
@@ -37,6 +39,58 @@ public class LocalTapestryModule extends TapestryModule
     public boolean isReadOnly()
     {
         return false;
+    }
+    
+    @Override
+    protected void enumJavaClassesRecursively(String rootPackage, ObjectCallback<Object> callback)
+    {
+        try
+        {
+            for (IPackageFragmentRoot root : getModuleClass().getJavaProject().getPackageFragmentRoots())
+            {
+                if (!EclipseUtils.isSourceFolder(root))
+                {
+                    continue;
+                }
+                
+                IContainer container = (IContainer) root.getCorrespondingResource().getAdapter(IContainer.class);
+                
+                IResource resource = container.findMember(rootPackage.replace('.', '/'));
+                
+                IJavaElement javaElement = resource != null
+                                         ? (IJavaElement) resource.getAdapter(IJavaElement.class)
+                                         : null;
+                
+                if (!(javaElement instanceof IPackageFragment))
+                {
+                    continue;
+                }
+                
+                enumJavaClassesRecursively((IPackageFragment) resource.getAdapter(IJavaElement.class), callback);
+            }
+        }
+        catch (JavaModelException e)
+        {
+            Activator.getDefault().logError("Error enumerating Java classes", e);
+        }
+    }
+
+    private void enumJavaClassesRecursively(IPackageFragment packageFragment, ObjectCallback<Object> callback) throws JavaModelException
+    {
+        for (IJavaElement child : packageFragment.getChildren())
+        {
+            if (child instanceof IPackageFragment)
+            {
+                enumJavaClassesRecursively((IPackageFragment) child, callback);
+            }
+            
+            IResource resource = child.getCorrespondingResource();
+            
+            if (resource != null && TapestryUtils.isJavaFile(resource.getProjectRelativePath()))
+            {
+                callback.callback(resource);
+            }
+        }
     }
     
     @Override

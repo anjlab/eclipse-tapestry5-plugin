@@ -3,6 +3,7 @@ package com.anjlab.eclipse.tapestry5;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.NullProgressMonitor;
@@ -28,6 +29,7 @@ public abstract class TapestryModule
     
     private boolean sourceAvailable;
     private boolean appModule;
+    private boolean tapestryCoreModule;
     
     public static interface ModuleReference
     {
@@ -82,6 +84,8 @@ public abstract class TapestryModule
         findSubModules(monitor);
         
         findLibraryMappings(monitor);
+        
+        findComponents(monitor);
     }
     
     private List<TapestryModule> subModules;
@@ -231,6 +235,85 @@ public abstract class TapestryModule
         });
     }
 
+    private List<TapestryContext> components;
+    
+    public List<TapestryContext> getComponents()
+    {
+        if (components == null)
+        {
+            findComponents(new NullProgressMonitor());
+        }
+        return components;
+    }
+    
+    public interface ObjectCallback<T>
+    {
+        void callback(T obj);
+    }
+    
+    private synchronized void findComponents(IProgressMonitor monitor)
+    {
+        if (components != null)
+        {
+            return;
+        }
+        
+        components = new ArrayList<TapestryContext>();
+        
+        ObjectCallback<Object> componentClassFound = new ObjectCallback<Object>()
+        {
+            @Override
+            public void callback(Object obj)
+            {
+                TapestryContext componentContext = null;
+                
+                if (obj instanceof IFile)
+                {
+                    componentContext = TapestryUtils.createTapestryContext((IFile) obj);
+                }
+                else if (obj instanceof IClassFile)
+                {
+                    IClassFile classFile = (IClassFile) obj;
+                    
+                    //  Ignore inner classes
+                    if (!classFile.getElementName().contains("$"))
+                    {
+                        componentContext = TapestryUtils.createTapestryContext(classFile);
+                    }
+                }
+                
+                if (componentContext != null)
+                {
+                    components.add(componentContext);
+                }
+            }
+        };
+        
+        for (LibraryMapping mapping : libraryMappings())
+        {
+            String componentsPackage = mapping.getRootPackage() + ".components";
+            
+            if (mapping.getPathPrefix().isEmpty() && isTapestryCoreModule())
+            {
+                //  This package is from the AppModule
+                for (TapestryModule module : getProject().modules())
+                {
+                    if (module.isAppModule())
+                    {
+                        module.enumJavaClassesRecursively(componentsPackage, componentClassFound);
+                        break;
+                    }
+                }
+            }
+            else
+            {
+                enumJavaClassesRecursively(componentsPackage, componentClassFound);
+            }
+        }
+    }
+
+    protected abstract void enumJavaClassesRecursively(String rootPackage, ObjectCallback<Object> callback);
+
     public abstract TapestryFile getModuleFile();
 
     public abstract boolean isReadOnly();
@@ -250,6 +333,16 @@ public abstract class TapestryModule
         return appModule;
     }
 
+    public void setTapestryCoreModule(boolean tapestryCoreModule)
+    {
+        this.tapestryCoreModule = tapestryCoreModule;
+    }
+    
+    public boolean isTapestryCoreModule()
+    {
+        return tapestryCoreModule;
+    }
+    
     public List<LibraryMapping> libraryMappings(String libraryPrefix) throws JavaModelException
     {
         List<LibraryMapping> result = new ArrayList<LibraryMapping>();

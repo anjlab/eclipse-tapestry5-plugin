@@ -13,6 +13,8 @@ import com.anjlab.eclipse.tapestry5.Member;
 import com.anjlab.eclipse.tapestry5.Property;
 import com.anjlab.eclipse.tapestry5.TapestryComponentSpecification;
 import com.anjlab.eclipse.tapestry5.TapestryContext;
+import com.anjlab.eclipse.tapestry5.TapestryModule;
+import com.anjlab.eclipse.tapestry5.TapestryProject;
 import com.anjlab.eclipse.tapestry5.TapestryUtils;
 
 @SuppressWarnings({ "restriction" })
@@ -25,41 +27,43 @@ public class TapestryCompletionProposalComputer
             ContentAssistRequest contentAssistRequest, int childPosition,
             CompletionProposalInvocationContext context)
     {
-//        Shell shell = context.getViewer().getTextWidget().getShell();
-//        
-//        IWorkbenchWindow window = TapestryUtils.getWorkbenchWindow(shell);
-//        
-//        if (window == null)
-//        {
-//            return;
-//        }
-//        TapestryProject tapestryProject = Activator.getDefault().getTapestryProject(window);
-//        
-//        if (tapestryProject == null)
-//        {
-//            //  No tapestry project available for the context
-//            return;
-//        }
-//        
-//        for (TapestryModule tapestryModule : tapestryProject.modules())
-//        {
-//            for (LibraryMapping libraryMapping : tapestryModule.libraryMappings())
-//            {
-//                //  TODO List all components from this library mapping
-//                
-//                String replacementString = contentAssistRequest.getMatchString();
-//                contentAssistRequest.addProposal(new CompletionProposal(
-//                        replacementString,
-//                        contentAssistRequest.getReplacementBeginPosition(),
-//                        contentAssistRequest.getReplacementLength(),
-//                        replacementString.length(),
-//                        null, // image
-//                        "TODO " + libraryMapping.getRootPackage() + ".components.*", // displayString
-//                        null, // contextInfo
-//                        null  // additionalProposalInfo
-//                        ));
-//            }
-//        }
+        Shell shell = context.getViewer().getTextWidget().getShell();
+        
+        IWorkbenchWindow window = TapestryUtils.getWorkbenchWindow(shell);
+        
+        if (window == null)
+        {
+            return;
+        }
+        
+        TapestryProject tapestryProject = Activator.getDefault().getTapestryProject(window);
+        
+        if (tapestryProject == null)
+        {
+            //  No tapestry project available for the context
+            return;
+        }
+        
+        for (TapestryModule tapestryModule : tapestryProject.modules())
+        {
+            for (TapestryContext tapestryContext : tapestryModule.getComponents())
+            {
+                String replacementString = "t:" + tapestryContext.getName();
+                
+                contentAssistRequest.addProposal(new MarkupCompletionProposal(
+                        replacementString,
+                        contentAssistRequest.getReplacementBeginPosition(),
+                        contentAssistRequest.getReplacementLength(),
+                        replacementString.length() - 1,
+                        Activator.getTapestryLogoIcon(), // image
+                        tapestryContext.getName(), // displayString
+                        null, // contextInfo
+                        null,  // additionalProposalInfo
+                        3000, // relevance
+                        true  // updateReplacementLengthOnValidate
+                        ));
+            }
+        }
     }
     
     @Override
