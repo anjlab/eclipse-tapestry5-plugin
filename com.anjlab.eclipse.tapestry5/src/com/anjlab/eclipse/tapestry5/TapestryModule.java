@@ -3,6 +3,7 @@ package com.anjlab.eclipse.tapestry5;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.apache.commons.lang.StringUtils;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.runtime.IProgressMonitor;
@@ -216,14 +217,26 @@ public abstract class TapestryModule
                                 
                                 if (name.isSimpleName())
                                 {
-                                    if ("LibraryMapping".equals(((SimpleName) name).getIdentifier()))
+                                    if ("LibraryMapping".equals(((SimpleName) name).getIdentifier())
+                                            && creation.arguments().size() == 2)
                                     {
-                                        String prefix = EclipseUtils.evalExpression(project.getProject(), creation.arguments().get(0));
+                                        Object prefixExpr = creation.arguments().get(0);
+                                        Object packageExpr = creation.arguments().get(1);
+                                        
+                                        String prefix = EclipseUtils.evalExpression(project.getProject(), prefixExpr);
                                         String pkg = "".equals(prefix)
                                                    ? TapestryUtils.getAppPackage(project.getProject())
-                                                   : EclipseUtils.evalExpression(project.getProject(), creation.arguments().get(1));
+                                                   : EclipseUtils.evalExpression(project.getProject(), packageExpr);
                                         
-                                        libraryMappings.add(new LibraryMapping(prefix, pkg));
+                                        if (!StringUtils.isEmpty(prefix) && !StringUtils.isEmpty(pkg))
+                                        {
+                                            libraryMappings.add(new LibraryMapping(prefix, pkg));
+                                        }
+                                        else
+                                        {
+                                            Activator.getDefault().logWarning(
+                                                    "Unable to evaluate LibraryMapping(" + prefixExpr + ", " + packageExpr + ")");
+                                        }
                                     }
                                 }
                             }

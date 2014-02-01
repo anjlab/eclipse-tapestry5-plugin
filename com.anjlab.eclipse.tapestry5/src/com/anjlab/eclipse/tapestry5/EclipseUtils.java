@@ -384,7 +384,7 @@ public class EclipseUtils
             }
         }
         
-        return "<" + expr.toString() + ">";
+        return "<" + expr + ">";
     }
 
 }
