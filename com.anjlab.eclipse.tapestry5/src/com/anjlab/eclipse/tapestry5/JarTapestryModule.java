@@ -1,6 +1,7 @@
 package com.anjlab.eclipse.tapestry5;
 
 import org.eclipse.jdt.core.IClassFile;
+import org.eclipse.jdt.core.IJarEntryResource;
 import org.eclipse.jdt.core.IJavaElement;
 import org.eclipse.jdt.core.IPackageFragment;
 import org.eclipse.jdt.core.IParent;
@@ -68,7 +69,7 @@ public class JarTapestryModule extends TapestryModule
     }
 
     @Override
-    public TapestryFile findJavaFileCaseInsensitive(String path)
+    public TapestryFile findClasspathFileCaseInsensitive(String path)
     {
         int index = path.lastIndexOf('/');
         
@@ -86,9 +87,19 @@ public class JarTapestryModule extends TapestryModule
                 {
                     if (segments.length == 0)
                     {
-                        IClassFile classFile = (IClassFile) child;
+                        if (child instanceof IClassFile)
+                        {
+                            IClassFile classFile = (IClassFile) child;
+                            
+                            return TapestryUtils.createTapestryContext(classFile).getInitialFile();
+                        }
                         
-                        return TapestryUtils.createTapestryContext(classFile).getInitialFile();
+                        if (child instanceof IJarEntryResource)
+                        {
+                            IJarEntryResource jarEntry = (IJarEntryResource) child;
+                            
+                            return TapestryUtils.createTapestryContext(jarEntry).getInitialFile();
+                        }
                     }
                     else
                     {
@@ -99,6 +110,20 @@ public class JarTapestryModule extends TapestryModule
                             if (classFile.getElementName().equalsIgnoreCase(segments[1]))
                             {
                                 return TapestryUtils.createTapestryContext(classFile).getInitialFile();
+                            }
+                        }
+                        
+                        for (Object nonJava : pkg.getNonJavaResources())
+                        {
+                            if (nonJava instanceof IJarEntryResource)
+                            {
+                                IJarEntryResource jarEntry = ((IJarEntryResource) nonJava);
+                                
+                                //  Full path has leading slash
+                                if (jarEntry.getFullPath().toPortableString().equalsIgnoreCase(path.startsWith("/") ? path : "/" + path))
+                                {
+                                    return TapestryUtils.createTapestryContext(jarEntry).getInitialFile();
+                                }
                             }
                         }
                         

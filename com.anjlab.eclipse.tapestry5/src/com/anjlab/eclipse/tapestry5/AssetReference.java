@@ -85,40 +85,11 @@ public class AssetReference extends AbstractTapestryFile
         return javaFile;
     }
     
-    private static class Asset
-    {
-        private final String bindingPrefix;
-        private final String path;
-        
-        public Asset(String assetPath)
-        {
-            String path = assetPath;
-            
-            String bindingPrefix = "default";
-            
-            int colonIndex = assetPath.indexOf(":");
-            if (colonIndex > 0)
-            {
-                bindingPrefix = assetPath.substring(0, colonIndex);
-                
-                path = assetPath.substring(colonIndex + 1);
-            }
-            
-            this.path = path;
-            this.bindingPrefix = bindingPrefix;
-        }
-    }
-    
     public TapestryFile resolveFile(boolean updateMarker) throws AssetException
     {
         Asset asset = new Asset(assetPath);
         
-        AssetResolver assetResolver = TapestryUtils.createAssetResolver(asset.bindingPrefix, asset.path);
-        
-        if (assetResolver == null)
-        {
-            throw new AssetException("Binding prefix '" + asset.bindingPrefix + "' not supported");
-        }
+        AssetResolver assetResolver = TapestryUtils.createAssetResolver(asset.bindingPrefix);
         
         try
         {

@@ -40,16 +40,13 @@ import org.eclipse.jface.viewers.TreeSelection;
 import org.eclipse.jface.wizard.Wizard;
 import org.eclipse.jface.wizard.WizardDialog;
 import org.eclipse.swt.widgets.Shell;
-import org.eclipse.ui.IEditorPart;
 import org.eclipse.ui.IWorkbenchWindow;
 import org.eclipse.ui.dialogs.WizardNewFileCreationPage;
-import org.eclipse.ui.part.MultiPageEditorPart;
-import org.eclipse.ui.texteditor.ITextEditor;
 
 import com.anjlab.eclipse.tapestry5.Activator;
 import com.anjlab.eclipse.tapestry5.EclipseUtils;
 import com.anjlab.eclipse.tapestry5.LocalFile;
-import com.anjlab.eclipse.tapestry5.EclipseUtils.EditorCallback;
+import com.anjlab.eclipse.tapestry5.SetEditorCaretPositionOffsetLength;
 import com.anjlab.eclipse.tapestry5.TapestryContext;
 import com.anjlab.eclipse.tapestry5.TapestryUtils;
 
@@ -223,30 +220,7 @@ public class NewFileWizardAction extends Action
                 }
                 finally
                 {
-                    EclipseUtils.openFile(window, file, new EditorCallback()
-                    {
-                        @Override
-                        public void editorOpened(IEditorPart editorPart)
-                        {
-                            if (caretPosition != -1)
-                            {
-                                if (editorPart instanceof MultiPageEditorPart)
-                                {
-                                    Object selectedPage = ((MultiPageEditorPart) editorPart).getSelectedPage();
-                                    
-                                    if (selectedPage instanceof IEditorPart)
-                                    {
-                                        editorPart = (IEditorPart) selectedPage;
-                                    }
-                                }
-                                
-                                if (editorPart instanceof ITextEditor)
-                                {
-                                    ((ITextEditor) editorPart).selectAndReveal(caretPosition, 0);
-                                }
-                            }
-                        }
-                    });
+                    EclipseUtils.openFile(window, file, new SetEditorCaretPositionOffsetLength(caretPosition, 0));
                 }
             }
 

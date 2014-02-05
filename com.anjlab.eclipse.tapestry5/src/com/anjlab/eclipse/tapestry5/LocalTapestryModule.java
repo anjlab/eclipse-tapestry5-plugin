@@ -1,9 +1,9 @@
 package com.anjlab.eclipse.tapestry5;
 
-import org.eclipse.core.resources.IContainer;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.jdt.core.IJavaElement;
+import org.eclipse.jdt.core.IJavaProject;
 import org.eclipse.jdt.core.IPackageFragment;
 import org.eclipse.jdt.core.IPackageFragmentRoot;
 import org.eclipse.jdt.core.IType;
@@ -82,31 +82,10 @@ public class LocalTapestryModule extends TapestryModule
     }
     
     @Override
-    public TapestryFile findJavaFileCaseInsensitive(String path)
+    public TapestryFile findClasspathFileCaseInsensitive(String path)
     {
-        try
-        {
-            for (IPackageFragmentRoot root : getModuleClass().getJavaProject().getAllPackageFragmentRoots())
-            {
-                if (!EclipseUtils.isSourceFolder(root))
-                {
-                    continue;
-                }
-                
-                IContainer container = (IContainer) root.getCorrespondingResource().getAdapter(IContainer.class);
-                
-                IFile javaFile = EclipseUtils.findFileCaseInsensitive(container, path);
-                
-                if (javaFile != null)
-                {
-                    return TapestryUtils.createTapestryContext(javaFile).getInitialFile();
-                }
-            }
-        }
-        catch (JavaModelException e)
-        {
-            //  Ignore
-        }
-        return null;
+        IJavaProject javaProject = getModuleClass().getJavaProject();
+        
+        return TapestryUtils.findFileInSourceFolders(javaProject, path);
     }
 }

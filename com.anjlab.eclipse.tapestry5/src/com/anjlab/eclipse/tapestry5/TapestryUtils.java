@@ -17,6 +17,8 @@ import org.eclipse.jdt.core.IAnnotation;
 import org.eclipse.jdt.core.IClassFile;
 import org.eclipse.jdt.core.ICompilationUnit;
 import org.eclipse.jdt.core.IJarEntryResource;
+import org.eclipse.jdt.core.IJavaProject;
+import org.eclipse.jdt.core.IPackageFragmentRoot;
 import org.eclipse.jdt.core.JavaModelException;
 import org.eclipse.jdt.core.dom.Annotation;
 import org.eclipse.jdt.internal.ui.javaeditor.IClassFileEditorInput;
@@ -134,17 +136,18 @@ public class TapestryUtils
         return "properties".equals(path.getFileExtension());
     }
 
-    public static AssetResolver createAssetResolver(String bindingPrefix, String assetPath)
+    public static AssetResolver createAssetResolver(String bindingPrefix) throws AssetException
     {
-        if ("default".equals(bindingPrefix))
+        if ("classpath".equals(bindingPrefix))
         {
-            return new DefaultAssetResolver();
+            return new ClasspathAssetResolver();
         }
         else if ("context".equals(bindingPrefix))
         {
             return new ContextAssetResolver();
         }
-        return null;
+        
+        throw new AssetException("Binding prefix '" + bindingPrefix + "' not supported");
     }
 
     public static IContainer findWebapp(IProject project)
@@ -538,6 +541,34 @@ public class TapestryUtils
             }
         }
         return currentWindow;
+    }
+
+    public static TapestryFile findFileInSourceFolders(IJavaProject javaProject, String path)
+    {
+        try
+        {
+            for (IPackageFragmentRoot root : javaProject.getAllPackageFragmentRoots())
+            {
+                if (!EclipseUtils.isSourceFolder(root))
+                {
+                    continue;
+                }
+                
+                IContainer container = (IContainer) root.getCorrespondingResource().getAdapter(IContainer.class);
+                
+                IFile file = EclipseUtils.findFileCaseInsensitive(container, path);
+                
+                if (file != null)
+                {
+                    return createTapestryContext(file).getInitialFile();
+                }
+            }
+        }
+        catch (JavaModelException e)
+        {
+            //  Ignore
+        }
+        return null;
     }
 
 }

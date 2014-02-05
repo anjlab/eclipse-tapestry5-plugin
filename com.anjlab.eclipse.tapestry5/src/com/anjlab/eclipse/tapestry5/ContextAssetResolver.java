@@ -2,10 +2,46 @@ package com.anjlab.eclipse.tapestry5;
 
 import org.eclipse.core.resources.IContainer;
 import org.eclipse.core.resources.IFile;
+import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
+import org.eclipse.core.resources.ResourcesPlugin;
+import org.eclipse.core.runtime.CoreException;
+import org.eclipse.jdt.core.JavaCore;
 
 public class ContextAssetResolver implements AssetResolver
 {
+    @Override
+    public TapestryFile resolveInWorkspace(String path)
+    {
+        IProject[] projects = ResourcesPlugin.getWorkspace().getRoot().getProjects();
+        
+        for (IProject project : projects)
+        {
+            try
+            {
+                if (project.hasNature(JavaCore.NATURE_ID))
+                {
+                    IContainer webapp = TapestryUtils.findWebapp(project);
+                    
+                    if (webapp != null)
+                    {
+                        IFile file = EclipseUtils.findFileCaseInsensitive(webapp, path);
+                        
+                        if (file != null)
+                        {
+                            return TapestryUtils.createTapestryContext(file).getInitialFile();
+                        }
+                    }
+                }
+            }
+            catch (CoreException e)
+            {
+                //  Ignore
+            }
+        }
+        return null;
+    }
+    
     @Override
     public TapestryFile resolve(String path, TapestryFile relativeTo) throws AssetException
     {

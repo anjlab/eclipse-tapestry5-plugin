@@ -321,7 +321,7 @@ public class TapestryProject
     {
         String componentPath = getComponentPath(module, appPackage, componentNameWithoutPrefix);
         
-        TapestryFile file = module.findJavaFileCaseInsensitive(componentPath);
+        TapestryFile file = module.findClasspathFileCaseInsensitive(componentPath);
         
         if (file == null)
         {
@@ -331,7 +331,7 @@ public class TapestryProject
             {
                 componentPath = getComponentPath(module, appPackage, componentNameWithoutPrefix + parentFile.getName());
                 
-                file = module.findJavaFileCaseInsensitive(componentPath);
+                file = module.findClasspathFileCaseInsensitive(componentPath);
             }
         }
         
@@ -345,5 +345,4 @@ public class TapestryProject
                 componentNameWithoutPrefix.replace('.', '/')
                     + (module instanceof LocalTapestryModule ? ".java" : ".class"));
     }
-
 }

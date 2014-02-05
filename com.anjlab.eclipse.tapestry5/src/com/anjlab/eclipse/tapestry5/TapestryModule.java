@@ -401,7 +401,7 @@ public abstract class TapestryModule
         return result;
     }
 
-    public abstract TapestryFile findJavaFileCaseInsensitive(String path);
+    public abstract TapestryFile findClasspathFileCaseInsensitive(String path);
 
     @Override
     public boolean equals(Object obj)
