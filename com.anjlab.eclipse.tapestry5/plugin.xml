@@ -131,7 +131,7 @@
              </enablement>
          </decorator>
    </extension>
-      <extension
+   <extension
          point="org.eclipse.ui.console.consolePatternMatchListeners">
       <consolePatternMatchListener
             class="com.anjlab.eclipse.tapestry5.console.TapestryExceptionPatternMatcher"
