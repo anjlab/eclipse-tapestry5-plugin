@@ -89,8 +89,13 @@ public class WindowSelectionListener implements IWindowListener
         
         PlatformUI.getWorkbench().addWindowListener(this);
         
-        //  This plug-in activated after the window opened, so should notify manually here
-        windowOpened(PlatformUI.getWorkbench().getActiveWorkbenchWindow());
+        IWorkbenchWindow activeWindow = PlatformUI.getWorkbench().getActiveWorkbenchWindow();
+        
+        if (activeWindow != null)
+        {
+            //  This plug-in activated after the window opened, so should notify manually here
+            windowOpened(activeWindow);
+        }
         
         return this;
     }
