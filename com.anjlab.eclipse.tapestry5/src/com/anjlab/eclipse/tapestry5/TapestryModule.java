@@ -228,7 +228,7 @@ public abstract class TapestryModule
                                                    ? TapestryUtils.getAppPackage(project.getProject())
                                                    : EclipseUtils.evalExpression(project.getProject(), packageExpr);
                                         
-                                        if (!StringUtils.isEmpty(prefix) && !StringUtils.isEmpty(pkg))
+                                        if (prefix != null && !StringUtils.isEmpty(pkg))
                                         {
                                             libraryMappings.add(new LibraryMapping(prefix, pkg));
                                         }
