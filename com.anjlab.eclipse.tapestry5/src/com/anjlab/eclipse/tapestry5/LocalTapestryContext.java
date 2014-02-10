@@ -120,7 +120,7 @@ public class LocalTapestryContext extends TapestryContext
             
             IContainer webapp = TapestryUtils.findWebapp(project);
             
-            if (TapestryUtils.isTemplateFile(forFile.getProjectRelativePath()))
+            if (isWebappContextAValidLocationForTheFile(forFile))
             {
                 if (fromWebapp = TapestryUtils.isInFolder(forFile, webapp))
                 {
@@ -229,6 +229,13 @@ public class LocalTapestryContext extends TapestryContext
             
             return Collections.emptyList();
         }
+    }
+
+    private boolean isWebappContextAValidLocationForTheFile(IFile file)
+    {
+        return TapestryUtils.isTemplateFile(file.getProjectRelativePath())
+            || TapestryUtils.isStyleSheetFile(file.getProjectRelativePath())
+            || TapestryUtils.isJavaScriptFile(file.getProjectRelativePath());
     }
     
     private List<IFile> findMembers(IContainer container, String path)
