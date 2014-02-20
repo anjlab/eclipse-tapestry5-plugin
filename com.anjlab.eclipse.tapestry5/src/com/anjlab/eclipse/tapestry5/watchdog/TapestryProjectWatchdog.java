@@ -11,11 +11,13 @@ import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.ui.ISelectionListener;
+import org.eclipse.ui.IWorkbenchPage;
 import org.eclipse.ui.IWorkbenchPart;
 import org.eclipse.ui.IWorkbenchWindow;
 
 import com.anjlab.eclipse.tapestry5.EclipseUtils;
 import com.anjlab.eclipse.tapestry5.ITapestryContextListener;
+import com.anjlab.eclipse.tapestry5.TapestryFile;
 import com.anjlab.eclipse.tapestry5.TapestryProject;
 import com.anjlab.eclipse.tapestry5.TapestryUtils;
 
@@ -30,7 +32,6 @@ public class TapestryProjectWatchdog extends AbstractTapestryWatchdog
         currentProjects = new HashMap<IWorkbenchWindow, TapestryProject>();
     }
     
-    
     @Override
     public void start()
     {
@@ -41,7 +42,13 @@ public class TapestryProjectWatchdog extends AbstractTapestryWatchdog
             @Override
             public void selectionChanged(IWorkbenchPart part, ISelection selection)
             {
-                final IProject project = EclipseUtils.getProjectFromSelection(selection);
+                IWorkbenchPage page = part.getSite().getPage();
+                
+                TapestryFile tapestryFile = TapestryUtils.getTapestryFileFromPage(page);
+                
+                final IProject project = tapestryFile != null
+                                       ? tapestryFile.getProject()
+                                       : EclipseUtils.getProjectFromSelection(selection);
                 
                 if (project == null)
                 {

@@ -396,7 +396,7 @@ public class TapestryUtils
         return null;
     }
 
-    static TapestryFile getTapestryFileFromSelectionElement(Object firstElement) throws JavaModelException
+    private static TapestryFile getTapestryFileFromSelectionElement(Object firstElement) throws JavaModelException
     {
         if (firstElement == null)
         {
