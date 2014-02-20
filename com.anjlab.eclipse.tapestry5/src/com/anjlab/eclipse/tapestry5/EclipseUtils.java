@@ -3,6 +3,7 @@ package com.anjlab.eclipse.tapestry5;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.apache.commons.lang.ObjectUtils;
 import org.eclipse.core.resources.IContainer;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
@@ -33,7 +34,10 @@ import org.eclipse.jdt.internal.ui.javaeditor.EditorUtility;
 import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.jface.viewers.ITreeSelection;
+import org.eclipse.ui.IEditorInput;
 import org.eclipse.ui.IEditorPart;
+import org.eclipse.ui.IEditorReference;
+import org.eclipse.ui.IFileEditorInput;
 import org.eclipse.ui.IWorkbenchWindow;
 import org.eclipse.ui.PartInitException;
 import org.eclipse.ui.ide.IDE;
@@ -385,6 +389,37 @@ public class EclipseUtils
         }
         
         return "<" + expr + ">";
+    }
+
+    public static void ensureFileIsOpenedInEditor(IWorkbenchWindow window, IFile file, EditorCallback editorCallback)
+    {
+        IEditorReference[] editors = window.getActivePage().getEditorReferences();
+        
+        for (IEditorReference editor : editors)
+        {
+            try
+            {
+                IEditorInput editorInput = editor.getEditorInput();
+                
+                if (editorInput instanceof IFileEditorInput)
+                {
+                    if (ObjectUtils.equals(((IFileEditorInput) editorInput).getFile(), file))
+                    {
+                        //  The file is opened in editor
+                        
+                        editorCallback.editorOpened(null);
+                        
+                        return;
+                    }
+                }
+            }
+            catch (PartInitException e)
+            {
+                //  Ignore
+            }
+        }
+        
+        openFile(window, file, editorCallback);
     }
 
 }

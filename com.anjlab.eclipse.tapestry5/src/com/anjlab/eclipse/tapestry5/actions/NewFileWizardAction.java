@@ -41,11 +41,13 @@ import org.eclipse.jface.viewers.TreeSelection;
 import org.eclipse.jface.wizard.Wizard;
 import org.eclipse.jface.wizard.WizardDialog;
 import org.eclipse.swt.widgets.Shell;
+import org.eclipse.ui.IEditorPart;
 import org.eclipse.ui.IWorkbenchWindow;
 import org.eclipse.ui.dialogs.WizardNewFileCreationPage;
 
 import com.anjlab.eclipse.tapestry5.Activator;
 import com.anjlab.eclipse.tapestry5.EclipseUtils;
+import com.anjlab.eclipse.tapestry5.EclipseUtils.EditorCallback;
 import com.anjlab.eclipse.tapestry5.LocalFile;
 import com.anjlab.eclipse.tapestry5.SetEditorCaretPositionOffsetLength;
 import com.anjlab.eclipse.tapestry5.TapestryContext;
@@ -235,10 +237,24 @@ public class NewFileWizardAction extends Action
                 }
             }
 
-            private void addImport(IFile file, String resourceType)
+            private void addImport(final IFile file, final String resourceType)
             {
-                IJavaElement javaElement = JavaCore.create(((LocalFile) tapestryContext.getJavaFile()).getFile());
+                final IFile javaFile = ((LocalFile) tapestryContext.getJavaFile()).getFile();
+                
+                EclipseUtils.ensureFileIsOpenedInEditor(window, javaFile, new EditorCallback()
+                {
+                    @Override
+                    public void editorOpened(IEditorPart editorPart)
+                    {
+                        addImport(file, resourceType, javaFile);
+                    }
+                });
+            }
 
+            private void addImport(IFile file, String resourceType, IFile javaFile)
+            {
+                IJavaElement javaElement = JavaCore.create(javaFile);
+                
                 final ICompilationUnit compilationUnit = (ICompilationUnit) javaElement;
                 
                 CompilationUnit unit = EclipseUtils.parse(compilationUnit);
