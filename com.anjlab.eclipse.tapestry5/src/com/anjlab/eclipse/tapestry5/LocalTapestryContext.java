@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
 
+import org.apache.commons.lang.StringUtils;
 import org.eclipse.core.resources.IContainer;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IFolder;
@@ -120,9 +121,9 @@ public class LocalTapestryContext extends TapestryContext
             
             IContainer webapp = TapestryUtils.findWebapp(project);
             
-            if (isWebappContextAValidLocationForTheFile(forFile))
+            if (fromWebapp = TapestryUtils.isInFolder(forFile, webapp))
             {
-                if (fromWebapp = TapestryUtils.isInFolder(forFile, webapp))
+                if (isWebappContextAValidLocationForTheFile(forFile))
                 {
                     String relativeFileName = TapestryUtils.getRelativeFileName(forFile, webapp);
                     
@@ -167,17 +168,18 @@ public class LocalTapestryContext extends TapestryContext
                     container = container.getParent();
                 }
                 
-                if (container == null)
+                if (container != null)
                 {
-                    Activator.getDefault().logWarning("Unable to find source folder for file: " + forFile.getProjectRelativePath());
+                    //  Get the file name relative to source folder
+                    String relativeFileName = TapestryUtils.getRelativeFileName(forFile, container);
                     
-                    return Collections.emptyList();
+                    complementFileName = fileNameBuilder.getFileName(relativeFileName, forFile.getFileExtension());
                 }
-                
-                //  Get the file name relative to source folder
-                String relativeFileName = TapestryUtils.getRelativeFileName(forFile, container);
-                
-                complementFileName = fileNameBuilder.getFileName(relativeFileName, forFile.getFileExtension());
+            }
+            
+            if (StringUtils.isEmpty(complementFileName))
+            {
+                return Collections.emptyList();
             }
             
             for (IPackageFragmentRoot root : javaProject.getAllPackageFragmentRoots())
