@@ -2,8 +2,12 @@
 
     T5.extendInitializers(function() {
         
-        return {
+        function init$ContextName$(spec) {
             $Caret$
+        }
+        
+        return {
+            init$ContextName$: init$ContextName$
         }
         
     });

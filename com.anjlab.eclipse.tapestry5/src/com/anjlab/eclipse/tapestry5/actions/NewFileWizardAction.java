@@ -11,6 +11,7 @@ import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IFolder;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.Path;
 import org.eclipse.jdt.core.ICompilationUnit;
 import org.eclipse.jdt.core.IImportDeclaration;
@@ -168,14 +169,24 @@ public class NewFileWizardAction extends Action
                     {
                         caretPosition = -1;
                         
-                        String snippetFile = "snippet."
-                                + Path.fromPortableString(fileCreationPage.getFileName()).getFileExtension();
+                        IPath newFile = Path.fromPortableString(fileCreationPage.getFileName());
+                        
+                        String snippetFile = "snippet." + newFile.getFileExtension();
                         
                         InputStream stream = getClass().getResourceAsStream(snippetFile);
                         
                         if (stream != null)
                         {
                             String content = TapestryUtils.readToEnd(stream);
+                            
+                            String contextName = TapestryUtils.getDefaultContextNameFromFileName(newFile.removeFileExtension().lastSegment());
+                            
+                            if (tapestryContext != null)
+                            {
+                                contextName = tapestryContext.getName();
+                            }
+                            
+                            content = content.replace("$ContextName$", contextName);
                             
                             caretPosition = content.indexOf(CARET_SNIPPET);
                             

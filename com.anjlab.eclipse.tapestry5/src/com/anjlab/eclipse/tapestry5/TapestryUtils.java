@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 
+import org.apache.commons.lang.StringUtils;
 import org.eclipse.core.resources.IContainer;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
@@ -569,6 +570,45 @@ public class TapestryUtils
             //  Ignore
         }
         return null;
+    }
+
+    public static String getDefaultContextNameFromFileName(String fileNameWithoutExtension)
+    {
+        final String DEFAULT_CONTEXT_NAME = "Unknown";
+        
+        if (StringUtils.isEmpty(fileNameWithoutExtension))
+        {
+            return DEFAULT_CONTEXT_NAME;
+        }
+        
+        StringBuilder builder = new StringBuilder(fileNameWithoutExtension.length());
+        
+        boolean changeCase = true;
+        
+        for (int i = 0; i < fileNameWithoutExtension.length(); i++)
+        {
+            char ch = fileNameWithoutExtension.charAt(i);
+            
+            if (Character.isDigit(ch) || Character.isLetter(ch))
+            {
+                if (changeCase)
+                {
+                    ch = Character.toUpperCase(ch);
+                    
+                    changeCase = Character.isDigit(ch);
+                }
+                
+                builder.append(ch);
+            }
+            else
+            {
+                changeCase = true;
+            }
+        }
+        
+        return builder.length() == 0
+             ? DEFAULT_CONTEXT_NAME
+             : builder.toString();
     }
 
 }
