@@ -213,12 +213,16 @@ public class LocalTapestryContext extends TapestryContext
             {
                 if (webapp != null)
                 {
-                    IResource file = webapp.findMember(
-                            complementFileName.substring(TapestryUtils.getPagesPath(project).length()));
+                    String pagesPath = TapestryUtils.getPagesPath(project);
                     
-                    if (file instanceof IFile)
+                    if (complementFileName.length() > pagesPath.length())
                     {
-                        resources.add((IFile) file);
+                        IResource file = webapp.findMember(complementFileName.substring(pagesPath.length()));
+                        
+                        if (file instanceof IFile)
+                        {
+                            resources.add((IFile) file);
+                        }
                     }
                 }
             }
