@@ -158,6 +158,18 @@ public class TapestryUtils
         return (IContainer) project.findMember("src/main/webapp");
     }
     
+    public static IFile findWebXml(IProject project)
+    {
+        IContainer webapp = TapestryUtils.findWebapp(project);
+        
+        if (webapp == null)
+        {
+            return null;
+        }
+        
+        return (IFile) webapp.findMember("/WEB-INF/web.xml");
+    }
+    
     public static boolean isTapestryAppProject(IProject project)
     {
         return getAppPackage(project) != null;

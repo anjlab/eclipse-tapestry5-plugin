@@ -13,7 +13,6 @@ import org.eclipse.ui.IWorkbenchWindow;
 import org.eclipse.ui.part.ViewPart;
 
 import com.anjlab.eclipse.tapestry5.Activator;
-import com.anjlab.eclipse.tapestry5.ITapestryContextListener;
 import com.anjlab.eclipse.tapestry5.TapestryContext;
 import com.anjlab.eclipse.tapestry5.TapestryFile;
 import com.anjlab.eclipse.tapestry5.TapestryModule;
@@ -22,6 +21,7 @@ import com.anjlab.eclipse.tapestry5.views.NameSorter;
 import com.anjlab.eclipse.tapestry5.views.TapestryDecoratingLabelProvider;
 import com.anjlab.eclipse.tapestry5.views.TreeObject;
 import com.anjlab.eclipse.tapestry5.views.ViewLabelProvider;
+import com.anjlab.eclipse.tapestry5.watchdog.ITapestryContextListener;
 
 /**
  * This sample class demonstrates how to plug-in a new workbench view. The view
@@ -92,6 +92,13 @@ public class TapestryProjectOutlineView extends ViewPart
             @Override
             public void projectChanged(IWorkbenchWindow window, final TapestryProject newTapestryProject)
             {
+                if (!getSite().getWorkbenchWindow().equals(window))
+                {
+                    return;
+                }
+                
+                //  TODO Check if this is the same project with updates or simply a new project was selected
+                
                 window.getShell().getDisplay().syncExec(new Runnable()
                 {
                     @Override

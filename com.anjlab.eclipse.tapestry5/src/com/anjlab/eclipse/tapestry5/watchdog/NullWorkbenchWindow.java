@@ -18,6 +18,12 @@ import org.eclipse.ui.WorkbenchException;
 @SuppressWarnings("rawtypes")
 public class NullWorkbenchWindow implements IWorkbenchWindow
 {
+    public static final IWorkbenchWindow INSTANCE = new NullWorkbenchWindow();
+    
+    private NullWorkbenchWindow()
+    {
+    }
+    
     @Override public boolean hasService(Class api) { return false; }
 
     @Override public Object getService(Class api) { return null; }

@@ -16,19 +16,18 @@ import org.eclipse.ui.IWorkbenchPart;
 import org.eclipse.ui.IWorkbenchWindow;
 
 import com.anjlab.eclipse.tapestry5.EclipseUtils;
-import com.anjlab.eclipse.tapestry5.ITapestryContextListener;
 import com.anjlab.eclipse.tapestry5.TapestryContext;
 import com.anjlab.eclipse.tapestry5.TapestryFile;
 import com.anjlab.eclipse.tapestry5.TapestryUtils;
 
-public class TapestryContextWatchdog extends AbstractTapestryWatchdog
+public class TapestryContextWatchdog extends AbstractWatchdog
 {
     private WindowSelectionListener windowListener;
     
     private IResourceChangeListener postBuildListener;
     
     private IResourceChangeListener postChangeListener;
-
+    
     private final Map<IWorkbenchWindow, TapestryContext> currentContexts;
     
     public TapestryContextWatchdog()
@@ -38,33 +37,17 @@ public class TapestryContextWatchdog extends AbstractTapestryWatchdog
     
     private void notifyContextChanged(IWorkbenchWindow targetWindow, TapestryContext newContext)
     {
-        notifyContextChanged(tapestryContextListeners.get(targetWindow), targetWindow, newContext);
-        notifyContextChanged(tapestryContextListeners.get(NULL_WINDOW), targetWindow, newContext);
-    }
-    
-    private void notifyContextChanged(List<ITapestryContextListener> listeners, IWorkbenchWindow targetWindow, TapestryContext newContext)
-    {
-        if (listeners != null)
+        for (ITapestryContextListener listener : listeners.find(ITapestryContextListener.class, targetWindow, true))
         {
-            for (ITapestryContextListener listener : listeners)
-            {
-                listener.contextChanged(targetWindow, newContext);
-            }
+            listener.contextChanged(targetWindow, newContext);
         }
     }
     
     private void notifySelectionChanged(IWorkbenchWindow targetWindow, TapestryFile selectedFile)
     {
-        for (IWorkbenchWindow window : tapestryContextListeners.keySet())
+        for (ITapestryContextListener listener : listeners.find(ITapestryContextListener.class, targetWindow, true))
         {
-            List<ITapestryContextListener> listeners = tapestryContextListeners.get(window);
-            if (listeners != null)
-            {
-                for (ITapestryContextListener listener : listeners)
-                {
-                    listener.selectionChanged(targetWindow, selectedFile);
-                }
-            }
+            listener.selectionChanged(targetWindow, selectedFile);
         }
     }
     
@@ -196,8 +179,6 @@ public class TapestryContextWatchdog extends AbstractTapestryWatchdog
         
         ResourcesPlugin.getWorkspace().removeResourceChangeListener(postBuildListener);
         postBuildListener = null;
-        
-        tapestryContextListeners.clear();;
         
         currentContexts.clear();;
         

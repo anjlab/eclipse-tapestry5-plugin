@@ -65,4 +65,10 @@ public class JarEntryFile extends AbstractTapestryFile
         
         return this.jarEntry.equals(((JarEntryFile) obj).jarEntry);
     }
+    
+    @Override
+    public boolean exists()
+    {
+        return true;
+    }
 }

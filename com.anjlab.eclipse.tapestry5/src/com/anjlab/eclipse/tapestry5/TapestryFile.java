@@ -24,4 +24,6 @@ public interface TapestryFile
     boolean isStyleSheetFile();
     
     TapestryContext getContext();
+
+    boolean exists();
 }

@@ -1,6 +1,10 @@
-package com.anjlab.eclipse.tapestry5;
+package com.anjlab.eclipse.tapestry5.watchdog;
 
 import org.eclipse.ui.IWorkbenchWindow;
+
+import com.anjlab.eclipse.tapestry5.TapestryContext;
+import com.anjlab.eclipse.tapestry5.TapestryFile;
+import com.anjlab.eclipse.tapestry5.TapestryProject;
 
 public interface ITapestryContextListener
 {

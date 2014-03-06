@@ -5,6 +5,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import javax.xml.stream.XMLInputFactory;
 
+import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.jface.resource.ImageDescriptor;
@@ -13,15 +14,18 @@ import org.eclipse.ui.IWorkbenchWindow;
 import org.eclipse.ui.plugin.AbstractUIPlugin;
 import org.osgi.framework.BundleContext;
 
+import com.anjlab.eclipse.tapestry5.watchdog.ITapestryContextListener;
+import com.anjlab.eclipse.tapestry5.watchdog.IWebXmlListener;
 import com.anjlab.eclipse.tapestry5.watchdog.TapestryContextWatchdog;
 import com.anjlab.eclipse.tapestry5.watchdog.TapestryProjectWatchdog;
+import com.anjlab.eclipse.tapestry5.watchdog.WebXmlReader;
+import com.anjlab.eclipse.tapestry5.watchdog.WebXmlReader.WebXml;
 import com.anjlab.eclipse.tapestry5.watchdog.WebXmlWatchdog;
-import com.anjlab.eclipse.tapestry5.watchdog.WebXmlWatchdog.WebXml;
 
 /**
  * The activator class controls the plug-in life cycle
  */
-public class Activator extends AbstractUIPlugin
+public class Activator extends AbstractUIPlugin implements IWebXmlListener
 {
 
     // The plug-in ID
@@ -56,11 +60,12 @@ public class Activator extends AbstractUIPlugin
         
         projectCache = new ConcurrentHashMap<String, Map<String,Object>>();
         
+        webXmlWatchdog = new WebXmlWatchdog();
+        webXmlWatchdog.addListener(null, this);
+        webXmlWatchdog.start();
+        
         tapestryContextWatchdog = new TapestryContextWatchdog();
         tapestryContextWatchdog.start();
-        
-        webXmlWatchdog = new WebXmlWatchdog();
-        webXmlWatchdog.start();
         
         tapestryProjectWatchdog = new TapestryProjectWatchdog();
         tapestryProjectWatchdog.start();
@@ -88,14 +93,15 @@ public class Activator extends AbstractUIPlugin
      */
     public void stop(BundleContext context) throws Exception
     {
-        tapestryContextWatchdog.stop();
-        tapestryContextWatchdog = null;
-        
-        webXmlWatchdog.stop();
-        webXmlWatchdog = null;
-        
         tapestryProjectWatchdog.stop();
         tapestryProjectWatchdog = null;
+        
+        webXmlWatchdog.stop();
+        webXmlWatchdog.removeListener(null, this);
+        webXmlWatchdog = null;
+        
+        tapestryContextWatchdog.stop();
+        tapestryContextWatchdog = null;
         
         projectCache = null;
         
@@ -164,17 +170,37 @@ public class Activator extends AbstractUIPlugin
 
     public void addTapestryContextListener(IWorkbenchWindow window, ITapestryContextListener listener)
     {
-        tapestryContextWatchdog.addTapestryContextListener(window, listener);
+        tapestryContextWatchdog.addListener(window, listener);
     }
 
     public void removeTapestryContextListener(IWorkbenchWindow window, ITapestryContextListener listener)
     {
-        tapestryContextWatchdog.removeTapestryContextListener(window, listener);
+        tapestryContextWatchdog.removeListener(window, listener);
     }
-
+    
+    private static final String WEB_XML = "web.xml";
+    
+    @Override
+    public void webXmlChanged(IFile file, WebXml webXml)
+    {
+        //  Replace webXml in cache with new instance
+        Activator.getDefault().getCache(file.getProject()).put(WEB_XML, webXml);
+    }
+    
     public WebXml getWebXml(IProject project)
     {
-        return webXmlWatchdog.getWebXmlCache(project);
+        Map<String, Object> projectCache = Activator.getDefault().getCache(project);
+        
+        WebXml webXml = (WebXml) projectCache.get(WEB_XML);
+        
+        if (webXml == null || webXml.isEmpty())
+        {
+            webXml = WebXmlReader.readWebXml(TapestryUtils.findWebXml(project));
+            
+            projectCache.put(WEB_XML, webXml);
+        }
+        
+        return webXml;
     }
     
     public TapestryProject getTapestryProject(IWorkbenchWindow window)
@@ -184,12 +210,12 @@ public class Activator extends AbstractUIPlugin
 
     public void addTapestryProjectListener(IWorkbenchWindow window, ITapestryContextListener listener)
     {
-        tapestryProjectWatchdog.addTapestryContextListener(window, listener);
+        tapestryProjectWatchdog.addListener(window, listener);
     }
 
     public void removeTapestryProjectListener(IWorkbenchWindow window, ITapestryContextListener listener)
     {
-        tapestryProjectWatchdog.removeTapestryContextListener(window, listener);
+        tapestryProjectWatchdog.removeListener(window, listener);
     }
 
     private static Image tapestryLogoIcon;

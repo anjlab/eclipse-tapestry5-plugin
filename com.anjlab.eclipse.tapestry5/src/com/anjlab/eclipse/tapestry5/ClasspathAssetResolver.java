@@ -54,7 +54,7 @@ public class ClasspathAssetResolver implements AssetResolver
             
             try
             {
-                if (project.hasNature(JavaCore.NATURE_ID))
+                if (EclipseUtils.isJavaProject(project))
                 {
                     IJavaProject javaProject = JavaCore.create(project);
                     

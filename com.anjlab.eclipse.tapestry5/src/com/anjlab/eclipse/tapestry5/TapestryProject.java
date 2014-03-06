@@ -19,7 +19,7 @@ import org.eclipse.jdt.core.JavaModelException;
 
 import com.anjlab.eclipse.tapestry5.TapestryModule.ModuleReference;
 import com.anjlab.eclipse.tapestry5.TapestryModule.ObjectCallback;
-import com.anjlab.eclipse.tapestry5.watchdog.WebXmlWatchdog.WebXml;
+import com.anjlab.eclipse.tapestry5.watchdog.WebXmlReader.WebXml;
 
 public class TapestryProject
 {

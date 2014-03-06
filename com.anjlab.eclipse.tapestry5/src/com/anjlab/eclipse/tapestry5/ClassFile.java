@@ -74,4 +74,9 @@ public class ClassFile extends AbstractTapestryFile
         return this.classFile.equals(((ClassFile) obj).classFile);
     }
 
+    @Override
+    public boolean exists()
+    {
+        return classFile.exists();
+    }
 }

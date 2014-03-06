@@ -74,4 +74,10 @@ public class LocalFile extends AbstractTapestryFile
         
         return this.file.equals(((LocalFile) obj).file);
     }
+    
+    @Override
+    public boolean exists()
+    {
+        return file.exists();
+    }
 }

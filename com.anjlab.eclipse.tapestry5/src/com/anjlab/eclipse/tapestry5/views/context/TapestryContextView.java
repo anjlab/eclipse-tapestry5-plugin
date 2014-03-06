@@ -14,12 +14,12 @@ import org.eclipse.ui.part.ViewPart;
 
 import com.anjlab.eclipse.tapestry5.Activator;
 import com.anjlab.eclipse.tapestry5.EclipseUtils;
-import com.anjlab.eclipse.tapestry5.ITapestryContextListener;
 import com.anjlab.eclipse.tapestry5.TapestryContext;
 import com.anjlab.eclipse.tapestry5.TapestryFile;
 import com.anjlab.eclipse.tapestry5.TapestryProject;
 import com.anjlab.eclipse.tapestry5.views.TreeObject;
 import com.anjlab.eclipse.tapestry5.views.ViewLabelProvider;
+import com.anjlab.eclipse.tapestry5.watchdog.ITapestryContextListener;
 
 /**
  * This sample class demonstrates how to plug-in a new workbench view. The view
@@ -77,6 +77,11 @@ public class TapestryContextView extends ViewPart
             @Override
             public void contextChanged(IWorkbenchWindow window, final TapestryContext newContext)
             {
+                if (!getSite().getWorkbenchWindow().equals(window))
+                {
+                    return;
+                }
+                
                 window.getShell().getDisplay().syncExec(new Runnable()
                 {
                     @Override
@@ -90,6 +95,11 @@ public class TapestryContextView extends ViewPart
             @Override
             public void selectionChanged(IWorkbenchWindow window, TapestryFile selectedFile)
             {
+                if (!getSite().getWorkbenchWindow().equals(window))
+                {
+                    return;
+                }
+                
                 viewer.setSelection(
                         new TreeSelection(
                             new TreePath(

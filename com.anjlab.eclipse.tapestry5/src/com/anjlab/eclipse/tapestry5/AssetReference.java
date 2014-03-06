@@ -85,6 +85,19 @@ public class AssetReference extends AbstractTapestryFile
         return javaFile;
     }
     
+    @Override
+    public boolean exists()
+    {
+        try
+        {
+            return resolveFile(false).exists();
+        }
+        catch (AssetException e)
+        {
+            return false;
+        }
+    }
+    
     public TapestryFile resolveFile(boolean updateMarker) throws AssetException
     {
         Asset asset = new Asset(assetPath);

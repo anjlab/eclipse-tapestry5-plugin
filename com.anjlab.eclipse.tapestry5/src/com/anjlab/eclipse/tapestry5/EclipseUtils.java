@@ -422,4 +422,9 @@ public class EclipseUtils
         openFile(window, file, editorCallback);
     }
 
+    public static boolean isJavaProject(IProject project) throws CoreException
+    {
+        return project.hasNature(JavaCore.NATURE_ID);
+    }
+
 }

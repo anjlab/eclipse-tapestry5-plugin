@@ -67,7 +67,14 @@ public class LocalTapestryContext extends TapestryContext
             return TapestryUtils.pathToPackageName(TapestryUtils.getRelativeFileName(javaFile.getParent(), root), false);
         }
         
-        IFile templateFile = ((LocalFile) getTemplateFile()).getFile();
+        LocalFile localTemplateFile = (LocalFile) getTemplateFile();
+        
+        if (localTemplateFile == null)
+        {
+            return null;
+        }
+        
+        IFile templateFile = localTemplateFile.getFile();
         
         root = TapestryUtils.getRoot(templateFile);
         
@@ -160,6 +167,11 @@ public class LocalTapestryContext extends TapestryContext
                 IContainer adaptedProject = (IContainer) javaProject.getCorrespondingResource().getAdapter(IContainer.class);
                 
                 IResource adaptedFile = adaptedProject.findMember(forFile.getProjectRelativePath());
+                
+                if (adaptedFile == null)
+                {
+                    return resources;
+                }
                 
                 container = adaptedFile.getParent();
                 
