@@ -49,7 +49,12 @@ public class WindowSelectionListener implements IWindowListener
         
         //  windowOpened might be fired manually and the page was already open at this moment,
         //  so trigger pageOpened event manually now to setup handlers
-        pageListener.pageOpened(window.getActivePage());
+        IWorkbenchPage activePage = window.getActivePage();
+        
+        if (activePage != null)
+        {
+            pageListener.pageOpened(activePage);
+        }
     }
 
     @Override
