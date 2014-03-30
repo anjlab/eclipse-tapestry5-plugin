@@ -103,18 +103,16 @@
          </hyperlinkDetector>
    </extension>
    <extension
-         point="org.eclipse.ui.viewActions">
-         <viewContribution
-            id="com.anjlab.eclipse.tapestry5.viewActions"
-            targetID="com.anjlab.eclipse.tapestry5.views.context.TapestryContextView">
-            <action id="com.anjlab.eclipse.tapestry5.actions.CreateAction"
-                toolbarPath="additions"
-                label="Create..."
-                tooltip="Create..."
-                icon="IMG_OBJ_ADD"
-                class="com.anjlab.eclipse.tapestry5.actions.CreateActionViewDelegate">
-            </action>
-         </viewContribution>
+         point="org.eclipse.ui.menus">
+         <menuContribution
+               locationURI="toolbar:com.anjlab.eclipse.tapestry5.views.context.TapestryContextView">
+            <command
+                  commandId="com.anjlab.eclipse.tapestry5.commands.createCommand"
+                  icon="IMG_OBJ_ADD"
+                  tooltip="Create..."
+                  id="com.anjlab.eclipse.tapestry5.toolbars.createCommand">
+            </command>
+         </menuContribution>
    </extension>
    <extension
          point="org.eclipse.ui.decorators">
