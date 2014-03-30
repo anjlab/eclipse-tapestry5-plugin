@@ -233,6 +233,11 @@ public class TapestryProject
 
     private void addModule(IProgressMonitor monitor, List<TapestryModule> modules, TapestryModule module)
     {
+        if (monitor.isCanceled())
+        {
+            return;
+        }
+        
         if (modules.contains(module))
         {
             return;

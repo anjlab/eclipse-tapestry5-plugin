@@ -19,6 +19,7 @@ import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
+import org.eclipse.core.runtime.OperationCanceledException;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.jdt.core.IClasspathEntry;
@@ -41,6 +42,94 @@ import com.anjlab.eclipse.tapestry5.TapestryUtils;
 
 public class TapestryProjectWatchdog extends AbstractWatchdog
 {
+    private final class TapestryProjectAnalyzerJob extends Job
+    {
+        public static final String FAMILY_NAME = EclipseUtils.ECLIPSE_INTEGRATION_FOR_TAPESTRY5;
+        
+        private final IWorkbenchWindow window;
+        private final IProject project;
+
+        private TapestryProjectAnalyzerJob(IWorkbenchWindow window, IProject project)
+        {
+            super(EclipseUtils.ECLIPSE_INTEGRATION_FOR_TAPESTRY5);
+            this.window = window;
+            this.project = project;
+            
+            //  Don't show progress pop-up to the user's face
+            setUser(false);
+        }
+
+        @Override
+        protected IStatus run(IProgressMonitor monitor)
+        {
+            cancelOtherJobsOfThisKind();
+            
+            try
+            {
+                waitForBuildCompletion(monitor);
+            }
+            catch (OperationCanceledException e)
+            {
+                return Status.CANCEL_STATUS;
+            }
+            catch (InterruptedException e)
+            {
+                return Status.CANCEL_STATUS;
+            }
+            
+            monitor.beginTask("Analyzing " + project.getName(), IProgressMonitor.UNKNOWN);
+            monitor.worked(1);
+            
+            final TapestryProject newTapestryProject = new TapestryProject(project);
+            
+            newTapestryProject.initialize(monitor);
+            
+            if (monitor.isCanceled())
+            {
+                //  Don't propagate project changes if the job was canceled
+                return Status.CANCEL_STATUS;
+            }
+            
+            window.getShell().getDisplay().asyncExec(new Runnable()
+            {
+                @Override
+                public void run()
+                {
+                    currentProjects.put(window, newTapestryProject);
+                    
+                    notifyProjectChanged(window, newTapestryProject);
+                }
+            });
+            
+            return Status.OK_STATUS;
+        }
+
+        private void waitForBuildCompletion(IProgressMonitor monitor) throws OperationCanceledException, InterruptedException
+        {
+            getJobManager().join(ResourcesPlugin.FAMILY_AUTO_BUILD, monitor);
+            getJobManager().join(ResourcesPlugin.FAMILY_MANUAL_BUILD, monitor);
+        }
+
+        private void cancelOtherJobsOfThisKind()
+        {
+            Job[] jobs = getJobManager().find(FAMILY_NAME);
+            for (Job job : jobs)
+            {
+                if (job == this)
+                {
+                    continue;
+                }
+                job.cancel();
+            }
+        }
+        
+        @Override
+        public boolean belongsTo(Object family)
+        {
+            return FAMILY_NAME.equals(family);
+        }
+    }
+
     private WindowSelectionListener windowListener;
     
     private final Map<IWorkbenchWindow, TapestryProject> currentProjects;
@@ -100,7 +189,7 @@ public class TapestryProjectWatchdog extends AbstractWatchdog
                 
                 //  XXX This event is triggered twice on clean & build
                 
-                removeFilesFromOutputFolders(affectedFiles);
+                filterOutFilesLocatedInOutputFolders(affectedFiles);
                 
                 if (affectedFiles.size() == 0)
                 {
@@ -225,6 +314,8 @@ public class TapestryProjectWatchdog extends AbstractWatchdog
                 
                 //  Find out which tapestry projects should be re-analyzed
                 
+                //  TODO This should better be done after project build
+                
                 Set<IProject> updatedProjects = new HashSet<IProject>();
                 
                 for (Entry<IWorkbenchWindow, TapestryProject> entry : currentProjects.entrySet())
@@ -259,7 +350,7 @@ public class TapestryProjectWatchdog extends AbstractWatchdog
                 //  Some modules might have been changed (added/removed) -- Update modules before analysis?
             }
 
-            private void removeFilesFromOutputFolders(List<IFile> affectedFiles)
+            private void filterOutFilesLocatedInOutputFolders(List<IFile> affectedFiles)
             {
                 Map<IProject, List<IPath>> outputLocations = new HashMap<IProject, List<IPath>>();
                 
@@ -373,35 +464,8 @@ public class TapestryProjectWatchdog extends AbstractWatchdog
     
     private void changeTapestryProject(final IWorkbenchWindow window, final IProject project)
     {
-        final TapestryProject newTapestryProject = new TapestryProject(project);
+        Job analyzeProject = new TapestryProjectAnalyzerJob(window, project);
         
-        Job analyzeProject = new Job(EclipseUtils.ECLIPSE_INTEGRATION_FOR_TAPESTRY5)
-        {
-            @Override
-            protected IStatus run(IProgressMonitor monitor)
-            {
-                monitor.beginTask("Analyzing " + project.getName(), IProgressMonitor.UNKNOWN);
-                monitor.worked(1);
-                
-                newTapestryProject.initialize(monitor);
-                
-                window.getShell().getDisplay().asyncExec(new Runnable()
-                {
-                    @Override
-                    public void run()
-                    {
-                        currentProjects.put(window, newTapestryProject);
-                        
-                        notifyProjectChanged(window, newTapestryProject);
-                    }
-                });
-                
-                return Status.OK_STATUS;
-            }
-        };
-        
-        //  Don't show progress pop-up to the user's face
-        analyzeProject.setUser(false);
         analyzeProject.schedule();
     }
     
