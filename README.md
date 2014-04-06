@@ -13,7 +13,7 @@ Tapestry Context View will appear (top right on this screenshot):
   - Provides context for opened Tapestry file
   - Includes code/template files of selected page/component, as well as list of properties files and @Import'ed assets
   - Click on the file in a view to open this file
-  - Simple validation implemented to highlight assets that couldn't be resolved (supports default or 'context:' binding prefixes)
+  - Simple validation implemented to highlight assets & JavaScript stacks that couldn't be resolved (supports default/`classpath:` or `context:` binding prefixes for assets)
 
 ![Screenshot](https://f.cloud.github.com/assets/76579/1105085/c106e906-1918-11e3-9525-68839dcc89b2.png)
 
@@ -58,14 +58,23 @@ This view displays structure of your Tapestry5 project:
 
   - Select your main Tapestry5 project (i.e. the project with `web.xml`) in the "Project Explorer" to see its outline
   - View all Tapestry5 modules available in classpath of the main Tapestry5 project
-  - View [library mappings](http://tapestry.apache.org/component-libraries.html#ComponentLibraries-Step4%3AConfigurethevirtualfolder) declared in each module (only available if source code attached to the module class)
-  - Double click on module name to open its source code
+  - View [library mappings](http://tapestry.apache.org/component-libraries.html#ComponentLibraries-Step4%3AConfigurethevirtualfolder) and [JavaScript stacks](https://tapestry.apache.org/javascript.html#JavaScript-JavaScriptStacks) declared in each module (only available if source code attached to the module class)
+  - Double click on module name or JavaScript stack to open its source code
+  - Content of this view will be updated automatically in background when you're adding new or updating existing modules, changing `web.xml`, or editing your pages/components files
   - More to come...
 
 **Note:** Analysis of 3rd party modules will only work if you have sources attached to your JARs in Eclipse (which is the default if you import your project via `./gradlew eclipse` or `mvn eclipse:eclipse -DdownloadSources=true`).
 If you don't have sources attached to one of your module classes you will see warning icon near it in the Tapestry Project Outline view.
 
 **Note:** `CMD+Hover` feature won't be able to find components in the modules that don't have attached sources.
+
+#### Support for JavaScript stack overrides
+
+It is possible in Tapestry5 to override stack definitions, for example, this is what [Tapestry5 jQuery](https://github.com/got5/tapestry5-jquery/) does for core stacks. Overridden stacks will have special markers in Tapestry Project Outline view.
+
+<img alt="stacks-overrides" src="https://cloud.githubusercontent.com/assets/76579/2624897/5fbc69c6-bd6b-11e3-923c-3c8609ba42af.png" width="640">
+
+<img alt="stacks-overridden" src="https://cloud.githubusercontent.com/assets/76579/2624898/5fc00158-bd6b-11e3-9ee5-e4130ba5a23b.png" width="640">
 
 ### Quickly Create Files for Tapestry5
 
