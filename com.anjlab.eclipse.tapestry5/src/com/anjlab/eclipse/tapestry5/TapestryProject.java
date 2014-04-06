@@ -4,9 +4,12 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.jar.Manifest;
 
+import org.apache.commons.lang.StringUtils;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
@@ -50,6 +53,55 @@ public class TapestryProject
     public void initialize(IProgressMonitor monitor)
     {
         findModules(monitor);
+        
+        markOverrides();
+    }
+
+    private void markOverrides()
+    {
+        Map<String, List<JavaScriptStack>> stacks = new HashMap<String, List<JavaScriptStack>>();
+        
+        for (TapestryModule module : modules())
+        {
+            for (JavaScriptStack stack : module.javaScriptStacks())
+            {
+                List<JavaScriptStack> configs = stacks.get(stack.getName());
+                
+                if (configs == null)
+                {
+                    configs = new ArrayList<JavaScriptStack>();
+                    stacks.put(stack.getName(), configs);
+                }
+                
+                configs.add(stack);
+            }
+        }
+        
+        for (String stackName : stacks.keySet())
+        {
+            List<JavaScriptStack> configs = stacks.get(stackName);
+            
+            boolean hasOverride = false;
+            
+            for (JavaScriptStack stack : configs)
+            {
+                if (stack.isOverrides())
+                {
+                    hasOverride = true;
+                }
+            }
+            
+            if (hasOverride)
+            {
+                for (JavaScriptStack stack : configs)
+                {
+                    if (!stack.isOverrides())
+                    {
+                        stack.setOverridden(true);
+                    }
+                }
+            }
+        }
     }
 
     private synchronized void findModules(IProgressMonitor monitor)
@@ -79,7 +131,8 @@ public class TapestryProject
         {
             final String localFilterName = filterName;
             
-            TapestryModule appModule = addModule(monitor, modules, project, appPackage + ".services." + filterName + "Module", new ModuleReference()
+            TapestryModule appModule = addModule(monitor, modules, project,
+                    appPackage + ".services." + StringUtils.capitalize(filterName) + "Module", new ModuleReference()
             {
                 @Override
                 public String getLabel()
@@ -210,6 +263,11 @@ public class TapestryProject
 
     private TapestryModule addModule(IProgressMonitor monitor, List<TapestryModule> modules, IProject project, String moduleClassName, ModuleReference reference, ObjectCallback<TapestryModule> moduleCreated)
     {
+        if (monitor.isCanceled())
+        {
+            return null;
+        }
+        
         monitor.subTask("Locating " + moduleClassName + "...");
         
         IType moduleClass = EclipseUtils.findTypeDeclaration(project, moduleClassName);
@@ -349,5 +407,34 @@ public class TapestryProject
         return TapestryUtils.joinPath(appPackage.replace('.', '/'),
                 componentNameWithoutPrefix.replace('.', '/')
                     + (module instanceof LocalTapestryModule ? ".java" : ".class"));
+    }
+
+    public JavaScriptStack findStack(String stackName)
+    {
+        List<JavaScriptStack> stacks = new ArrayList<JavaScriptStack>();
+        
+        for (TapestryModule module : modules())
+        {
+            for (JavaScriptStack stack : module.javaScriptStacks())
+            {
+                if (stackName.equals(stack.getName()))
+                {
+                    stacks.add(stack);
+                }
+            }
+        }
+        
+        //  Find first overridden stack (if any)
+        for (JavaScriptStack stack : stacks)
+        {
+            if (stack.isOverrides())
+            {
+                return stack;
+            }
+        }
+        
+        return stacks.isEmpty()
+             ? null
+             : stacks.get(0);
     }
 }

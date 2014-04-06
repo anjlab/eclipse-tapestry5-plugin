@@ -76,7 +76,7 @@ public class ClasspathAssetResolver implements AssetResolver
     }
     
     @Override
-    public TapestryFile resolve(final String path, TapestryFile relativeTo) throws AssetException
+    public TapestryFile resolve(final String path, TapestryFile relativeTo) throws UnresolvableReferenceException
     {
         try
         {
@@ -110,8 +110,8 @@ public class ClasspathAssetResolver implements AssetResolver
         }
     }
 
-    private AssetException createAssetException(final String path, Throwable cause)
+    private UnresolvableReferenceException createAssetException(final String path, Throwable cause)
     {
-        return new AssetException("Couldn't resolve classpath asset from path '" + path + "'", cause);
+        return new UnresolvableReferenceException("Couldn't resolve classpath asset from path '" + path + "'", cause);
     }
 }

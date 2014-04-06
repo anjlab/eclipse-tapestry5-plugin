@@ -87,7 +87,7 @@ public class TreeObject implements IAdaptable
         
         TreeObject other = (TreeObject) obj;
         
-        return data.equals(other.data) && name.equals(other.name);
+        return data.equals(other.data);
     }
 
     @Override

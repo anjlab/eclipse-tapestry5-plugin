@@ -19,6 +19,7 @@ import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
+import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.core.runtime.OperationCanceledException;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.jobs.Job;
@@ -26,6 +27,7 @@ import org.eclipse.jdt.core.IClasspathEntry;
 import org.eclipse.jdt.core.IJavaProject;
 import org.eclipse.jdt.core.IPackageFragmentRoot;
 import org.eclipse.jdt.core.JavaCore;
+import org.eclipse.jdt.ui.JavaUI;
 import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.ui.ISelectionListener;
 import org.eclipse.ui.IWorkbenchPage;
@@ -62,11 +64,9 @@ public class TapestryProjectWatchdog extends AbstractWatchdog
         @Override
         protected IStatus run(IProgressMonitor monitor)
         {
-            cancelOtherJobsOfThisKind();
-            
             try
             {
-                waitForBuildCompletion(monitor);
+                waitForOtherJobs(monitor);
             }
             catch (OperationCanceledException e)
             {
@@ -104,29 +104,32 @@ public class TapestryProjectWatchdog extends AbstractWatchdog
             return Status.OK_STATUS;
         }
 
-        private void waitForBuildCompletion(IProgressMonitor monitor) throws OperationCanceledException, InterruptedException
+        private void waitForOtherJobs(IProgressMonitor monitor) throws OperationCanceledException, InterruptedException
         {
             getJobManager().join(ResourcesPlugin.FAMILY_AUTO_BUILD, monitor);
             getJobManager().join(ResourcesPlugin.FAMILY_MANUAL_BUILD, monitor);
+            getJobManager().join(JavaUI.ID_PLUGIN, monitor);
         }
 
-        private void cancelOtherJobsOfThisKind()
-        {
-            Job[] jobs = getJobManager().find(FAMILY_NAME);
-            for (Job job : jobs)
-            {
-                if (job == this)
-                {
-                    continue;
-                }
-                job.cancel();
-            }
-        }
-        
         @Override
         public boolean belongsTo(Object family)
         {
             return FAMILY_NAME.equals(family);
+        }
+    }
+
+    private static void cancelOtherJobsOfThisKind(IWorkbenchWindow window)
+    {
+        Job[] jobs = Job.getJobManager().find(TapestryProjectAnalyzerJob.FAMILY_NAME);
+        for (Job job : jobs)
+        {
+            if (job instanceof TapestryProjectAnalyzerJob)
+            {
+                if (((TapestryProjectAnalyzerJob) job).window == window)
+                {
+                    job.cancel();
+                }
+            }
         }
     }
 
@@ -462,8 +465,25 @@ public class TapestryProjectWatchdog extends AbstractWatchdog
         }
     }
     
-    private void changeTapestryProject(final IWorkbenchWindow window, final IProject project)
+    private synchronized void changeTapestryProject(final IWorkbenchWindow window, final IProject project)
     {
+        //  Other jobs may still be running, cancel them and don't even schedule new job until they completed
+        
+        cancelOtherJobsOfThisKind(window);
+        
+        try
+        {
+            Job.getJobManager().join(TapestryProjectAnalyzerJob.FAMILY_NAME, new NullProgressMonitor());
+        }
+        catch (OperationCanceledException e)
+        {
+            //  Ignore
+        }
+        catch (InterruptedException e)
+        {
+            //  Ignore
+        }
+        
         Job analyzeProject = new TapestryProjectAnalyzerJob(window, project);
         
         analyzeProject.schedule();

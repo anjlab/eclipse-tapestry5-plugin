@@ -108,7 +108,7 @@
                locationURI="toolbar:com.anjlab.eclipse.tapestry5.views.context.TapestryContextView">
             <command
                   commandId="com.anjlab.eclipse.tapestry5.commands.createCommand"
-                  icon="IMG_OBJ_ADD"
+                  icon="platform:/plugin/IMG_OBJ_ADD"
                   tooltip="Create..."
                   id="com.anjlab.eclipse.tapestry5.toolbars.createCommand">
             </command>

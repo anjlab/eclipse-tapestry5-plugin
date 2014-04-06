@@ -8,11 +8,12 @@ import org.eclipse.swt.graphics.Image;
 import org.eclipse.ui.ISharedImages;
 import org.eclipse.ui.PlatformUI;
 
-import com.anjlab.eclipse.tapestry5.AssetException;
-import com.anjlab.eclipse.tapestry5.AssetReference;
 import com.anjlab.eclipse.tapestry5.ClassFile;
+import com.anjlab.eclipse.tapestry5.JavaScriptStack;
 import com.anjlab.eclipse.tapestry5.TapestryFile;
+import com.anjlab.eclipse.tapestry5.TapestryFileReference;
 import com.anjlab.eclipse.tapestry5.TapestryModule;
+import com.anjlab.eclipse.tapestry5.UnresolvableReferenceException;
 
 public class ViewLabelProvider extends LabelProvider
 {
@@ -28,6 +29,7 @@ public class ViewLabelProvider extends LabelProvider
         return getImageDescriptor(obj).createImage();
     }
 
+    @SuppressWarnings("restriction")
     public ImageDescriptor getImageDescriptor(Object obj)
     {
         if (obj instanceof TreeObject)
@@ -45,6 +47,27 @@ public class ViewLabelProvider extends LabelProvider
                 if (moduleFile != null)
                 {
                     return getImageDescriptor(moduleFile);
+                }
+            }
+            else if (data instanceof JavaScriptStack)
+            {
+                JavaScriptStack stack = (JavaScriptStack) data;
+                
+                ImageDescriptor imageDescriptor = PlatformUI.getWorkbench().getSharedImages().getImageDescriptor(ISharedImages.IMG_OBJ_FILE);
+                
+                //  isOverridden will be set only for objects that came from TapestryProject,
+                //  which is the case for TapestryProjectOutlineView - we only need to mark overridden stacks for this view
+                if (stack.isOverridden())
+                {
+                    return getImageDescriptor(
+                                imageDescriptor,
+                                org.eclipse.jdt.internal.ui.JavaPluginImages.DESC_OVR_DEPRECATED);
+                }
+                else if (stack.isOverrides())
+                {
+                    return getImageDescriptor(
+                            imageDescriptor,
+                            org.eclipse.jdt.internal.ui.JavaPluginImages.DESC_OVR_OVERRIDES);
                 }
             }
         }
@@ -65,15 +88,15 @@ public class ViewLabelProvider extends LabelProvider
         
         ImageDescriptor[] overlays = null;
         
-        if (file instanceof AssetReference)
+        if (file instanceof TapestryFileReference)
         {
             try
             {
-                ((AssetReference) file).resolveFile(false);
+                ((TapestryFileReference) file).resolveFile(false);
                 
                 overlays = new ImageDescriptor[0];
             }
-            catch (AssetException e)
+            catch (UnresolvableReferenceException e)
             {
                 overlays = new ImageDescriptor[]
                 {
@@ -100,6 +123,11 @@ public class ViewLabelProvider extends LabelProvider
             }
         }
         
+        return getImageDescriptor(imageDesc, overlays);
+    }
+
+    private ImageDescriptor getImageDescriptor(ImageDescriptor imageDesc, ImageDescriptor... overlays)
+    {
         if (overlays != null)
         {
             DecorationOverlayIcon overlayIcon = new DecorationOverlayIcon(imageDesc.createImage(), overlays);

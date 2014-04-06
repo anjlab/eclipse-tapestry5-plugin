@@ -19,6 +19,8 @@ import org.eclipse.jdt.core.IMemberValuePair;
 import org.eclipse.jdt.core.ISourceRange;
 import org.eclipse.jdt.core.IType;
 import org.eclipse.jdt.core.JavaModelException;
+import org.eclipse.jdt.core.dom.AST;
+import org.eclipse.jdt.core.dom.Name;
 
 public abstract class TapestryContext
 {
@@ -120,6 +122,9 @@ public abstract class TapestryContext
                 return;
             }
             
+            AST ast = null;
+            boolean astParsed = false;
+            
             for (IType type : compilationUnit.getAllTypes())
             {
                 for (IAnnotation annotation : type.getAnnotations())
@@ -130,9 +135,23 @@ public abstract class TapestryContext
                         for (IMemberValuePair pair : pairs)
                         {
                             if ("library".equals(pair.getMemberName())
-                                    || "stylesheet".equals(pair.getMemberName()))
+                                    || "stylesheet".equals(pair.getMemberName())
+                                    || "stack".equals(pair.getMemberName()))
                             {
-                                processImport(annotation, pair.getMemberName(), pair.getValue());
+                                if (!astParsed)
+                                {
+                                    astParsed = true;
+                                    try
+                                    {
+                                        ast = EclipseUtils.parse(compilationUnit).getAST();
+                                    }
+                                    catch (Exception e)
+                                    {
+                                        //  Ignore
+                                    }
+                                }
+                                
+                                processImport(annotation, pair.getMemberName(), pair.getValue(), pair.getValueKind(), ast);
                             }
                         }
                     }
@@ -159,19 +178,31 @@ public abstract class TapestryContext
 
     protected abstract ICompilationUnit getCompilationUnit();
     
-    private void processImport(IAnnotation annotation, String type, Object value)
+    private void processImport(IAnnotation annotation, String type, Object value, int valueKind, AST ast)
     {
         if (value instanceof Object[])
         {
             for (Object item : (Object[])value)
             {
-                processImportedFile(annotation, type, (String) item);
+                processImportedFile(annotation, type, eval(item, valueKind, ast));
             }
         }
         else if (value instanceof String)
         {
-            processImportedFile(annotation, type, (String) value);
+            processImportedFile(annotation, type, eval(value, valueKind, ast));
         }
+    }
+
+    private String eval(Object value, int valueKind, AST ast)
+    {
+        if (ast != null
+                && (valueKind == IMemberValuePair.K_SIMPLE_NAME
+                    || valueKind == IMemberValuePair.K_QUALIFIED_NAME))
+        {
+            Name name = ast.newName((String) value);
+            value = EclipseUtils.evalExpression(getProject(), name);
+        }
+        return (String) value;
     }
     
     private void processImportedFile(IAnnotation annotation, String type, String fileName)
@@ -185,7 +216,15 @@ public abstract class TapestryContext
         {
             Activator.getDefault().logError("Error getting annotation location", e);
         }
-        files.add(new AssetReference(getJavaFile(), sourceRange, fileName));
+        
+        if ("stack".equals(type))
+        {
+            files.add(new JavaScriptStackReference(getJavaFile(), fileName, sourceRange));
+        }
+        else
+        {
+            files.add(new AssetReference(getJavaFile(), sourceRange, fileName));
+        }
     }
     
     public List<TapestryFile> getFiles()
@@ -382,23 +421,18 @@ public abstract class TapestryContext
     {
         for (TapestryFile file : files)
         {
-            if (file instanceof AssetReference)
+            if (file instanceof TapestryFileReference)
             {
                 try
                 {
-                    ((AssetReference) file).resolveFile(true);
+                    ((TapestryFileReference) file).resolveFile(true);
                 }
-                catch (AssetException e)
+                catch (UnresolvableReferenceException e)
                 {
                     //  Ignore
                 }
             }
         }
-    }
-    
-    public void deleteMarkers()
-    {
-        deleteMarkers(getProject());
     }
     
     public static void deleteMarkers(IResource project)
@@ -409,7 +443,9 @@ public abstract class TapestryContext
             
             for (IMarker marker : markers)
             {
-                if (marker.getAttribute(AssetReference.ASSET_PATH_MARKER_ATTRIBUTE) != null)
+                //  TODO Support other markers too
+                if (marker.getAttribute(AssetReference.MARKER_NAME) != null
+                        || marker.getAttribute(JavaScriptStackReference.MARKER_NAME) != null)
                 {
                     marker.delete();
                 }

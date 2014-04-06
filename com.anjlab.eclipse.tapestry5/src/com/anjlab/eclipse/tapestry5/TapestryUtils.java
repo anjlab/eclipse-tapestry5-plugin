@@ -137,7 +137,7 @@ public class TapestryUtils
         return "properties".equals(path.getFileExtension());
     }
 
-    public static AssetResolver createAssetResolver(String bindingPrefix) throws AssetException
+    public static AssetResolver createAssetResolver(String bindingPrefix) throws UnresolvableReferenceException
     {
         if ("classpath".equals(bindingPrefix))
         {
@@ -148,7 +148,7 @@ public class TapestryUtils
             return new ContextAssetResolver();
         }
         
-        throw new AssetException("Binding prefix '" + bindingPrefix + "' not supported");
+        throw new UnresolvableReferenceException("Binding prefix '" + bindingPrefix + "' not supported");
     }
 
     public static IContainer findWebapp(IProject project)
@@ -178,6 +178,12 @@ public class TapestryUtils
     public static String getAppPackage(IProject project)
     {
         return Activator.getDefault().getWebXml(project).getParamValue(TAPESTRY_APP_PACKAGE);
+    }
+    
+    public static boolean isTapestryJavaScriptStackInterface(String interfaceName)
+    {
+        return "JavaScriptStack".equals(interfaceName)
+                || "org.apache.tapestry5.services.javascript.JavaScriptStack".equals(interfaceName);
     }
     
     public static boolean isTapestrySubModuleAnnotation(IAnnotation annotation)
@@ -623,4 +629,20 @@ public class TapestryUtils
              : builder.toString();
     }
 
+    public static JavaScriptStack findStack(IProject project, String stackName)
+    {
+        IWorkbenchWindow[] windows = PlatformUI.getWorkbench().getWorkbenchWindows();
+        
+        for (IWorkbenchWindow window : windows)
+        {
+            TapestryProject tapestryProject = Activator.getDefault().getTapestryProject(window);
+            
+            if (tapestryProject != null && tapestryProject.contains(project))
+            {
+                return tapestryProject.findStack(stackName);
+            }
+        }
+        
+        return null;
+    }
 }

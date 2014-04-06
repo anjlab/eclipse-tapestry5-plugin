@@ -13,7 +13,7 @@ import org.eclipse.ui.console.TextConsole;
 
 import com.anjlab.eclipse.tapestry5.Activator;
 import com.anjlab.eclipse.tapestry5.Asset;
-import com.anjlab.eclipse.tapestry5.AssetException;
+import com.anjlab.eclipse.tapestry5.UnresolvableReferenceException;
 import com.anjlab.eclipse.tapestry5.AssetResolver;
 import com.anjlab.eclipse.tapestry5.EclipseUtils;
 import com.anjlab.eclipse.tapestry5.SetEditorCaretPositionLineColumn;
@@ -92,7 +92,7 @@ public class TapestryExceptionPatternMatcher implements IPatternMatchListenerDel
                     {
                         assetResolver = TapestryUtils.createAssetResolver(asset.bindingPrefix);
                     }
-                    catch (AssetException e)
+                    catch (UnresolvableReferenceException e)
                     {
                         Activator.getDefault().logError(e.getMessage(), e);
                         return;

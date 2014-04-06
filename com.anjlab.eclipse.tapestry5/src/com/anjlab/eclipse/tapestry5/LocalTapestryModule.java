@@ -2,6 +2,7 @@ package com.anjlab.eclipse.tapestry5;
 
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IResource;
+import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.jdt.core.IJavaElement;
 import org.eclipse.jdt.core.IJavaProject;
 import org.eclipse.jdt.core.IPackageFragment;
@@ -42,7 +43,7 @@ public class LocalTapestryModule extends TapestryModule
     }
     
     @Override
-    protected void enumJavaClassesRecursively(String rootPackage, ObjectCallback<Object> callback)
+    protected void enumJavaClassesRecursively(IProgressMonitor monitor, String rootPackage, ObjectCallback<Object> callback)
     {
         try
         {
@@ -55,9 +56,14 @@ public class LocalTapestryModule extends TapestryModule
                 
                 for (IJavaElement child : root.getChildren())
                 {
+                    if (monitor.isCanceled())
+                    {
+                        return;
+                    }
+                    
                     if (child instanceof IPackageFragment && child.getElementName().startsWith(rootPackage))
                     {
-                        enumJavaClassesRecursively((IPackageFragment) child, callback);
+                        enumJavaClassesRecursively(monitor, (IPackageFragment) child, callback);
                     }
                 }
             }
@@ -68,10 +74,15 @@ public class LocalTapestryModule extends TapestryModule
         }
     }
 
-    private void enumJavaClassesRecursively(IPackageFragment packageFragment, ObjectCallback<Object> callback) throws JavaModelException
+    private void enumJavaClassesRecursively(IProgressMonitor monitor, IPackageFragment packageFragment, ObjectCallback<Object> callback) throws JavaModelException
     {
         for (IJavaElement child : packageFragment.getChildren())
         {
+            if (monitor.isCanceled())
+            {
+                return;
+            }
+            
             IResource resource = child.getCorrespondingResource();
             
             if (resource != null && TapestryUtils.isJavaFile(resource.getProjectRelativePath()))

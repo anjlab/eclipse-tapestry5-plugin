@@ -7,6 +7,7 @@ import org.eclipse.jface.viewers.Viewer;
 import org.eclipse.ui.IViewSite;
 
 import com.anjlab.eclipse.tapestry5.EclipseUtils;
+import com.anjlab.eclipse.tapestry5.JavaScriptStack;
 import com.anjlab.eclipse.tapestry5.LibraryMapping;
 import com.anjlab.eclipse.tapestry5.TapestryModule;
 import com.anjlab.eclipse.tapestry5.TapestryProject;
@@ -48,23 +49,40 @@ public class TapestryProjectOutlineContentProvider implements ITreeContentProvid
                 {
                     List<LibraryMapping> libraryMappings = module.libraryMappings();
                     
-                    TreeParent mappingsRoot = newLibraryMappingNode(moduleRoot, new Object());
+                    TreeParent mappingsRoot = newLibraryMappingsNode(moduleRoot, new Object());
                     
                     for (LibraryMapping libraryMapping : libraryMappings)
                     {
                         String pathPrefix = libraryMapping.getPathPrefix();
                         mappingsRoot.addChild(new TreeObject("".equals(pathPrefix) ? "(default)" : pathPrefix, libraryMapping));
                     }
+                    
+                    List<JavaScriptStack> stacks = module.javaScriptStacks();
+                    
+                    TreeParent stacksRoot = newJavaScriptStacksNode(moduleRoot, new Object());
+                    
+                    for (JavaScriptStack javaScriptStack : stacks)
+                    {
+                        stacksRoot.addChild(new TreeObject(javaScriptStack.getName(), javaScriptStack));
+                    }
                 }
                 else
                 {
-                    newLibraryMappingNode(moduleRoot, EclipseUtils.SOURCE_NOT_FOUND);
+                    newLibraryMappingsNode(moduleRoot, EclipseUtils.SOURCE_NOT_FOUND);
+                    newJavaScriptStacksNode(moduleRoot, EclipseUtils.SOURCE_NOT_FOUND);
                 }
             }
         }
     }
 
-    private TreeParent newLibraryMappingNode(TreeParent parent, Object data)
+    private TreeParent newJavaScriptStacksNode(TreeParent parent, Object data)
+    {
+        TreeParent node = new TreeParent("JavaScript Stacks", data);
+        parent.addChild(node);
+        return node;
+    }
+    
+    private TreeParent newLibraryMappingsNode(TreeParent parent, Object data)
     {
         TreeParent node = new TreeParent("Library Mappings", data);
         parent.addChild(node);

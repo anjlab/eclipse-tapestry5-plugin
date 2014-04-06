@@ -42,26 +42,26 @@ public class ContextAssetResolver implements AssetResolver
     }
     
     @Override
-    public TapestryFile resolve(String path, TapestryFile relativeTo) throws AssetException
+    public TapestryFile resolve(String path, TapestryFile relativeTo) throws UnresolvableReferenceException
     {
         IContainer webapp = TapestryUtils.findWebapp(relativeTo.getProject());
         
         if (webapp == null)
         {
-            throw new AssetException("Couldn't find context folder ('src/main/webapp')");
+            throw new UnresolvableReferenceException("Couldn't find context folder ('src/main/webapp')");
         }
         
         IResource resource = webapp.findMember(path);
         
         if (resource == null)
         {
-            throw new AssetException("File not found '"
+            throw new UnresolvableReferenceException("File not found '"
                     + webapp.getProjectRelativePath().toPortableString() + "/" + path + "'");
         }
         
         if (!(resource instanceof IFile))
         {
-            throw new AssetException(
+            throw new UnresolvableReferenceException(
                     "'" + webapp.getProjectRelativePath().toPortableString() + "/" + path + "' is not a file");
         }
         

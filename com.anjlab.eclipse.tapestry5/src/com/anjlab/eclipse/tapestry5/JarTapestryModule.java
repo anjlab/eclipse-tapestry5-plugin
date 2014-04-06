@@ -1,5 +1,6 @@
 package com.anjlab.eclipse.tapestry5;
 
+import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.jdt.core.IClassFile;
 import org.eclipse.jdt.core.IJarEntryResource;
 import org.eclipse.jdt.core.IJavaElement;
@@ -33,7 +34,7 @@ public class JarTapestryModule extends TapestryModule
     }
     
     @Override
-    protected void enumJavaClassesRecursively(String rootPackage, ObjectCallback<Object> callback)
+    protected void enumJavaClassesRecursively(IProgressMonitor monitor, String rootPackage, ObjectCallback<Object> callback)
     {
         IParent root = (IParent) getModuleClass().getAncestor(IJavaElement.PACKAGE_FRAGMENT_ROOT);
         
@@ -41,9 +42,14 @@ public class JarTapestryModule extends TapestryModule
         {
             for (IJavaElement child : root.getChildren())
             {
+                if (monitor.isCanceled())
+                {
+                    return;
+                }
+                
                 if (child instanceof IPackageFragment && child.getElementName().startsWith(rootPackage))
                 {
-                    enumJavaClassesRecursively((IPackageFragment) child, callback);
+                    enumJavaClassesRecursively(monitor, (IPackageFragment) child, callback);
                 }
             }
         }
@@ -53,17 +59,22 @@ public class JarTapestryModule extends TapestryModule
         }
     }
 
-    private void enumJavaClassesRecursively(IPackageFragment packageFragment, ObjectCallback<Object> callback) throws JavaModelException
+    private void enumJavaClassesRecursively(IProgressMonitor monitor, IPackageFragment packageFragment, ObjectCallback<Object> callback) throws JavaModelException
     {
         for (IJavaElement child : packageFragment.getChildren())
         {
+            if (monitor.isCanceled())
+            {
+                return;
+            }
+            
             if (child instanceof IClassFile)
             {
                 callback.callback(child);
             }
             else if (child instanceof IPackageFragment)
             {
-                enumJavaClassesRecursively((IPackageFragment) child, callback);
+                enumJavaClassesRecursively(monitor, (IPackageFragment) child, callback);
             }
         }
     }

@@ -1,6 +1,7 @@
 package com.anjlab.eclipse.tapestry5;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import org.apache.commons.lang.StringUtils;
@@ -18,9 +19,11 @@ import org.eclipse.jdt.core.dom.ClassInstanceCreation;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.MethodInvocation;
 import org.eclipse.jdt.core.dom.Name;
+import org.eclipse.jdt.core.dom.QualifiedType;
 import org.eclipse.jdt.core.dom.SimpleName;
 import org.eclipse.jdt.core.dom.SimpleType;
 import org.eclipse.jdt.core.dom.Type;
+import org.eclipse.jdt.core.dom.TypeLiteral;
 
 public abstract class TapestryModule
 {
@@ -86,6 +89,8 @@ public abstract class TapestryModule
         
         findLibraryMappings(monitor);
         
+        findJavaScriptStacks(monitor);
+        
         findComponents(monitor);
     }
     
@@ -124,6 +129,11 @@ public abstract class TapestryModule
                         
                         for (Object className : classes)
                         {
+                            if (monitor.isCanceled())
+                            {
+                                return;
+                            }
+                            
                             IType subModuleClass = EclipseUtils.findTypeDeclaration(
                                     moduleClass.getJavaProject().getProject(), (String) className);
                             
@@ -149,6 +159,107 @@ public abstract class TapestryModule
         }
     }
     
+    private List<JavaScriptStack> javaScriptStacks;
+    
+    public List<JavaScriptStack> javaScriptStacks()
+    {
+        if (javaScriptStacks == null)
+        {
+            findJavaScriptStacks(new NullProgressMonitor());
+        }
+        return javaScriptStacks;
+    }
+    
+    private synchronized void findJavaScriptStacks(final IProgressMonitor monitor)
+    {
+        if (javaScriptStacks != null)
+        {
+            return;
+        }
+        
+        javaScriptStacks = new ArrayList<JavaScriptStack>();
+        
+        CompilationUnit compilationUnit = getModuleClassCompilationUnit();
+        
+        if (compilationUnit == null)
+        {
+            return;
+        }
+        
+        compilationUnit.accept(new ASTVisitor()
+        {
+            @Override
+            public boolean visit(MethodInvocation node)
+            {
+                if (monitor.isCanceled())
+                {
+                    return false;
+                }
+                
+                if (Arrays.binarySearch(ADD_OVERRIDE_INSTANCE, node.getName().toString()) < 0
+                        || node.arguments().size() != 2)
+                {
+                    return super.visit(node);
+                }
+                
+                Object typeArg = node.arguments().get(1);
+                
+                if (!(typeArg instanceof TypeLiteral))
+                {
+                    return super.visit(node);
+                }
+                
+                TypeLiteral typeLiteral = (TypeLiteral) typeArg;
+                
+                Type type = typeLiteral.getType();
+                
+                String className = null;
+                
+                if (type instanceof SimpleType)
+                {
+                    className = ((SimpleType) type).getName().getFullyQualifiedName();
+                }
+                else if (type instanceof QualifiedType)
+                {
+                    className = ((QualifiedType) type).getName().getFullyQualifiedName();
+                }
+                else
+                {
+                    return super.visit(node);
+                }
+                
+                IType declaration = EclipseUtils.findTypeDeclaration(getEclipseProject(), className);
+                
+                if (declaration != null)
+                {
+                    try
+                    {
+                        String[] interfaceNames = declaration.getSuperInterfaceNames();
+                        
+                        for (String interfaceName : interfaceNames)
+                        {
+                            if (TapestryUtils.isTapestryJavaScriptStackInterface(interfaceName))
+                            {
+                                Object stackExpr = node.arguments().get(0);
+                                String stackName = EclipseUtils.evalExpression(getEclipseProject(), stackExpr);
+                                
+                                javaScriptStacks.add(new JavaScriptStack(stackName, declaration,
+                                        Arrays.binarySearch(OVERRIDES, node.getName().toString()) >= 0));
+                            }
+                        }
+                    }
+                    catch (JavaModelException e)
+                    {
+                        Activator.getDefault().logWarning(
+                                "Unable to get super interfaces of " + declaration);
+                    }
+                }
+                
+                return super.visit(node);
+            }
+        });
+    }
+
     private List<LibraryMapping> libraryMappings;
 
     public List<LibraryMapping> libraryMappings()
@@ -160,7 +271,11 @@ public abstract class TapestryModule
         return libraryMappings;
     }
 
-    private synchronized void findLibraryMappings(IProgressMonitor monitor)
+    private static final String[] ADD_OVERRIDE = { "add", "override" };
+    private static final String[] ADD_OVERRIDE_INSTANCE = { "addInstance", "overrideInstance" };
+    private static final String[] OVERRIDES = { "override", "overrideInstance" };
+    
+    private synchronized void findLibraryMappings(final IProgressMonitor monitor)
     {
         if (libraryMappings != null)
         {
@@ -168,6 +283,84 @@ public abstract class TapestryModule
         }
         
         libraryMappings = new ArrayList<LibraryMapping>();
+        
+        CompilationUnit compilationUnit = getModuleClassCompilationUnit();
+        
+        if (compilationUnit == null)
+        {
+            return;
+        }
+        
+        compilationUnit.accept(new ASTVisitor()
+        {
+            @Override
+            public boolean visit(MethodInvocation node)
+            {
+                if (monitor.isCanceled())
+                {
+                    return false;
+                }
+                
+                if (Arrays.binarySearch(ADD_OVERRIDE, node.getName().toString()) < 0
+                        || node.arguments().size() != 1)
+                {
+                    return super.visit(node);
+                }
+                
+                Object arg = node.arguments().get(0);
+                
+                if (!(arg instanceof ClassInstanceCreation))
+                {
+                    return super.visit(node);
+                }
+                
+                ClassInstanceCreation creation = (ClassInstanceCreation) arg;
+                
+                Type creationType = creation.getType();
+                
+                if (creationType.isSimpleType())
+                {
+                    Name name = ((SimpleType) creationType).getName();
+                    
+                    if (name.isSimpleName())
+                    {
+                        if ("LibraryMapping".equals(((SimpleName) name).getIdentifier())
+                                && creation.arguments().size() == 2)
+                        {
+                            Object prefixExpr = creation.arguments().get(0);
+                            Object packageExpr = creation.arguments().get(1);
+                            
+                            String prefix = EclipseUtils.evalExpression(project.getProject(), prefixExpr);
+                            String pkg = "".equals(prefix)
+                                       ? TapestryUtils.getAppPackage(project.getProject())
+                                       : EclipseUtils.evalExpression(project.getProject(), packageExpr);
+                            
+                            if (prefix != null && !StringUtils.isEmpty(pkg))
+                            {
+                                libraryMappings.add(new LibraryMapping(prefix, pkg));
+                            }
+                            else
+                            {
+                                Activator.getDefault().logWarning(
+                                        "Unable to evaluate LibraryMapping(" + prefixExpr + ", " + packageExpr + ")");
+                            }
+                        }
+                    }
+                }
+                
+                return super.visit(node);
+            }
+        });
+    }
+
+    private CompilationUnit compilationUnit;
+    
+    private CompilationUnit getModuleClassCompilationUnit()
+    {
+        if (compilationUnit != null)
+        {
+            return compilationUnit;
+        }
         
         IClassFile classFile = moduleClass.getClassFile();
         
@@ -188,64 +381,11 @@ public abstract class TapestryModule
         
         if (!sourceAvailable)
         {
-            return;
+            return null;
         }
         
         CompilationUnit compilationUnit = EclipseUtils.parse(source);
-        
-        compilationUnit.accept(new ASTVisitor()
-        {
-            @Override
-            public boolean visit(MethodInvocation node)
-            {
-                if ("add".equals(node.getName().toString())
-                        || "override".equals(node.getName().toString()))
-                {
-                    if (node.arguments().size() == 1)
-                    {
-                        Object arg = node.arguments().get(0);
-                        
-                        if (arg instanceof ClassInstanceCreation)
-                        {
-                            ClassInstanceCreation creation = (ClassInstanceCreation) arg;
-                            
-                            Type creationType = creation.getType();
-                            
-                            if (creationType.isSimpleType())
-                            {
-                                Name name = ((SimpleType) creationType).getName();
-                                
-                                if (name.isSimpleName())
-                                {
-                                    if ("LibraryMapping".equals(((SimpleName) name).getIdentifier())
-                                            && creation.arguments().size() == 2)
-                                    {
-                                        Object prefixExpr = creation.arguments().get(0);
-                                        Object packageExpr = creation.arguments().get(1);
-                                        
-                                        String prefix = EclipseUtils.evalExpression(project.getProject(), prefixExpr);
-                                        String pkg = "".equals(prefix)
-                                                   ? TapestryUtils.getAppPackage(project.getProject())
-                                                   : EclipseUtils.evalExpression(project.getProject(), packageExpr);
-                                        
-                                        if (prefix != null && !StringUtils.isEmpty(pkg))
-                                        {
-                                            libraryMappings.add(new LibraryMapping(prefix, pkg));
-                                        }
-                                        else
-                                        {
-                                            Activator.getDefault().logWarning(
-                                                    "Unable to evaluate LibraryMapping(" + prefixExpr + ", " + packageExpr + ")");
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-                return super.visit(node);
-            }
-        });
+        return compilationUnit;
     }
 
     private List<TapestryContext> components;
@@ -284,6 +424,11 @@ public abstract class TapestryModule
         {
             String componentsPackage = mapping.getRootPackage() + ".components";
             
+            if (monitor.isCanceled())
+            {
+                return;
+            }
+            
             if (mapping.getPathPrefix().isEmpty() && isTapestryCoreModule())
             {
                 //  This package is from the AppModule
@@ -292,21 +437,21 @@ public abstract class TapestryModule
                     if (module.isAppModule())
                     {
                         //  Components should go to AppModule by using its own componentClassFound handler
-                        module.enumJavaClassesRecursively(componentsPackage);
+                        module.enumJavaClassesRecursively(monitor, componentsPackage);
                         break;
                     }
                 }
             }
             else
             {
-                enumJavaClassesRecursively(componentsPackage, componentClassFound);
+                enumJavaClassesRecursively(monitor, componentsPackage, componentClassFound);
             }
         }
     }
     
-    private void enumJavaClassesRecursively(String componentsPackage)
+    private void enumJavaClassesRecursively(IProgressMonitor monitor, String componentsPackage)
     {
-        enumJavaClassesRecursively(componentsPackage, createComponentClassFoundHandler());
+        enumJavaClassesRecursively(monitor, componentsPackage, createComponentClassFoundHandler());
     }
 
     private List<TapestryContext> intermediateComponents;
@@ -357,7 +502,7 @@ public abstract class TapestryModule
         return componentClassFound;
     }
 
-    protected abstract void enumJavaClassesRecursively(String rootPackage, ObjectCallback<Object> callback);
+    protected abstract void enumJavaClassesRecursively(IProgressMonitor monitor, String rootPackage, ObjectCallback<Object> callback);
 
     public abstract TapestryFile getModuleFile();
 

@@ -71,17 +71,17 @@ public class EclipseUtils
     
     public static void openFile(final IWorkbenchWindow window, TapestryFile file, final EditorCallback editorCallback)
     {
-        if (file instanceof AssetReference)
+        if (file instanceof TapestryFileReference)
         {
-            AssetReference asset = (AssetReference) file;
+            TapestryFileReference reference = (TapestryFileReference) file;
             try
             {
-                file = asset.resolveFile(false);
+                file = reference.resolveFile(false);
             }
-            catch (AssetException e)
+            catch (UnresolvableReferenceException e)
             {
                 EclipseUtils.openError(window,
-                        "Unable to resolve asset '" + asset.getAssetPath() + "': "
+                        "Unable to resolve '" + reference.getReference() + "': "
                                 + e.getLocalizedMessage());
                 
                 return;

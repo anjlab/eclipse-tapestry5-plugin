@@ -1,6 +1,6 @@
 package com.anjlab.eclipse.tapestry5.views.project;
 
-import org.eclipse.jdt.core.IType;
+import org.eclipse.jdt.core.IJavaElement;
 import org.eclipse.jdt.ui.JavaUI;
 import org.eclipse.jface.viewers.DoubleClickEvent;
 import org.eclipse.jface.viewers.IDoubleClickListener;
@@ -13,6 +13,7 @@ import org.eclipse.ui.IWorkbenchWindow;
 import org.eclipse.ui.part.ViewPart;
 
 import com.anjlab.eclipse.tapestry5.Activator;
+import com.anjlab.eclipse.tapestry5.JavaScriptStack;
 import com.anjlab.eclipse.tapestry5.TapestryContext;
 import com.anjlab.eclipse.tapestry5.TapestryFile;
 import com.anjlab.eclipse.tapestry5.TapestryModule;
@@ -72,17 +73,24 @@ public class TapestryProjectOutlineView extends ViewPart
                     
                     if (data instanceof TapestryModule)
                     {
-                        IType moduleClass = ((TapestryModule) data).getModuleClass();
-                        
-                        try
-                        {
-                            JavaUI.openInEditor(moduleClass);
-                        }
-                        catch (Exception e)
-                        {
-                            Activator.getDefault().logError("Error opening " + moduleClass.getElementName(), e);
-                        }
+                        openDeclaration(((TapestryModule) data).getModuleClass());
                     }
+                    else if (data instanceof JavaScriptStack)
+                    {
+                        openDeclaration(((JavaScriptStack) data).getDeclaration());
+                    }
+                }
+            }
+
+            private void openDeclaration(IJavaElement element)
+            {
+                try
+                {
+                    JavaUI.openInEditor(element);
+                }
+                catch (Exception e)
+                {
+                    Activator.getDefault().logError("Error opening " + element.getElementName(), e);
                 }
             }
         });
