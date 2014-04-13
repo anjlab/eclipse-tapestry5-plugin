@@ -382,6 +382,7 @@ public class TapestryProject
 
     private TapestryContext findComponentContext(TapestryModule module, String appPackage, String componentNameWithoutPrefix)
     {
+        //  subpackage.componentName
         String componentPath = getComponentPath(module, appPackage, componentNameWithoutPrefix);
         
         TapestryFile file = module.findClasspathFileCaseInsensitive(componentPath);
@@ -392,13 +393,29 @@ public class TapestryProject
             
             if (parentFile != null)
             {
+                //  subpackage.componentNameSubpackage
                 componentPath = getComponentPath(module, appPackage, componentNameWithoutPrefix + parentFile.getName());
                 
                 file = module.findClasspathFileCaseInsensitive(componentPath);
+                
+                if (file == null)
+                {
+                    //  subpackage.subpackageComponentName
+                    componentPath = getComponentPath(module, appPackage, prepend(componentNameWithoutPrefix, parentFile.getName()));
+                    
+                    file = module.findClasspathFileCaseInsensitive(componentPath);
+                }
             }
         }
         
         return file != null ? file.getContext() : null;
+    }
+
+    private String prepend(String componentNameWithoutPrefix, String parentName)
+    {
+        StringBuilder builder = new StringBuilder(componentNameWithoutPrefix);
+        int index = componentNameWithoutPrefix.lastIndexOf(".");
+        return builder.insert(index + 1, parentName).toString();
     }
 
     protected String getComponentPath(TapestryModule module, String appPackage,
