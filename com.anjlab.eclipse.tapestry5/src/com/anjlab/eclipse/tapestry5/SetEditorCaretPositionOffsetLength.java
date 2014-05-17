@@ -1,12 +1,8 @@
 package com.anjlab.eclipse.tapestry5;
 
-import org.eclipse.ui.IEditorPart;
-import org.eclipse.ui.part.MultiPageEditorPart;
 import org.eclipse.ui.texteditor.ITextEditor;
 
-import com.anjlab.eclipse.tapestry5.EclipseUtils.EditorCallback;
-
-public class SetEditorCaretPositionOffsetLength implements EditorCallback
+public class SetEditorCaretPositionOffsetLength extends TextEditorCallback
 {
     private final int offset;
     private final int length;
@@ -23,26 +19,13 @@ public class SetEditorCaretPositionOffsetLength implements EditorCallback
     }
     
     @Override
-    public void editorOpened(IEditorPart editorPart)
+    public void editorOpened(ITextEditor textEditor)
     {
         if (offset < 0)
         {
             return;
         }
         
-        if (editorPart instanceof MultiPageEditorPart)
-        {
-            Object selectedPage = ((MultiPageEditorPart) editorPart).getSelectedPage();
-            
-            if (selectedPage instanceof IEditorPart)
-            {
-                editorPart = (IEditorPart) selectedPage;
-            }
-        }
-        
-        if (editorPart instanceof ITextEditor)
-        {
-            ((ITextEditor) editorPart).selectAndReveal(offset, length);
-        }
+        textEditor.selectAndReveal(offset, length);
     }
 }

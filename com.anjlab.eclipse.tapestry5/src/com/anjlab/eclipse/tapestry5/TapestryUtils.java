@@ -34,6 +34,8 @@ import org.eclipse.ui.IStorageEditorInput;
 import org.eclipse.ui.IWorkbenchPage;
 import org.eclipse.ui.IWorkbenchWindow;
 import org.eclipse.ui.PlatformUI;
+import org.w3c.dom.NamedNodeMap;
+import org.w3c.dom.Node;
 
 @SuppressWarnings("restriction")
 public class TapestryUtils
@@ -518,7 +520,7 @@ public class TapestryUtils
         return null;
     }
 
-    public static TapestryContext getTapestryContext(IWorkbenchWindow window, String componentName)
+    public static TapestryContextScope getTapestryContext(IWorkbenchWindow window, String componentName)
     {
         TapestryContext tapestryContext = Activator.getDefault().getTapestryContext(window);
         
@@ -544,7 +546,12 @@ public class TapestryUtils
             return null;
         }
         
-        return targetContext;
+        if (targetContext == null)
+        {
+            return null;
+        }
+        
+        return new TapestryContextScope(window, tapestryModule.getProject(), targetContext, null);
     }
 
     public static IWorkbenchWindow getWorkbenchWindow(Shell shell)
@@ -644,5 +651,107 @@ public class TapestryUtils
         }
         
         return null;
+    }
+
+    public static boolean isTapestryDefaultNamespace(String namespace)
+    {
+        return !StringUtils.isEmpty(namespace)
+            && namespace.startsWith("http://tapestry.apache.org/schema/tapestry");
+    }
+
+    public static String findTapestryAttribute(Node node, String attributeName)
+    {
+        NamedNodeMap attributes = node.getAttributes();
+        
+        for (int i = 0; i < attributes.getLength(); i++)
+        {
+            Node attribute = attributes.item(i);
+            
+            if (attribute.getNamespaceURI() != null && isTapestryDefaultNamespace(attribute.getNamespaceURI()))
+            {
+                if (attributeName.equals(attribute.getLocalName()))
+                {
+                    return attribute.getNodeValue();
+                }
+            }
+        }
+        return null;
+    }
+
+    public static String getComponentName(IWorkbenchWindow window, Node element)
+    {
+        //  if element is from Tapestry namespace -- we have a componentName
+        String namespace = element.getNamespaceURI();
+        
+        if (namespace != null)
+        {
+            if (isTapestryDefaultNamespace(namespace))
+            {
+                return element.getLocalName();
+            }
+            else if (namespace.startsWith("tapestry-library:"))
+            {
+                return namespace.substring("tapestry-library:".length()) + "." + element.getLocalName();
+            }
+            else if (namespace.equals("tapestry:parameter"))
+            {
+                //  TODO Add support for tapestry parameters
+                return null;
+            }
+        }
+        
+        String componentName = findTapestryAttribute(element, "type");
+        
+        if (componentName == null)
+        {
+            String componentId = findTapestryAttribute(element, "id");
+            
+            if (componentId != null)
+            {
+                //  Get type from field declaration in Java class
+                
+                TapestryContext tapestryContext = Activator.getDefault().getTapestryContext(window);
+                
+                if (tapestryContext == null)
+                {
+                    return null;
+                }
+                
+                TapestryProject tapestryProject = Activator.getDefault().getTapestryProject(window);
+                
+                for (Component component : tapestryContext.getSpecification().getComponents())
+                {
+                    if (StringUtils.equals(componentId, component.getId()))
+                    {
+                        return getComponentName(tapestryProject, component);
+                    }
+                }
+            }
+        }
+        return componentName;
+    }
+
+    public static String getComponentName(TapestryProject tapestryProject, Component component)
+    {
+        if (component.isJavaType())
+        {
+            //  Convert component type to component name
+            for (TapestryModule tapestryModule : tapestryProject.modules())
+            {
+                for (LibraryMapping libraryMapping : tapestryModule.libraryMappings())
+                {
+                    if (component.getType().startsWith(libraryMapping.getRootPackage()))
+                    {
+                        return component.getType().substring(
+                                (libraryMapping.getRootPackage() + ".components").length()
+                                + ".".length());
+                    }
+                }
+            }
+            
+            return null;
+        }
+        
+        return component.getType();
     }
 }

@@ -1,14 +1,24 @@
 package com.anjlab.eclipse.tapestry5;
 
+import org.eclipse.jdt.core.ISourceRange;
+
 public class Member
 {
 
-    public String name;
+    private String name;
+    private ISourceRange nameRange;
     private String javadoc;
 
-    public Member()
+    private TapestryComponentSpecification specification;
+    
+    public TapestryComponentSpecification getSpecification()
     {
-        super();
+        return specification;
+    }
+
+    public void setSpecification(TapestryComponentSpecification specification)
+    {
+        this.specification = specification;
     }
 
     public String getName()
@@ -31,4 +41,13 @@ public class Member
         this.javadoc = javadoc;
     }
 
+    public ISourceRange getNameRange()
+    {
+        return nameRange;
+    }
+
+    public void setNameRange(ISourceRange nameRange)
+    {
+        this.nameRange = nameRange;
+    }
 }

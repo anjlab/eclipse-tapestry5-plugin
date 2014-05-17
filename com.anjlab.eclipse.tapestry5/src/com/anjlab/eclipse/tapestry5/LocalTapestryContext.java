@@ -313,11 +313,24 @@ public class LocalTapestryContext extends TapestryContext
     @Override
     public TapestryComponentSpecification getSpecification()
     {
+        IType type = getJavaType();
+        
+        if (type == null)
+        {
+            return TapestryComponentSpecification.EMPTY;
+        }
+        
+        return new TapestryComponentSpecification(type, this);
+    }
+    
+    @Override
+    public IType getJavaType()
+    {
         TapestryFile javaFile = getJavaFile();
         
         if (javaFile == null)
         {
-            return TapestryComponentSpecification.EMPTY;
+            return null;
         }
         
         IFile file = ((LocalFile)javaFile).getFile();
@@ -326,11 +339,6 @@ public class LocalTapestryContext extends TapestryContext
         
         IType type = compilationUnit.findPrimaryType();
         
-        if (type == null)
-        {
-            return TapestryComponentSpecification.EMPTY;
-        }
-        
-        return new TapestryComponentSpecification(type);
+        return type;
     }
 }

@@ -385,6 +385,7 @@ public class TapestryProject
         //  subpackage.componentName
         String componentPath = getComponentPath(module, appPackage, componentNameWithoutPrefix);
         
+        //  TODO Look in module.getComponents() instead? It's cached
         TapestryFile file = module.findClasspathFileCaseInsensitive(componentPath);
         
         if (file == null)

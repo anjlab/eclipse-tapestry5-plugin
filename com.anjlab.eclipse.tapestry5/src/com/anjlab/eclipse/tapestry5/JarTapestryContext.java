@@ -175,14 +175,28 @@ public class JarTapestryContext extends TapestryContext
     @Override
     public TapestryComponentSpecification getSpecification()
     {
-        TapestryFile javaFile = getJavaFile();
+        IType type = getJavaType();
         
-        if (javaFile == null)
+        if (type == null)
         {
             return TapestryComponentSpecification.EMPTY;
         }
         
+        return new TapestryComponentSpecification(type, this);
+    }
+    
+    @Override
+    public IType getJavaType()
+    {
+        TapestryFile javaFile = getJavaFile();
+        
+        if (javaFile == null)
+        {
+            return null;
+        }
+        
         IType type = ((ClassFile)javaFile).getClassFile().findPrimaryType();
-        return new TapestryComponentSpecification(type);
+        
+        return type;
     }
 }

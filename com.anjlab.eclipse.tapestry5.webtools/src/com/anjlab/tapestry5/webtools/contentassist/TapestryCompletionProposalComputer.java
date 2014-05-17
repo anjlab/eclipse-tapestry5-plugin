@@ -14,6 +14,7 @@ import com.anjlab.eclipse.tapestry5.Member;
 import com.anjlab.eclipse.tapestry5.Property;
 import com.anjlab.eclipse.tapestry5.TapestryComponentSpecification;
 import com.anjlab.eclipse.tapestry5.TapestryContext;
+import com.anjlab.eclipse.tapestry5.TapestryContextScope;
 import com.anjlab.eclipse.tapestry5.TapestryModule;
 import com.anjlab.eclipse.tapestry5.TapestryProject;
 import com.anjlab.eclipse.tapestry5.TapestryUtils;
@@ -49,6 +50,7 @@ public class TapestryCompletionProposalComputer
         {
             for (TapestryContext tapestryContext : tapestryModule.getComponents())
             {
+                //  Find prefix for this tapestryContext -- might be prefix of default T5 namespaceURI or one of "tapestry-library:"
                 String replacementString = "t:" + tapestryModule.getComponentName(tapestryContext);
                 
                 if (!StringUtils.startsWithIgnoreCase(replacementString, contentAssistRequest.getMatchString())
@@ -85,16 +87,18 @@ public class TapestryCompletionProposalComputer
             return;
         }
         
-        TapestryComponentSpecification specification = getCurrentTagSpecification(contentAssistRequest, context);
+        TapestryContextScope scope = getCurrentTagSpecification(contentAssistRequest, context);
         
-        if (specification == null)
+        if (scope == null)
         {
             return;
         }
         
         NamedNodeMap attributes = contentAssistRequest.getNode().getAttributes();
         
-        for (Member parameter : specification.getParameters())
+        //  TODO Add parameters of applied t:mixins
+        
+        for (Member parameter : scope.specification.getParameters(scope.project))
         {
             //  Filter out parameters that are already present in this tag
             if (attributes.getNamedItem(parameter.getName()) != null)
@@ -125,10 +129,10 @@ public class TapestryCompletionProposalComputer
 
     private boolean isTapestryTag(ContentAssistRequest contentAssistRequest)
     {
-        return contentAssistRequest.getNode().getNamespaceURI().startsWith("http://tapestry.apache.org/");
+        return TapestryUtils.isTapestryDefaultNamespace(contentAssistRequest.getNode().getNamespaceURI());
     }
 
-    protected TapestryComponentSpecification getCurrentTagSpecification(
+    protected TapestryContextScope getCurrentTagSpecification(
             ContentAssistRequest contentAssistRequest,
             CompletionProposalInvocationContext context)
     {
@@ -141,26 +145,26 @@ public class TapestryCompletionProposalComputer
             return null;
         }
         
-        String componentName = contentAssistRequest.getNode().getLocalName();
+        String componentName = TapestryUtils.getComponentName(window, contentAssistRequest.getNode());
         
         if (componentName == null)
         {
             return null;
         }
         
-        TapestryContext tapestryContext = TapestryUtils.getTapestryContext(window, componentName);
+        TapestryContextScope scope = TapestryUtils.getTapestryContext(window, componentName);
         
-        if (tapestryContext == null)
+        if (scope == null)
         {
             return null;
         }
         
-        TapestryComponentSpecification specification = tapestryContext.getSpecification();
+        TapestryComponentSpecification specification = scope.context.getSpecification();
         
-        return specification;
+        return new TapestryContextScope(window, scope.project, scope.context, specification);
     }
     
-    protected TapestryComponentSpecification getCurrentTapestryContextSpecification(
+    protected TapestryContextScope getCurrentTapestryContextSpecification(
             ContentAssistRequest contentAssistRequest,
             CompletionProposalInvocationContext context)
     {
@@ -180,9 +184,11 @@ public class TapestryCompletionProposalComputer
             return null;
         }
         
+        TapestryProject tapestryProject = Activator.getDefault().getTapestryProject(window);
+        
         TapestryComponentSpecification specification = tapestryContext.getSpecification();
         
-        return specification;
+        return new TapestryContextScope(window, tapestryProject, tapestryContext, specification);
     }
     
     @Override
@@ -197,16 +203,16 @@ public class TapestryCompletionProposalComputer
             return;
         }
         
-        TapestryComponentSpecification specification = getCurrentTapestryContextSpecification(contentAssistRequest, context);
+        TapestryContextScope scope = getCurrentTapestryContextSpecification(contentAssistRequest, context);
         
-        if (specification == null)
+        if (scope == null)
         {
             return;
         }
+        //  TODO Support comma-separated lists (like for t:mixins), maps, and different binding prefixes
+        //  TODO Support properties in dot-notation, like: user.firstName
         
-        //  TODO Support t:type=""
-        
-        for (Property property : specification.getProperties())
+        for (Property property : scope.specification.getProperties())
         {
             if (!property.getName().startsWith(contentAssistRequest.getMatchString().replaceAll("\"|'", "")))
             {
