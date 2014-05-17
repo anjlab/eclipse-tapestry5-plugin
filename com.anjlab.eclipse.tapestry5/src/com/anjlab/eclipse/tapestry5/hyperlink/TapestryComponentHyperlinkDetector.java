@@ -30,7 +30,7 @@ import com.anjlab.eclipse.tapestry5.hyperlink.XmlFragment.XmlAttributeValue;
 import com.anjlab.eclipse.tapestry5.hyperlink.XmlFragment.XmlContextFragment;
 import com.anjlab.eclipse.tapestry5.hyperlink.XmlFragment.XmlTagName;
 
-public class TapestryComponentHyperlinkDetector2 extends AbstractHyperlinkDetector
+public class TapestryComponentHyperlinkDetector extends AbstractHyperlinkDetector
 {
     @Override
     public IHyperlink[] detectHyperlinks(ITextViewer textViewer, IRegion region, boolean canShowMultipleHyperlinks)
