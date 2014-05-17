@@ -26,7 +26,6 @@ import org.eclipse.jdt.internal.ui.javaeditor.IClassFileEditorInput;
 import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.jface.viewers.ITreeSelection;
-import org.eclipse.swt.widgets.Shell;
 import org.eclipse.ui.IEditorInput;
 import org.eclipse.ui.IEditorPart;
 import org.eclipse.ui.IFileEditorInput;
@@ -63,20 +62,6 @@ public class TapestryUtils
     public static String joinPath(String part1, String part2)
     {
         return (part1 + '/' + part2).replaceAll("//", "/");
-    }
-
-    public static boolean isInFolder(IFile file, IContainer folder)
-    {
-        IContainer parent = file.getParent();
-        while (parent != null)
-        {
-            if (parent.equals(folder))
-            {
-                return true;
-            }
-            parent = parent.getParent();
-        }
-        return false;
     }
 
     public static String getRelativeFileName(IResource resource, IContainer ancestor)
@@ -347,12 +332,6 @@ public class TapestryUtils
         return null;
     }
 
-    public static String getSimpleName(String className)
-    {
-        String[] parts = className.split("\\.");
-        return parts[parts.length - 1];
-    }
-
     public static TapestryContext createTapestryContext(IJarEntryResource jarEntry)
     {
         return new JarTapestryContext(jarEntry);
@@ -552,21 +531,6 @@ public class TapestryUtils
         }
         
         return new TapestryContextScope(window, tapestryModule.getProject(), targetContext, null);
-    }
-
-    public static IWorkbenchWindow getWorkbenchWindow(Shell shell)
-    {
-        IWorkbenchWindow currentWindow = null;
-        
-        for (IWorkbenchWindow window : PlatformUI.getWorkbench().getWorkbenchWindows())
-        {
-            if (shell == window.getShell())
-            {
-                currentWindow = window;
-                break;
-            }
-        }
-        return currentWindow;
     }
 
     public static TapestryFile findFileInSourceFolders(IJavaProject javaProject, String path)

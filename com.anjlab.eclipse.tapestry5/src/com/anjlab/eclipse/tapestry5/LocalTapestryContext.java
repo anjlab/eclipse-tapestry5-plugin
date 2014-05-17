@@ -128,7 +128,7 @@ public class LocalTapestryContext extends TapestryContext
             
             IContainer webapp = TapestryUtils.findWebapp(project);
             
-            if (fromWebapp = TapestryUtils.isInFolder(forFile, webapp))
+            if (fromWebapp = EclipseUtils.isInFolder(forFile, webapp))
             {
                 if (isWebappContextAValidLocationForTheFile(forFile))
                 {

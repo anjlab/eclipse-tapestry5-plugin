@@ -10,6 +10,7 @@ import org.eclipse.wst.xml.ui.internal.contentassist.MarkupCompletionProposal;
 import org.w3c.dom.NamedNodeMap;
 
 import com.anjlab.eclipse.tapestry5.Activator;
+import com.anjlab.eclipse.tapestry5.EclipseUtils;
 import com.anjlab.eclipse.tapestry5.Member;
 import com.anjlab.eclipse.tapestry5.Property;
 import com.anjlab.eclipse.tapestry5.TapestryComponentSpecification;
@@ -31,7 +32,7 @@ public class TapestryCompletionProposalComputer
     {
         Shell shell = context.getViewer().getTextWidget().getShell();
         
-        IWorkbenchWindow window = TapestryUtils.getWorkbenchWindow(shell);
+        IWorkbenchWindow window = EclipseUtils.getWorkbenchWindow(shell);
         
         if (window == null)
         {
@@ -138,7 +139,7 @@ public class TapestryCompletionProposalComputer
     {
         Shell shell = context.getViewer().getTextWidget().getShell();
         
-        IWorkbenchWindow window = TapestryUtils.getWorkbenchWindow(shell);
+        IWorkbenchWindow window = EclipseUtils.getWorkbenchWindow(shell);
         
         if (window == null)
         {
@@ -170,7 +171,7 @@ public class TapestryCompletionProposalComputer
     {
         Shell shell = context.getViewer().getTextWidget().getShell();
         
-        IWorkbenchWindow window = TapestryUtils.getWorkbenchWindow(shell);
+        IWorkbenchWindow window = EclipseUtils.getWorkbenchWindow(shell);
         
         if (window == null)
         {

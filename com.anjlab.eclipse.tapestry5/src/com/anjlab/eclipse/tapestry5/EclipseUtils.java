@@ -34,12 +34,14 @@ import org.eclipse.jdt.internal.ui.javaeditor.EditorUtility;
 import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.jface.viewers.ITreeSelection;
+import org.eclipse.swt.widgets.Shell;
 import org.eclipse.ui.IEditorInput;
 import org.eclipse.ui.IEditorPart;
 import org.eclipse.ui.IEditorReference;
 import org.eclipse.ui.IFileEditorInput;
 import org.eclipse.ui.IWorkbenchWindow;
 import org.eclipse.ui.PartInitException;
+import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.ide.IDE;
 
 @SuppressWarnings("restriction")
@@ -425,6 +427,35 @@ public class EclipseUtils
     public static boolean isJavaProject(IProject project) throws CoreException
     {
         return project.hasNature(JavaCore.NATURE_ID);
+    }
+
+    public static IWorkbenchWindow getWorkbenchWindow(Shell shell)
+    {
+        IWorkbenchWindow currentWindow = null;
+        
+        for (IWorkbenchWindow window : PlatformUI.getWorkbench().getWorkbenchWindows())
+        {
+            if (shell == window.getShell())
+            {
+                currentWindow = window;
+                break;
+            }
+        }
+        return currentWindow;
+    }
+
+    public static boolean isInFolder(IFile file, IContainer folder)
+    {
+        IContainer parent = file.getParent();
+        while (parent != null)
+        {
+            if (parent.equals(folder))
+            {
+                return true;
+            }
+            parent = parent.getParent();
+        }
+        return false;
     }
 
 }

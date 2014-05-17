@@ -45,7 +45,7 @@ public class TapestryComponentHyperlinkDetector2 extends AbstractHyperlinkDetect
             return null;
         }
         
-        final IWorkbenchWindow window = TapestryUtils.getWorkbenchWindow(textViewer.getTextWidget().getShell());
+        final IWorkbenchWindow window = EclipseUtils.getWorkbenchWindow(textViewer.getTextWidget().getShell());
         
         if (window == null)
         {
