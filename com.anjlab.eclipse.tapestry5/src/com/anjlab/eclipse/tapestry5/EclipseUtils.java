@@ -327,13 +327,24 @@ public class EclipseUtils
         return parse(source);
     }
 
+    @SuppressWarnings("deprecation")    //  -- Since Eclipse Luna
     public static CompilationUnit parse(String source)
     {
         if (source == null)
         {
             throw new IllegalStateException(SOURCE_NOT_FOUND);
         }
-        ASTParser parser = ASTParser.newParser(AST.JLS4);
+        
+        ASTParser parser;
+        try
+        {
+            int parserLevel = 8;  // AST.JLS8 -- Since Eclipse Luna
+            parser = ASTParser.newParser(parserLevel);
+        }
+        catch (IllegalArgumentException e)
+        {
+            parser = ASTParser.newParser(AST.JLS4);
+        }
         parser.setKind(ASTParser.K_COMPILATION_UNIT);
         parser.setSource(source.toCharArray());
         parser.setResolveBindings(true);

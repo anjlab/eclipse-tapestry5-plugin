@@ -17,6 +17,7 @@ import org.eclipse.emf.common.util.URI;
 import org.eclipse.jface.resource.ImageDescriptor;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.custom.CTabItem;
+import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.graphics.Point;
 import org.eclipse.swt.graphics.Rectangle;
 import org.eclipse.swt.widgets.Composite;
@@ -132,6 +133,13 @@ public class QuickSwitchHandler extends AbstractHandler
                         TapestryFile file = mElementContainerImpl.lookupFile(uri.toString());
                         
                         return labelProvider.getImageDescriptor(file);
+                    }
+
+//                    @Override -- Since Luna
+                    public Image adornImage(Image arg0, Image arg1)
+                    {
+                        // TODO Auto-generated method stub
+                        return null;
                     }
                 },
                 false);

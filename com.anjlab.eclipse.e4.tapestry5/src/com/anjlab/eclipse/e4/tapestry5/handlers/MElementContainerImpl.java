@@ -254,4 +254,11 @@ public class MElementContainerImpl implements MElementContainer<MStackElementImp
         // TODO Auto-generated method stub
         
     }
+
+//    @Override -- Since Luna
+    public void updateLocalization()
+    {
+        // TODO Auto-generated method stub
+        
+    }
 }

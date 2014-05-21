@@ -12,6 +12,7 @@ import org.eclipse.ui.IWorkbenchWindow;
 
 import com.anjlab.eclipse.tapestry5.EclipseUtils;
 
+@SuppressWarnings("deprecation") // Since Luna
 public class EPartServiceImpl implements EPartService
 {
     private IWorkbenchWindow window;

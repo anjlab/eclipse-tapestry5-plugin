@@ -419,4 +419,11 @@ public class MStackElementImpl implements MStackElement, MPart
         
     }
 
+//    @Override -- Since Luna
+    public void updateLocalization()
+    {
+        // TODO Auto-generated method stub
+        
+    }
+
 }
