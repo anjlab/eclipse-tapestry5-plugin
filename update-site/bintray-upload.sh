@@ -6,11 +6,11 @@ VERSION_NAME=2.4.2
 
 curl -vT content.jar \
     -udmitrygusev:$bintray_api_key \
-    https://api.bintray.com/content/anjlab/$REPO_NAME/$PACKAGE_NAME/$VERSION_NAME/
+    https://api.bintray.com/content/anjlab/$REPO_NAME/
 
 curl -vT artifacts.jar \
     -udmitrygusev:$bintray_api_key \
-    https://api.bintray.com/content/anjlab/$REPO_NAME/$PACKAGE_NAME/$VERSION_NAME/
+    https://api.bintray.com/content/anjlab/$REPO_NAME/
 
 curl -vT features/com.anjlab.eclipse.tapestry5.feature_$VERSION_NAME.jar \
     -udmitrygusev:$bintray_api_key \
