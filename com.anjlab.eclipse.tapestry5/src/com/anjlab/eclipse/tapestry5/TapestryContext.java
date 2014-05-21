@@ -21,7 +21,9 @@ import org.eclipse.jdt.core.IType;
 import org.eclipse.jdt.core.JavaModelException;
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.Name;
+import org.eclipse.jdt.internal.ui.text.javadoc.JavadocContentAccess2;
 
+@SuppressWarnings("restriction")
 public abstract class TapestryContext
 {
     public static interface FileNameBuilder
@@ -565,4 +567,20 @@ public abstract class TapestryContext
     public abstract TapestryComponentSpecification getSpecification();
     
     public abstract IType getJavaType();
+
+    public String getJavadoc()
+    {
+        try
+        {
+            IType javaType = getJavaType();
+            
+            return javaType != null
+                 ? JavadocContentAccess2.getHTMLContent(javaType, true)
+                 : null;
+        }
+        catch (JavaModelException e)
+        {
+            return null;
+        }
+    }
 }

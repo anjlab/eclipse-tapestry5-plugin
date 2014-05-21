@@ -718,4 +718,15 @@ public class TapestryUtils
         
         return component.getType();
     }
+
+    public static boolean isTapestryComponentsNamespace(String namespace)
+    {
+        if (StringUtils.isEmpty(namespace))
+        {
+            return false;
+        }
+        
+        return isTapestryDefaultNamespace(namespace)
+            || namespace.startsWith("tapestry-library:");
+    }
 }
