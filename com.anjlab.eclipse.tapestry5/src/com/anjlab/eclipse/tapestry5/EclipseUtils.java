@@ -18,7 +18,6 @@ import org.eclipse.jdt.core.IPackageFragmentRoot;
 import org.eclipse.jdt.core.IType;
 import org.eclipse.jdt.core.JavaCore;
 import org.eclipse.jdt.core.JavaModelException;
-import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTParser;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.Name;
@@ -327,7 +326,6 @@ public class EclipseUtils
         return parse(source);
     }
 
-    @SuppressWarnings("deprecation")    //  -- Since Eclipse Luna
     public static CompilationUnit parse(String source)
     {
         if (source == null)
@@ -335,20 +333,34 @@ public class EclipseUtils
             throw new IllegalStateException(SOURCE_NOT_FOUND);
         }
         
-        ASTParser parser;
-        try
+        if (parserLevel == -1)
         {
-            int parserLevel = 8;  // AST.JLS8 -- Since Eclipse Luna
-            parser = ASTParser.newParser(parserLevel);
+            parserLevel = getParserLevel();
         }
-        catch (IllegalArgumentException e)
-        {
-            parser = ASTParser.newParser(AST.JLS4);
-        }
+        
+        ASTParser parser = ASTParser.newParser(parserLevel);
         parser.setKind(ASTParser.K_COMPILATION_UNIT);
         parser.setSource(source.toCharArray());
         parser.setResolveBindings(true);
         return (CompilationUnit) parser.createAST(null);
+    }
+
+    private static int parserLevel = -1;
+
+    private static int getParserLevel()
+    {
+        try
+        {
+            int JLS8 = 8;
+            // Try to use Java 8's AST.JLS8
+            ASTParser.newParser(JLS8);
+            return JLS8;
+        }
+        catch (IllegalArgumentException e)
+        {
+            //  Fallback to Java 7
+            return 4; //  AST.JLS4
+        }
     }
 
     public static IProject getProjectFromSelection(ISelection selection)
