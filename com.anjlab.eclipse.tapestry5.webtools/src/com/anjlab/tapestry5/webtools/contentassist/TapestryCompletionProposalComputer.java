@@ -176,11 +176,6 @@ public class TapestryCompletionProposalComputer extends DefaultXMLCompletionProp
     {
         //  Display Page/Component parameters proposals
         
-        if (!isTapestryTag(contentAssistRequest))
-        {
-            return;
-        }
-        
         TapestryContextScope scope = getCurrentTagSpecification(contentAssistRequest, context);
         
         if (scope == null)
@@ -195,6 +190,9 @@ public class TapestryCompletionProposalComputer extends DefaultXMLCompletionProp
         for (Member parameter : scope.specification.getParameters(scope.project))
         {
             //  Filter out parameters that are already present in this tag
+            
+            //  TODO Also check if parameter is already declared
+            //  through @Component-annotated field in the java class
             if (attributes.getNamedItem(parameter.getName()) != null)
             {
                 continue;
@@ -227,11 +225,6 @@ public class TapestryCompletionProposalComputer extends DefaultXMLCompletionProp
             CompletionProposalInvocationContext context)
     {
         //  Display Page/Component properties
-        
-        if (!isTapestryTag(contentAssistRequest))
-        {
-            return;
-        }
         
         TapestryContextScope scope = getCurrentTapestryContextSpecification(contentAssistRequest, context);
         
@@ -377,12 +370,6 @@ public class TapestryCompletionProposalComputer extends DefaultXMLCompletionProp
             }
         }
         findXmlnsMappingsAt(node.getParentNode(), mappings);
-    }
-
-    private boolean isTapestryTag(ContentAssistRequest contentAssistRequest)
-    {
-        return TapestryUtils.isTapestryComponentsNamespace(
-                contentAssistRequest.getNode().getNamespaceURI());
     }
 
     protected TapestryContextScope getCurrentTagSpecification(
