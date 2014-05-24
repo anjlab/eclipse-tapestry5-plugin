@@ -113,6 +113,11 @@ public class TapestryContextView extends ViewPart
         Activator.getDefault().addTapestryContextListener(getViewSite().getWorkbenchWindow(), tapestryContextListener);
     }
     
+    public TapestryContext getTapestryContext()
+    {
+        return ((TapestryContextContentProvider) viewer.getContentProvider()).getContext();
+    }
+    
     @Override
     public void dispose()
     {

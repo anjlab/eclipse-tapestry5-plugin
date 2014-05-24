@@ -14,11 +14,11 @@ import org.eclipse.ui.IViewPart;
 import org.eclipse.ui.IWorkbenchWindow;
 import org.eclipse.ui.PlatformUI;
 
-import com.anjlab.eclipse.tapestry5.Activator;
 import com.anjlab.eclipse.tapestry5.EclipseUtils;
 import com.anjlab.eclipse.tapestry5.TapestryContext;
 import com.anjlab.eclipse.tapestry5.TapestryModule;
 import com.anjlab.eclipse.tapestry5.TapestryUtils;
+import com.anjlab.eclipse.tapestry5.views.context.TapestryContextView;
 
 public class CreateActionViewDelegate implements IViewActionDelegate, IMenuCreator
 {
@@ -91,8 +91,8 @@ public class CreateActionViewDelegate implements IViewActionDelegate, IMenuCreat
     {
         Menu menu = new Menu(parent);
         
-        TapestryContext tapestryContext = fromView
-                ? Activator.getDefault().getTapestryContext(window)
+        TapestryContext tapestryContext = view instanceof TapestryContextView
+                ? ((TapestryContextView) view).getTapestryContext()
                 : TapestryUtils.createTapestryContext(window); // From Main ToolBar
         
         TapestryModule module;
@@ -195,20 +195,19 @@ public class CreateActionViewDelegate implements IViewActionDelegate, IMenuCreat
         return null;
     }
 
-    private boolean fromView;
     private IWorkbenchWindow window;
+    private IViewPart view;
     
     @Override
     public void init(IViewPart view)
     {
+        this.view = view;
         this.window = view.getSite().getWorkbenchWindow();
-        this.fromView = true;
     }
 
     public void init(IWorkbenchWindow window)
     {
         this.window = window;
-        this.fromView = false;
     }
 
 }
