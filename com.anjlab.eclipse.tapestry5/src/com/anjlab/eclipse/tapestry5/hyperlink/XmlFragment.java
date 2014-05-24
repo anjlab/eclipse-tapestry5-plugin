@@ -168,13 +168,32 @@ public abstract class XmlFragment
         private IRegion findRootTagRegion(IDocument document) throws BadLocationException
         {
             //  Find the beginning of the root XML tag - skip everything before first tag definition
+            
+            boolean inComment = false;
+            
             for (int i = 0; i < document.getLength(); i++)
             {
-                if (document.getChar(i) == '<')
+                if (inComment)
+                {
+                    if (document.getChar(i) == '-')
+                    {
+                        if (i + "->".length() < document.getLength() && "->".equals(document.get(i + 1, "->".length())))
+                        {
+                            inComment = false;
+                            i += "->".length();
+                        }
+                    }
+                }
+                else if (document.getChar(i) == '<')
                 {
                     if (i + 1 < document.getLength() && isValidFirstCharForTagDefinition(document.getChar(i + 1)))
                     {
                         return findTagRegion(document, i);
+                    }
+                    else if (i + "!--".length() < document.getLength() && "!--".equals(document.get(i + 1, "!--".length())))
+                    {
+                        inComment = true;
+                        i += "!--".length();
                     }
                 }
             }
