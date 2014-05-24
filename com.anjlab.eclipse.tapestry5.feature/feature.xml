@@ -2,7 +2,7 @@
 <feature
       id="com.anjlab.eclipse.tapestry5.feature"
       label="Basic Tapestry5 Support (required)"
-      version="2.4.3"
+      version="2.4.4"
       provider-name="AnjLab Team"
       plugin="com.anjlab.eclipse.tapestry5">
 
@@ -12,7 +12,7 @@ for TML files.
    </description>
 
    <copyright>
-      Copyright 2013, AnjLab
+      Copyright 2013-2014, AnjLab
    </copyright>
 
    <license url="http://www.apache.org/licenses/LICENSE-2.0.txt">
