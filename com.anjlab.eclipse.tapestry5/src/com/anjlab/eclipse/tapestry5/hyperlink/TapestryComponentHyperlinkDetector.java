@@ -61,6 +61,7 @@ public class TapestryComponentHyperlinkDetector extends AbstractHyperlinkDetecto
         
         if (atomicFragment instanceof XmlTagName)
         {
+            //  TODO Check if it's a tapestry:parameter
             return filesFromContext(atomicFragment, targetScope.context);
         }
         else if (atomicFragment instanceof XmlAttributeName)

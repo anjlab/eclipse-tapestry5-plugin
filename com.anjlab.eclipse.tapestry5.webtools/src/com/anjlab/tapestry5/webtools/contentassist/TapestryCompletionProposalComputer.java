@@ -13,11 +13,13 @@ import org.eclipse.wst.xml.ui.internal.contentassist.DefaultXMLCompletionProposa
 import org.eclipse.wst.xml.ui.internal.contentassist.MarkupCompletionProposal;
 import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
 
 import com.anjlab.eclipse.tapestry5.Activator;
+import com.anjlab.eclipse.tapestry5.Component;
 import com.anjlab.eclipse.tapestry5.EclipseUtils;
 import com.anjlab.eclipse.tapestry5.LibraryMapping;
-import com.anjlab.eclipse.tapestry5.Member;
+import com.anjlab.eclipse.tapestry5.Parameter;
 import com.anjlab.eclipse.tapestry5.Property;
 import com.anjlab.eclipse.tapestry5.TapestryComponentSpecification;
 import com.anjlab.eclipse.tapestry5.TapestryContext;
@@ -90,31 +92,31 @@ public class TapestryCompletionProposalComputer extends DefaultXMLCompletionProp
 //    }
     
     @Override
-    protected void addTagNameProposals(final ContentAssistRequest contentAssistRequest,
+    protected void addTagNameProposals(final ContentAssistRequest request,
                                        int childPosition,
                                        CompletionProposalInvocationContext context)
     {
-        enumProposals(contentAssistRequest, context, new ProposalCallback()
+        enumProposals(request, context, new ProposalCallback()
         {
             @Override
             public void newProposal(TapestryContext tapestryContext,
                                     String tagName,
                                     String displayString)
             {
-                addProposal(contentAssistRequest, tapestryContext, tagName, displayString);
+                addProposal(request, tapestryContext, tagName, displayString);
             }
         });
     }
     
-    private void addProposal(ContentAssistRequest contentAssistRequest,
+    private void addProposal(ContentAssistRequest request,
                              TapestryContext tapestryContext,
                              String replacementString,
                              String displayString)
     {
-        contentAssistRequest.addProposal(new MarkupCompletionProposal(
+        request.addProposal(new MarkupCompletionProposal(
                 replacementString,  // replacementString
-                contentAssistRequest.getReplacementBeginPosition(),
-                contentAssistRequest.getReplacementLength(),
+                request.getReplacementBeginPosition(),
+                request.getReplacementLength(),
                 replacementString.length(),
                 Activator.getTapestryLogoIcon(), // image
                 displayString, // displayString
@@ -125,7 +127,7 @@ public class TapestryCompletionProposalComputer extends DefaultXMLCompletionProp
                 ));
     }
     
-    private void enumProposals(final ContentAssistRequest contentAssistRequest, CompletionProposalInvocationContext context,
+    private void enumProposals(final ContentAssistRequest request, CompletionProposalInvocationContext context,
             ProposalCallback proposalCallback)
     {
         TapestryProject tapestryProject = getTapestryProject(context);
@@ -136,7 +138,7 @@ public class TapestryCompletionProposalComputer extends DefaultXMLCompletionProp
             return;
         }
         
-        Map<String, String> xmlnsMappings = findXmlnsMappingsRelativeTo(contentAssistRequest.getNode());
+        Map<String, String> xmlnsMappings = findXmlnsMappingsRelativeTo(request.getNode());
         
         for (TapestryModule tapestryModule : tapestryProject.modules())
         {
@@ -146,15 +148,15 @@ public class TapestryCompletionProposalComputer extends DefaultXMLCompletionProp
                 String tagName = getComponentTagName(tapestryModule, tapestryContext, xmlnsMappings, true);
                 String displayString = tagName;
                 
-                String userInput = contentAssistRequest.getMatchString();
+                String userInput = request.getMatchString();
                 
-                if (!isProposalMatches(tagName, userInput, xmlnsMappings))
+                if (!isComponentNameProposalMatches(tagName, userInput, xmlnsMappings))
                 {
                     //  ... and fall back to full component name if library prefixed name doesn't match user input:
                     //  maybe the user is entering full component name
                     String fullTagName = getComponentTagName(tapestryModule, tapestryContext, xmlnsMappings, false);
                     
-                    if (!isProposalMatches(fullTagName, userInput, xmlnsMappings))
+                    if (!isComponentNameProposalMatches(fullTagName, userInput, xmlnsMappings))
                     {
                         continue;
                     }
@@ -171,43 +173,59 @@ public class TapestryCompletionProposalComputer extends DefaultXMLCompletionProp
 
     @Override
     protected void addAttributeNameProposals(
-            ContentAssistRequest contentAssistRequest,
+            ContentAssistRequest request,
             CompletionProposalInvocationContext context)
     {
         //  Display Page/Component parameters proposals
         
-        TapestryContextScope scope = getCurrentTagSpecification(contentAssistRequest, context);
+        TapestryContextScope scope = getCurrentTagSpecification(request, context);
         
         if (scope == null)
         {
             return;
         }
         
-        NamedNodeMap attributes = contentAssistRequest.getNode().getAttributes();
+        NamedNodeMap attributes = request.getNode().getAttributes();
         
         //  TODO Add parameters of applied t:mixins
         
-        for (Member parameter : scope.specification.getParameters(scope.project))
+        Component embeddedDefinition = null;
+        
+        String componentId = TapestryUtils.findTapestryAttribute(request.getNode(), "id");
+        
+        if (StringUtils.isNotEmpty(componentId))
         {
-            //  Filter out parameters that are already present in this tag
+            TapestryContextScope scope2 = getCurrentTapestryContextSpecification(request, context);
             
-            //  TODO Also check if parameter is already declared
-            //  through @Component-annotated field in the java class
-            if (attributes.getNamedItem(parameter.getName()) != null)
+            for (Component component : scope2.specification.getComponents())
+            {
+                if (StringUtils.equals(componentId, component.getId()))
+                {
+                    embeddedDefinition = component;
+                    break;
+                }
+            }
+        }
+        
+        for (Parameter parameter : scope.specification.getParameters(scope.project))
+        {
+            if (!parameter.getName().startsWith(request.getMatchString()))
             {
                 continue;
             }
             
-            if (!parameter.getName().startsWith(contentAssistRequest.getMatchString()))
+            if (parameterBoundUsingAttribute(parameter, attributes)
+                || parameterBoundUsingChildNode(parameter, request.getNode())
+                || parameterBoundUsingEmbeddedComponent(parameter, embeddedDefinition))
             {
                 continue;
             }
             
             String replacementString = parameter.getName() + "=\"\"";
-            contentAssistRequest.addProposal(new MarkupCompletionProposal(
+            request.addProposal(new MarkupCompletionProposal(
                     replacementString,
-                    contentAssistRequest.getReplacementBeginPosition(),
-                    contentAssistRequest.getReplacementLength(),
+                    request.getReplacementBeginPosition(),
+                    request.getReplacementLength(),
                     replacementString.length() - 1,
                     Activator.getTapestryLogoIcon(), // image
                     parameter.getName(), // displayString
@@ -219,14 +237,58 @@ public class TapestryCompletionProposalComputer extends DefaultXMLCompletionProp
         }
     }
 
+    private boolean parameterBoundUsingAttribute(Parameter parameter, NamedNodeMap attributes)
+    {
+        return attributes.getNamedItem(parameter.getName()) != null;
+    }
+
+    private boolean parameterBoundUsingChildNode(Parameter parameter, Node node)
+    {
+        NodeList childNodes = node.getChildNodes();
+        
+        if (childNodes != null)
+        {
+            for (int i = 0; i < childNodes.getLength(); i++)
+            {
+                Node child = childNodes.item(i);
+                if (StringUtils.equals("tapestry:parameter", child.getNamespaceURI())
+                        && StringUtils.equalsIgnoreCase(parameter.getName(), child.getLocalName()))
+                {
+                    return true;
+                }
+            }
+        }
+        
+        return false;
+    }
+
+    private boolean parameterBoundUsingEmbeddedComponent(Parameter parameter, Component embeddedDefinition)
+    {
+        if (embeddedDefinition == null)
+        {
+            return false;
+        }
+        
+        for (String param : embeddedDefinition.getParameters())
+        {
+            String[] nameValue = param.split("=");
+            if (nameValue.length == 2
+                    && StringUtils.equalsIgnoreCase(nameValue[0], parameter.getName()))
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+
     @Override
     protected void addAttributeValueProposals(
-            ContentAssistRequest contentAssistRequest,
+            ContentAssistRequest request,
             CompletionProposalInvocationContext context)
     {
         //  Display Page/Component properties
         
-        TapestryContextScope scope = getCurrentTapestryContextSpecification(contentAssistRequest, context);
+        TapestryContextScope scope = getCurrentTapestryContextSpecification(request, context);
         
         if (scope == null)
         {
@@ -237,16 +299,16 @@ public class TapestryCompletionProposalComputer extends DefaultXMLCompletionProp
         
         for (Property property : scope.specification.getProperties())
         {
-            if (!property.getName().startsWith(contentAssistRequest.getMatchString().replaceAll("\"|'", "")))
+            if (!property.getName().startsWith(request.getMatchString().replaceAll("\"|'", "")))
             {
                 continue;
             }
             
             String replacementString = '"' + property.getName() + '"';
-            contentAssistRequest.addProposal(new MarkupCompletionProposal(
+            request.addProposal(new MarkupCompletionProposal(
                     replacementString,
-                    contentAssistRequest.getReplacementBeginPosition(),
-                    contentAssistRequest.getReplacementLength(),
+                    request.getReplacementBeginPosition(),
+                    request.getReplacementLength(),
                     replacementString.length() - 1,
                     Activator.getTapestryLogoIcon(), // image
                     property.getName(), // displayString
@@ -274,7 +336,7 @@ public class TapestryCompletionProposalComputer extends DefaultXMLCompletionProp
         return tapestryProject;
     }
 
-    private boolean isProposalMatches(String proposal, String userInput, Map<String, String> xmlnsMappings)
+    private boolean isComponentNameProposalMatches(String proposal, String userInput, Map<String, String> xmlnsMappings)
     {
         if (StringUtils.isEmpty(userInput) || proposal.startsWith(userInput))
         {
@@ -372,8 +434,8 @@ public class TapestryCompletionProposalComputer extends DefaultXMLCompletionProp
         findXmlnsMappingsAt(node.getParentNode(), mappings);
     }
 
-    protected TapestryContextScope getCurrentTagSpecification(
-            ContentAssistRequest contentAssistRequest,
+    private TapestryContextScope getCurrentTagSpecification(
+            ContentAssistRequest request,
             CompletionProposalInvocationContext context)
     {
         Shell shell = context.getViewer().getTextWidget().getShell();
@@ -385,7 +447,7 @@ public class TapestryCompletionProposalComputer extends DefaultXMLCompletionProp
             return null;
         }
         
-        String componentName = TapestryUtils.getComponentName(window, contentAssistRequest.getNode());
+        String componentName = TapestryUtils.getComponentName(window, request.getNode());
         
         if (componentName == null)
         {
@@ -404,8 +466,8 @@ public class TapestryCompletionProposalComputer extends DefaultXMLCompletionProp
         return new TapestryContextScope(window, scope.project, scope.context, specification);
     }
     
-    protected TapestryContextScope getCurrentTapestryContextSpecification(
-            ContentAssistRequest contentAssistRequest,
+    private TapestryContextScope getCurrentTapestryContextSpecification(
+            ContentAssistRequest request,
             CompletionProposalInvocationContext context)
     {
         Shell shell = context.getViewer().getTextWidget().getShell();
