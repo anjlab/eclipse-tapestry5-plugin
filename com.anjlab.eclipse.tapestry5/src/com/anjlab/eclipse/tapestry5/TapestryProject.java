@@ -178,7 +178,7 @@ public class TapestryProject
         }
         
         // Handle new t5.4 TapestryModule class location
-        ModuleReference coreModuleReference =new ModuleReference()
+        ModuleReference coreModuleReference = new ModuleReference()
         {
             @Override
             public String getLabel()
