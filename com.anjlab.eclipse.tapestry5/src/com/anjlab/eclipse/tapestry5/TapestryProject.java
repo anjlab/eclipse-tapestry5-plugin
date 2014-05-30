@@ -177,22 +177,27 @@ public class TapestryProject
             }
         }
         
-        addModule(monitor, modules, project, "org.apache.tapestry5.services.TapestryModule", new ModuleReference()
+        // Handle new t5.4 TapestryModule class location
+        ModuleReference coreModuleReference =new ModuleReference()
         {
             @Override
             public String getLabel()
             {
                 return "Tapestry Core Module";
             }
-        },
-        new ObjectCallback<TapestryModule>()
+        };
+        ObjectCallback<TapestryModule> coreObjectCallback = new ObjectCallback<TapestryModule>()
         {
             @Override
             public void callback(TapestryModule module)
             {
                 module.setTapestryCoreModule(true);
             }
-        });
+        };
+        // t5.3
+        addModule(monitor, modules, project, "org.apache.tapestry5.services.TapestryModule", coreModuleReference, coreObjectCallback);
+        // t5.4
+        addModule(monitor, modules, project, "org.apache.tapestry5.modules.TapestryModule", coreModuleReference, coreObjectCallback);
         
         try
         {
