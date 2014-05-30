@@ -189,6 +189,7 @@ public class TapestryCompletionProposalComputer extends DefaultXMLCompletionProp
         
         //  TODO Add parameters of applied t:mixins
         
+        //  Current component may also have embedded definition via @Component annotation
         Component embeddedDefinition = null;
         
         String componentId = TapestryUtils.findTapestryAttribute(request.getNode(), "id");
@@ -271,6 +272,7 @@ public class TapestryCompletionProposalComputer extends DefaultXMLCompletionProp
         
         for (String param : embeddedDefinition.getParameters())
         {
+            //  TODO Only check within list of publishParameters
             String[] nameValue = param.split("=");
             if (nameValue.length == 2
                     && StringUtils.equalsIgnoreCase(nameValue[0], parameter.getName()))

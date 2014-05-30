@@ -2,7 +2,7 @@
 <feature
       id="com.anjlab.eclipse.e4.tapestry5.feature"
       label="Additional Tapestry5 Support for Eclipse4"
-      version="2.4.4"
+      version="2.4.5"
       provider-name="AnjLab Team"
       plugin="com.anjlab.eclipse.e4.tapestry5">
 

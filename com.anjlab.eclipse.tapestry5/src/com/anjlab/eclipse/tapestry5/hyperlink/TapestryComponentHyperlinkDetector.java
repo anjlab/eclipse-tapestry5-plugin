@@ -77,6 +77,7 @@ public class TapestryComponentHyperlinkDetector extends AbstractHyperlinkDetecto
             //      - Cache parameters in specification once retrieved?
             
             //  Find parameter in target context
+            //  TODO Also search between parameters of applied t:mixins 
             Parameter parameter = targetScope.context.getSpecification()
                     .getParameter(targetScope.project, atomicFragment.getFQName().name);
             

@@ -481,6 +481,9 @@ public class TapestryComponentSpecification
     /**
      * TODO Optimize this heavy method
      * 
+     * TODO Support a list of applied t:mixins,
+     * probably better implement t:mixins support on a higher level than component specification
+     * 
      * @param tapestryProject
      * @return parameters of this component including published parameters of its embedded components
      */
