@@ -131,10 +131,18 @@ public class TapestryContextWatchdog extends AbstractWatchdog
         
         windowListener = new WindowSelectionListener(new ISelectionListener()
         {
+            private final ActiveEditorTracker activeEditorTracker = new ActiveEditorTracker();
+            
             @Override
             public void selectionChanged(IWorkbenchPart part, ISelection selection)
             {
                 IWorkbenchWindow window = part.getSite().getWorkbenchWindow();
+                
+                //  https://github.com/anjlab/eclipse-tapestry5-plugin/issues/18
+                if (!activeEditorTracker.editorChanged(window.getActivePage()))
+                {
+                    return;
+                }
                 
                 TapestryFile selectedFile = TapestryUtils.getTapestryFileFromPage(window.getActivePage());
                 
