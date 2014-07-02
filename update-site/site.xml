@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <site>
-   <feature url="features/com.anjlab.eclipse.tapestry5.feature_2.4.5.jar" id="com.anjlab.eclipse.tapestry5.feature" version="2.4.5">
+   <feature url="features/com.anjlab.eclipse.tapestry5.feature_2.4.6.jar" id="com.anjlab.eclipse.tapestry5.feature" version="2.4.6">
       <category name="com.anjlab.tapestry5.category"/>
    </feature>
-   <feature url="features/com.anjlab.eclipse.e4.tapestry5.feature_2.4.5.jar" id="com.anjlab.eclipse.e4.tapestry5.feature" version="2.4.5">
+   <feature url="features/com.anjlab.eclipse.e4.tapestry5.feature_2.4.6.jar" id="com.anjlab.eclipse.e4.tapestry5.feature" version="2.4.6">
       <category name="com.anjlab.tapestry5.category"/>
    </feature>
-   <feature url="features/com.anjlab.eclipse.tapestry5.webtools.feature_2.4.5.jar" id="com.anjlab.eclipse.tapestry5.webtools.feature" version="2.4.5">
+   <feature url="features/com.anjlab.eclipse.tapestry5.webtools.feature_2.4.6.jar" id="com.anjlab.eclipse.tapestry5.webtools.feature" version="2.4.6">
       <category name="com.anjlab.tapestry5.category"/>
    </feature>
    <category-def name="com.anjlab.tapestry5.category" label="Eclipse Integration for Tapestry5">
