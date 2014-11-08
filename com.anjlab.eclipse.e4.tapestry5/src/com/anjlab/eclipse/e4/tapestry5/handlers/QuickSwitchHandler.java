@@ -146,7 +146,6 @@ public class QuickSwitchHandler extends AbstractHandler
         
         for (Constructor<?> constructor : BasicPartList.class.getConstructors())
         {
-            @SuppressWarnings("unchecked")
             List<Class<?>> paramTypes = Arrays.asList(
                     Shell.class,
                     int.class,
