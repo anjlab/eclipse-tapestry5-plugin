@@ -13,10 +13,9 @@ import org.eclipse.jdt.core.JavaModelException;
 public class LocalTapestryModule extends TapestryModule
 {
 
-    public LocalTapestryModule(TapestryProject project,
-            IType type, ModuleReference reference)
+    public LocalTapestryModule(TapestryProject project, IType type)
     {
-        super(project, type, reference);
+        super(project, type);
     }
 
     @Override

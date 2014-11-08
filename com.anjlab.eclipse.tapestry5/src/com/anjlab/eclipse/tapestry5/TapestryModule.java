@@ -40,20 +40,31 @@ public abstract class TapestryModule
         String getLabel();
     }
     
-    public TapestryModule(TapestryProject project, IType moduleClass, ModuleReference reference)
+    public TapestryModule(TapestryProject project, IType moduleClass)
     {
         this.project = project;
         this.moduleClass = moduleClass;
-        this.reference = reference;
     }
     
-    public static TapestryModule createTapestryModule(TapestryProject project, IType moduleClass, ModuleReference reference)
+    public static TapestryModule createTapestryModule(TapestryProject project, IType moduleClass, ObjectCallback<TapestryModule> moduleCreated)
     {
+        final TapestryModule module;
+        
         if (moduleClass.getResource() != null)
         {
-            return new LocalTapestryModule(project, moduleClass, reference);
+            module = new LocalTapestryModule(project, moduleClass);
         }
-        return new JarTapestryModule(project, moduleClass, reference);
+        else
+        {
+            module = new JarTapestryModule(project, moduleClass);
+        }
+        
+        if (moduleCreated != null)
+        {
+            moduleCreated.callback(module);
+        }
+        
+        return module;
     }
     
     public TapestryProject getProject()
@@ -69,6 +80,11 @@ public abstract class TapestryModule
     public ModuleReference getReference()
     {
         return reference;
+    }
+    
+    public void setReference(ModuleReference reference)
+    {
+        this.reference = reference;
     }
     
     public IType getModuleClass()
@@ -139,14 +155,25 @@ public abstract class TapestryModule
                             
                             if (subModuleClass != null)
                             {
-                                subModules.add(createTapestryModule(project, subModuleClass, new ModuleReference()
-                                {
-                                    @Override
-                                    public String getLabel()
-                                    {
-                                        return "via @SubModule of " + getName();
-                                    }
-                                }));
+                                subModules.add(
+                                        createTapestryModule(
+                                                project,
+                                                subModuleClass,
+                                                new ObjectCallback<TapestryModule>()
+                                                {
+                                                    @Override
+                                                    public void callback(TapestryModule obj)
+                                                    {
+                                                        obj.setReference(new ModuleReference()
+                                                        {
+                                                            @Override
+                                                            public String getLabel()
+                                                            {
+                                                                return "via @SubModule of " + getName();
+                                                            }
+                                                        });
+                                                    }
+                                                }));
                             }
                         }
                     }

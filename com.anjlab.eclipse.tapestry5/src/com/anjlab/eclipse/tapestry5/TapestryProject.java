@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 import java.util.jar.Manifest;
 
 import org.apache.commons.lang.StringUtils;
@@ -28,6 +29,10 @@ public class TapestryProject
 {
     private IProject project;
     
+    private String tapestryVersion;
+    
+    private boolean tapestryVersionResolved;
+    
     private volatile List<TapestryModule> modules;
     
     public TapestryProject(IProject project)
@@ -38,6 +43,44 @@ public class TapestryProject
     public IProject getProject()
     {
         return project;
+    }
+    
+    public String getTapestryVersion()
+    {
+        if (tapestryVersionResolved)
+        {
+            //  May be null
+            return tapestryVersion;
+        }
+        
+        for (TapestryModule module : modules())
+        {
+            if (module.isTapestryCoreModule())
+            {
+                TapestryFile file = module.findClasspathFileCaseInsensitive(
+                        "META-INF/gradle/org.apache.tapestry/tapestry-core/project.properties");
+                
+                if (file instanceof JarEntryFile)
+                {
+                    try
+                    {
+                        Properties properties = new Properties();
+                        properties.load(((JarEntryFile) file).getJarEntry().getContents());
+                        tapestryVersion = properties.getProperty("version");
+                    }
+                    catch (Exception e)
+                    {
+                        Activator.getDefault().logError("Error reading tapestry version string", e);
+                    }
+                }
+                
+                break;
+            }
+        }
+        
+        tapestryVersionResolved = true;
+        
+        return tapestryVersion;
     }
     
     public List<TapestryModule> modules()
@@ -132,21 +175,22 @@ public class TapestryProject
             final String localFilterName = filterName;
             
             TapestryModule appModule = addModule(monitor, modules, project,
-                    appPackage + ".services." + StringUtils.capitalize(filterName) + "Module", new ModuleReference()
-            {
-                @Override
-                public String getLabel()
-                {
-                    return "Your Application's Module (via " + webXml.getFilterClassName(localFilterName) + " in web.xml)";
-                }
-            },
-            new ObjectCallback<TapestryModule>()
-            {
-                @Override
-                public void callback(TapestryModule module)
-                {
-                    module.setAppModule(true);
-                }
+                    appPackage + ".services." + StringUtils.capitalize(filterName) + "Module",
+                    new ObjectCallback<TapestryModule>()
+                    {
+                        @Override
+                        public void callback(TapestryModule module)
+                        {
+                            module.setAppModule(true);
+                            module.setReference(new ModuleReference()
+                            {
+                                @Override
+                                public String getLabel()
+                                {
+                                    return "Your Application's Module (via " + webXml.getFilterClassName(localFilterName) + " in web.xml)";
+                                }
+                            });
+                        }
             });
             
             if (appModule != null)
@@ -165,39 +209,48 @@ public class TapestryProject
                 
                 for (String moduleClassName : modeModules.split(","))
                 {
-                    addModule(monitor, modules, project, moduleClassName.trim(), new ModuleReference()
+                    addModule(monitor, modules, project, moduleClassName.trim(), new ObjectCallback<TapestryModule>()
                     {
                         @Override
-                        public String getLabel()
+                        public void callback(TapestryModule obj)
                         {
-                            return "via " + tapestryModeModules + " in web.xml";
+                            obj.setReference(new ModuleReference()
+                            {
+                                @Override
+                                public String getLabel()
+                                {
+                                    return "via " + tapestryModeModules + " in web.xml";
+                                }
+                            });
                         }
-                    }, null);
+                    });
                 }
             }
         }
         
         // Handle new t5.4 TapestryModule class location
-        ModuleReference coreModuleReference = new ModuleReference()
-        {
-            @Override
-            public String getLabel()
-            {
-                return "Tapestry Core Module";
-            }
-        };
         ObjectCallback<TapestryModule> coreObjectCallback = new ObjectCallback<TapestryModule>()
         {
             @Override
             public void callback(TapestryModule module)
             {
                 module.setTapestryCoreModule(true);
+                module.setReference(new ModuleReference()
+                {
+                    @Override
+                    public String getLabel()
+                    {
+                        final String version = TapestryProject.this.getTapestryVersion();
+                        
+                        return "Tapestry Core Module" + (StringUtils.isEmpty(version) ? "" : " version " + version);
+                    }
+                });
             }
         };
         // t5.3
-        addModule(monitor, modules, project, "org.apache.tapestry5.services.TapestryModule", coreModuleReference, coreObjectCallback);
+        addModule(monitor, modules, project, "org.apache.tapestry5.services.TapestryModule", coreObjectCallback);
         // t5.4
-        addModule(monitor, modules, project, "org.apache.tapestry5.modules.TapestryModule", coreModuleReference, coreObjectCallback);
+        addModule(monitor, modules, project, "org.apache.tapestry5.modules.TapestryModule", coreObjectCallback);
         
         try
         {
@@ -241,14 +294,22 @@ public class TapestryProject
                                 {
                                     for (String className : classes.split(","))
                                     {
-                                        addModule(monitor, modules, project, className, new ModuleReference()
-                                        {
-                                            @Override
-                                            public String getLabel()
-                                            {
-                                                return "via " + root.getElementName() + "/META-INF/MANIFEST.MF";
-                                            }
-                                        }, null);
+                                        addModule(monitor, modules, project, className,
+                                                new ObjectCallback<TapestryModule>()
+                                                {
+                                                    @Override
+                                                    public void callback(TapestryModule obj)
+                                                    {
+                                                        obj.setReference(new ModuleReference()
+                                                        {
+                                                            @Override
+                                                            public String getLabel()
+                                                            {
+                                                                return "via " + root.getElementName() + "/META-INF/MANIFEST.MF";
+                                                            }
+                                                        });
+                                                    }
+                                                });
                                     }
                                 }
                             }
@@ -266,7 +327,7 @@ public class TapestryProject
         }
     }
 
-    private TapestryModule addModule(IProgressMonitor monitor, List<TapestryModule> modules, IProject project, String moduleClassName, ModuleReference reference, ObjectCallback<TapestryModule> moduleCreated)
+    private TapestryModule addModule(IProgressMonitor monitor, List<TapestryModule> modules, IProject project, String moduleClassName, ObjectCallback<TapestryModule> moduleCreated)
     {
         if (monitor.isCanceled())
         {
@@ -282,12 +343,7 @@ public class TapestryProject
             return null;
         }
         
-        TapestryModule module = TapestryModule.createTapestryModule(this, moduleClass, reference);
-        
-        if (moduleCreated != null)
-        {
-            moduleCreated.callback(module);
-        }
+        TapestryModule module = TapestryModule.createTapestryModule(this, moduleClass, moduleCreated);
         
         addModule(monitor, modules, module);
         
