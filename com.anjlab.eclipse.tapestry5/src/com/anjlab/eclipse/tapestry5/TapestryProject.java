@@ -9,6 +9,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.jar.Manifest;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.apache.commons.lang.StringUtils;
 import org.eclipse.core.resources.IProject;
@@ -43,6 +45,27 @@ public class TapestryProject
     public IProject getProject()
     {
         return project;
+    }
+    
+    private static final Pattern VERSION_MAJOR_MINOR_PATTERN = Pattern.compile("^\\d+\\.\\d+");
+    
+    public String getTapestryVersionMajorMinor()
+    {
+        String version = getTapestryVersion();
+        
+        if (StringUtils.isEmpty(version))
+        {
+            return null;
+        }
+        
+        Matcher matcher = VERSION_MAJOR_MINOR_PATTERN.matcher(version);
+        
+        if (matcher.find())
+        {
+            return matcher.group();
+        }
+        
+        return null;
     }
     
     public String getTapestryVersion()

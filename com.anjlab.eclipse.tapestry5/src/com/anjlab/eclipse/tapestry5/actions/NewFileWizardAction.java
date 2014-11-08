@@ -48,6 +48,7 @@ import org.eclipse.ui.dialogs.WizardNewFileCreationPage;
 import com.anjlab.eclipse.tapestry5.Activator;
 import com.anjlab.eclipse.tapestry5.EclipseUtils;
 import com.anjlab.eclipse.tapestry5.EclipseUtils.EditorCallback;
+import com.anjlab.eclipse.tapestry5.templates.TapestryTemplates;
 import com.anjlab.eclipse.tapestry5.LocalFile;
 import com.anjlab.eclipse.tapestry5.SetEditorCaretPositionOffsetLength;
 import com.anjlab.eclipse.tapestry5.TapestryContext;
@@ -173,9 +174,9 @@ public class NewFileWizardAction extends Action
                         
                         IPath newFile = Path.fromPortableString(fileCreationPage.getFileName());
                         
-                        String snippetFile = "snippet." + newFile.getFileExtension();
+                        TapestryTemplates templates = TapestryTemplates.get(Activator.getDefault().getTapestryProject(window));
                         
-                        InputStream stream = getClass().getResourceAsStream(snippetFile);
+                        InputStream stream = templates.openTemplate("snippet", newFile.getFileExtension());
                         
                         if (stream != null)
                         {
