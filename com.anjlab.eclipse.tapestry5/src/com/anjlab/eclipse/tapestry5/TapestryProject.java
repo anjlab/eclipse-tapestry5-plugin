@@ -380,8 +380,14 @@ public class TapestryProject
             return;
         }
         
-        if (modules.contains(module))
+        int index = modules.indexOf(module);
+        
+        if (index != -1)
         {
+            TapestryModule existingModule = modules.get(index);
+            
+            existingModule.addReference(module.getReference());
+            
             return;
         }
         

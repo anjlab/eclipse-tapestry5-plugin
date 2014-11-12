@@ -1,5 +1,6 @@
 package com.anjlab.eclipse.tapestry5.views;
 
+import org.apache.commons.lang.StringUtils;
 import org.eclipse.jface.viewers.IDecoration;
 import org.eclipse.jface.viewers.ILightweightLabelDecorator;
 import org.eclipse.jface.viewers.LabelProvider;
@@ -20,7 +21,7 @@ public class ViewLabelDecorator extends LabelProvider implements ILightweightLab
             
             if (data instanceof TapestryModule)
             {
-                decoration.addSuffix(" " + ((TapestryModule) data).getReference().getLabel());
+                decoration.addSuffix(" " + StringUtils.join(((TapestryModule) data).references(), ", "));
             }
             else if (data instanceof LibraryMapping)
             {

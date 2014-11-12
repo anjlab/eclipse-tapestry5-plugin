@@ -2,6 +2,7 @@ package com.anjlab.eclipse.tapestry5;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 import org.apache.commons.lang.StringUtils;
@@ -29,15 +30,21 @@ public abstract class TapestryModule
 {
     private TapestryProject project;
     private IType moduleClass;
-    private ModuleReference reference;
+    private List<ModuleReference> references = new ArrayList<>();
     
     private boolean sourceAvailable;
     private boolean appModule;
     private boolean tapestryCoreModule;
     
-    public static interface ModuleReference
+    public static abstract class ModuleReference
     {
-        String getLabel();
+        abstract String getLabel();
+        
+        @Override
+        public String toString()
+        {
+            return getLabel();
+        }
     }
     
     public TapestryModule(TapestryProject project, IType moduleClass)
@@ -79,12 +86,22 @@ public abstract class TapestryModule
     
     public ModuleReference getReference()
     {
-        return reference;
+        return references.get(0);
     }
     
     public void setReference(ModuleReference reference)
     {
-        this.reference = reference;
+        addReference(reference);
+    }
+    
+    public void addReference(ModuleReference reference)
+    {
+        this.references.add(reference);
+    }
+    
+    public List<ModuleReference> references()
+    {
+        return Collections.unmodifiableList(references);
     }
     
     public IType getModuleClass()
@@ -619,4 +636,5 @@ public abstract class TapestryModule
     {
         return componentFullName.substring((componentsPackage + ".").length());
     }
+
 }
