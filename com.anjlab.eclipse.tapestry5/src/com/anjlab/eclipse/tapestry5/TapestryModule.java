@@ -30,7 +30,7 @@ public abstract class TapestryModule
 {
     private TapestryProject project;
     private IType moduleClass;
-    private List<ModuleReference> references = new ArrayList<>();
+    private List<ModuleReference> references = new ArrayList<ModuleReference>();
     
     private boolean sourceAvailable;
     private boolean appModule;
