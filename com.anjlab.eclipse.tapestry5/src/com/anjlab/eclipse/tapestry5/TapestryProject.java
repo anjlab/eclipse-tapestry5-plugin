@@ -275,6 +275,22 @@ public class TapestryProject
         // t5.4
         addModule(monitor, modules, project, "org.apache.tapestry5.modules.TapestryModule", coreObjectCallback);
         
+        addModule(monitor, modules, project, "org.apache.tapestry5.ioc.services.TapestryIOCModule", new ObjectCallback<TapestryModule>()
+        {
+            @Override
+            public void callback(TapestryModule module)
+            {
+                module.setReference(new ModuleReference()
+                {
+                    @Override
+                    String getLabel()
+                    {
+                        return "Tapestry IoC Module";
+                    }
+                });
+            }
+        });
+        
         try
         {
             for (IPackageFragmentRoot root : JavaCore.create(project).getAllPackageFragmentRoots())
