@@ -20,6 +20,8 @@ import org.eclipse.jdt.core.IPackageFragmentRoot;
 import org.eclipse.jdt.core.IType;
 import org.eclipse.jdt.core.JavaCore;
 
+import com.anjlab.eclipse.tapestry5.internal.CompilationUnitContext.CompilationUnitLifecycle;
+
 
 public class LocalTapestryContext extends TapestryContext
 {
@@ -37,16 +39,23 @@ public class LocalTapestryContext extends TapestryContext
     }
     
     @Override
-    protected ICompilationUnit getCompilationUnit()
+    protected CompilationUnitLifecycle getCompilationUnit()
     {
-        IFile javaFile = getJavaFileInternal();
-        
-        if (javaFile == null)
+        return new CompilationUnitLifecycle()
         {
-            return null;
-        }
-        
-        return (ICompilationUnit) JavaCore.create(javaFile);
+            @Override
+            public ICompilationUnit createCompilationUnit()
+            {
+                IFile javaFile = getJavaFileInternal();
+                
+                if (javaFile == null)
+                {
+                    return null;
+                }
+                
+                return (ICompilationUnit) JavaCore.create(javaFile);
+            }
+        };
     }
 
     private IFile getJavaFileInternal()

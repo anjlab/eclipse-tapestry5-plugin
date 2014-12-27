@@ -15,6 +15,7 @@ import org.eclipse.core.resources.IResource;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.jdt.core.IAnnotation;
 import org.eclipse.jdt.core.ICompilationUnit;
+import org.eclipse.jdt.core.IField;
 import org.eclipse.jdt.core.IMemberValuePair;
 import org.eclipse.jdt.core.ISourceRange;
 import org.eclipse.jdt.core.IType;
@@ -22,6 +23,10 @@ import org.eclipse.jdt.core.JavaModelException;
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.Name;
 import org.eclipse.jdt.internal.ui.text.javadoc.JavadocContentAccess2;
+
+import com.anjlab.eclipse.tapestry5.internal.CompilationUnitContext;
+import com.anjlab.eclipse.tapestry5.internal.CompilationUnitContext.CompilationUnitLifecycle;
+import com.anjlab.eclipse.tapestry5.internal.CompilationUnitContext.ContextRunnable;
 
 @SuppressWarnings("restriction")
 public abstract class TapestryContext
@@ -52,9 +57,16 @@ public abstract class TapestryContext
             }
             
             @Override
-            protected ICompilationUnit getCompilationUnit()
+            protected CompilationUnitLifecycle getCompilationUnit()
             {
-                return null;
+                return new CompilationUnitLifecycle()
+                {
+                    @Override
+                    public ICompilationUnit createCompilationUnit()
+                    {
+                        return null;
+                    }
+                };
             }
             
             @Override
@@ -117,74 +129,131 @@ public abstract class TapestryContext
         }
     }
     
-    private void addImports()
+    private void analyzeCompilationUnit()
     {
-        ICompilationUnit compilationUnit = null;
+        CompilationUnitContext context = new CompilationUnitContext(getCompilationUnit());
         
         try
         {
-            compilationUnit = getCompilationUnit();
-            
-            if (compilationUnit == null)
+            addImports(context);
+            addInjectedAssets(context);
+        }
+        finally
+        {
+            context.dispose();
+        }
+    }
+    
+    private void analyzeCompilationUnit(
+            String operationName,
+            CompilationUnitContext context,
+            ContextRunnable runnable)
+    {
+        try
+        {
+            if (context.getCompilationUnit() != null)
             {
-                return;
+                runnable.run(context);
             }
-            
-            AST ast = null;
-            boolean astParsed = false;
-            
-            for (IType type : compilationUnit.getAllTypes())
+        }
+        catch (JavaModelException e)
+        {
+            Activator.getDefault().logError("Error during " + operationName, e);
+        }
+    }
+    
+    protected abstract CompilationUnitLifecycle getCompilationUnit();
+    
+    private void addInjectedAssets(CompilationUnitContext context)
+    {
+        analyzeCompilationUnit("analyzing @Inject'ed assets", context, new ContextRunnable()
+        {
+            @Override
+            public void run(CompilationUnitContext context) throws JavaModelException
             {
-                for (IAnnotation annotation : type.getAnnotations())
+                for (IType type : context.getCompilationUnit().getAllTypes())
                 {
-                    if (TapestryUtils.isTapestryImportAnnotation(annotation))
+                    for (IField field : type.getFields())
                     {
-                        IMemberValuePair[] pairs = annotation.getMemberValuePairs();
+                        IAnnotation[] annotations = field.getAnnotations();
+                        
+                        IAnnotation inject = TapestryUtils.findAnnotation(
+                                annotations, "org.apache.tapestry5.ioc.annotations.Inject");
+                        
+                        if (inject == null)
+                        {
+                            continue;
+                        }
+                        
+                        IAnnotation path = TapestryUtils.findAnnotation(
+                                annotations, "org.apache.tapestry5.annotations.Path");
+                        
+                        if (path == null)
+                        {
+                            continue;
+                        }
+                        
+                        IMemberValuePair[] pairs = path.getMemberValuePairs();
                         for (IMemberValuePair pair : pairs)
                         {
-                            if ("library".equals(pair.getMemberName())
-                                    || "stylesheet".equals(pair.getMemberName())
-                                    || "stack".equals(pair.getMemberName()))
+                            if ("value".equals(pair.getMemberName()))
                             {
-                                if (!astParsed)
+                                if (pair.getValueKind() == IMemberValuePair.K_UNKNOWN)
                                 {
-                                    astParsed = true;
-                                    try
-                                    {
-                                        ast = EclipseUtils.parse(compilationUnit).getAST();
-                                    }
-                                    catch (Exception e)
-                                    {
-                                        //  Ignore
-                                    }
+                                    //  The value is unknown at this stage
+                                    continue;
                                 }
-                                
-                                processImport(annotation, pair.getMemberName(), pair.getValue(), pair.getValueKind(), ast);
+                                else
+                                {
+                                    //  This is the path of @Inject'ed Asset
+                                    String value = eval(pair.getValue(), pair.getValueKind(), context.getAST());
+                                    
+                                    files.add(new AssetReference(getJavaFile(), path.getSourceRange(), value));
+                                }
                             }
                         }
                     }
                 }
             }
-        }
-        catch (JavaModelException e)
-        {
-            Activator.getDefault().logError("Error inspecting compilation unit", e);
-        }
-        finally
-        {
-            if (compilationUnit != null)
-            {
-                dispose(compilationUnit);
-            }
-        }
+        });
     }
     
-    protected void dispose(ICompilationUnit compilationUnit)
+    private void addImports(CompilationUnitContext context)
     {
-        //  Default implementation does nothing
+        analyzeCompilationUnit("analyzing @Imports", context, new ContextRunnable()
+        {
+            @Override
+            public void run(CompilationUnitContext context) throws JavaModelException
+            {
+                for (IType type : context.getCompilationUnit().getAllTypes())
+                {
+                    IAnnotation annotation = TapestryUtils.findAnnotation(
+                            type.getAnnotations(), "org.apache.tapestry5.annotations.Import");
+                    
+                    if (annotation == null)
+                    {
+                        continue;
+                    }
+                    
+                    IMemberValuePair[] pairs = annotation.getMemberValuePairs();
+                    for (IMemberValuePair pair : pairs)
+                    {
+                        if ("library".equals(pair.getMemberName())
+                                || "stylesheet".equals(pair.getMemberName())
+                                || "stack".equals(pair.getMemberName()))
+                        {
+                            processImport(
+                                    annotation,
+                                    pair.getMemberName(),
+                                    pair.getValue(),
+                                    pair.getValueKind(),
+                                    context.getAST());
+                        }
+                    }
+                }
+            }
+        });
     }
-
-    protected abstract ICompilationUnit getCompilationUnit();
     
     private void processImport(IAnnotation annotation, String type, Object value, int valueKind, AST ast)
     {
@@ -308,7 +377,7 @@ public abstract class TapestryContext
         {
             TapestryFile javaFile = files.get(0);
             addWithComplementFile(javaFile);
-            addImports();
+            analyzeCompilationUnit();
             
             if (!contains(file))
             {
@@ -345,14 +414,14 @@ public abstract class TapestryContext
         }
         
         addPropertiesFiles(file);
-        addImports();
+        analyzeCompilationUnit();
     }
     
     private void initFromJavaOrTemplateFile(TapestryFile file)
     {
         addWithComplementFile(file);
         addPropertiesFiles(file);
-        addImports();
+        analyzeCompilationUnit();
     }
     
     private void addWithComplementFile(TapestryFile file)

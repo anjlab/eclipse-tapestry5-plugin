@@ -179,9 +179,27 @@ public class TapestryUtils
             || "SubModule".equals(annotation.getElementName());
     }
 
-    public static boolean isTapestryImportAnnotation(IAnnotation annotation)
+    public static IAnnotation findAnnotation(IAnnotation[] annotations, String typeName)
     {
-        return isTapestryImportAnnotationName(annotation.getElementName());
+        for (IAnnotation annotation : annotations)
+        {
+            String name = annotation.getElementName();
+            
+            if (name.equals(typeName))
+            {
+                return annotation;
+            }
+            
+            int lastDot = typeName.lastIndexOf('.');
+            
+            if (lastDot != -1 && lastDot < typeName.length() - 1
+                    && name.equals(typeName.substring(lastDot + 1)))
+            {
+                return annotation;
+            }
+        }
+        
+        return null;
     }
 
     private static boolean isTapestryImportAnnotationName(String name)
@@ -729,4 +747,5 @@ public class TapestryUtils
         return isTapestryDefaultNamespace(namespace)
             || namespace.startsWith("tapestry-library:");
     }
+
 }

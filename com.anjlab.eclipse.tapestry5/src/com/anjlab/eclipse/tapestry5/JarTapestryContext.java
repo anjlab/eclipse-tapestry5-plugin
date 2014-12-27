@@ -16,6 +16,8 @@ import org.eclipse.jdt.core.IType;
 import org.eclipse.jdt.core.JavaModelException;
 import org.eclipse.jdt.core.WorkingCopyOwner;
 
+import com.anjlab.eclipse.tapestry5.internal.CompilationUnitContext.CompilationUnitLifecycle;
+
 public class JarTapestryContext extends TapestryContext
 {
     public JarTapestryContext(IJarEntryResource jarEntry)
@@ -29,38 +31,45 @@ public class JarTapestryContext extends TapestryContext
     }
 
     @Override
-    protected ICompilationUnit getCompilationUnit()
+    protected CompilationUnitLifecycle getCompilationUnit()
     {
-        TapestryFile javaFile = getJavaFile();
-        
-        if (javaFile instanceof ClassFile)
+        return new CompilationUnitLifecycle()
         {
-            IClassFile classFile = ((ClassFile) javaFile).getClassFile();
+            @Override
+            public ICompilationUnit createCompilationUnit()
+            {
+                TapestryFile javaFile = getJavaFile();
+                
+                if (javaFile instanceof ClassFile)
+                {
+                    IClassFile classFile = ((ClassFile) javaFile).getClassFile();
+                    
+                    try
+                    {
+                        return classFile.getWorkingCopy(new WorkingCopyOwner() { }, new NullProgressMonitor());
+                    }
+                    catch (JavaModelException e)
+                    {
+                        Activator.getDefault().logError("Error getting compilation unit", e);
+                    }
+                }
+                
+                return null;
+            }
             
-            try
+            @Override
+            public void dispose(ICompilationUnit compilationUnit)
             {
-                return classFile.getWorkingCopy(new WorkingCopyOwner() { }, new NullProgressMonitor());
+                try
+                {
+                    compilationUnit.discardWorkingCopy();
+                }
+                catch (JavaModelException e)
+                {
+                    //  Ignore
+                }
             }
-            catch (JavaModelException e)
-            {
-                Activator.getDefault().logError("Error getting compilation unit", e);
-            }
-        }
-        
-        return null;
-    }
-
-    @Override
-    protected void dispose(ICompilationUnit compilationUnit)
-    {
-        try
-        {
-            compilationUnit.discardWorkingCopy();
-        }
-        catch (JavaModelException e)
-        {
-            //  Ignore
-        }
+        };
     }
     
     @Override
