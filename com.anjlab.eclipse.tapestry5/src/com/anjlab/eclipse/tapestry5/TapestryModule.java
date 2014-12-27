@@ -428,7 +428,8 @@ public abstract class TapestryModule
             return null;
         }
         
-        CompilationUnit compilationUnit = EclipseUtils.parse(source);
+        compilationUnit = EclipseUtils.parse(source);
+        
         return compilationUnit;
     }
 
