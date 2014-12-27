@@ -150,49 +150,51 @@ public abstract class TapestryModule
         
         try
         {
-            for (IAnnotation annotation : moduleClass.getAnnotations())
+            IAnnotation annotation = TapestryUtils.findAnnotation(
+                    moduleClass.getAnnotations(), "org.apache.tapestry5.ioc.annotations.SubModule");
+            
+            if (annotation == null)
             {
-                if (TapestryUtils.isTapestrySubModuleAnnotation(annotation))
+                return;
+            }
+            
+            for (IMemberValuePair pair : annotation.getMemberValuePairs())
+            {
+                Object[] classes = pair.getValue().getClass().isArray()
+                                 ? (Object[]) pair.getValue()
+                                 : new Object[] { pair.getValue() };
+                
+                for (Object className : classes)
                 {
-                    for (IMemberValuePair pair : annotation.getMemberValuePairs())
+                    if (monitor.isCanceled())
                     {
-                        Object[] classes = pair.getValue().getClass().isArray()
-                                         ? (Object[]) pair.getValue()
-                                         : new Object[] { pair.getValue() };
-                        
-                        for (Object className : classes)
-                        {
-                            if (monitor.isCanceled())
-                            {
-                                return;
-                            }
-                            
-                            IType subModuleClass = EclipseUtils.findTypeDeclaration(
-                                    moduleClass.getJavaProject().getProject(), (String) className);
-                            
-                            if (subModuleClass != null)
-                            {
-                                subModules.add(
-                                        createTapestryModule(
-                                                project,
-                                                subModuleClass,
-                                                new ObjectCallback<TapestryModule>()
+                        return;
+                    }
+                    
+                    IType subModuleClass = EclipseUtils.findTypeDeclaration(
+                            moduleClass.getJavaProject().getProject(), (String) className);
+                    
+                    if (subModuleClass != null)
+                    {
+                        subModules.add(
+                                createTapestryModule(
+                                        project,
+                                        subModuleClass,
+                                        new ObjectCallback<TapestryModule>()
+                                        {
+                                            @Override
+                                            public void callback(TapestryModule obj)
+                                            {
+                                                obj.setReference(new ModuleReference()
                                                 {
                                                     @Override
-                                                    public void callback(TapestryModule obj)
+                                                    public String getLabel()
                                                     {
-                                                        obj.setReference(new ModuleReference()
-                                                        {
-                                                            @Override
-                                                            public String getLabel()
-                                                            {
-                                                                return "via @SubModule of " + getName();
-                                                            }
-                                                        });
+                                                        return "via @SubModule of " + getName();
                                                     }
-                                                }));
-                            }
-                        }
+                                                });
+                                            }
+                                        }));
                     }
                 }
             }

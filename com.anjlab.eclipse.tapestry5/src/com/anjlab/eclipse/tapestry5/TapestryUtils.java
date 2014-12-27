@@ -172,12 +172,6 @@ public class TapestryUtils
         return "JavaScriptStack".equals(interfaceName)
                 || "org.apache.tapestry5.services.javascript.JavaScriptStack".equals(interfaceName);
     }
-    
-    public static boolean isTapestrySubModuleAnnotation(IAnnotation annotation)
-    {
-        return "org.apache.tapestry5.ioc.annotations.SubModule".equals(annotation.getElementName())
-            || "SubModule".equals(annotation.getElementName());
-    }
 
     public static IAnnotation findAnnotation(IAnnotation[] annotations, String typeName)
     {
