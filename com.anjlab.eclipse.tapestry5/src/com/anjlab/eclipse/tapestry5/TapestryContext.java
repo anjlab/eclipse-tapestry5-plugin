@@ -166,6 +166,16 @@ public abstract class TapestryContext
     
     private void addInjectedAssets(CompilationUnitContext context)
     {
+//        context.accept(new ASTVisitor()
+//        {
+//            @Override
+//            public boolean visit(SingleMemberAnnotation node)
+//            {
+//                //  TODO Evaluate @Path expressions that are not available via IMemberValuePair (see below)
+//                return super.visit(node);
+//            }
+//        });
+        
         analyzeCompilationUnit("analyzing @Inject'ed assets", context, new ContextRunnable()
         {
             @Override

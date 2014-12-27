@@ -3,6 +3,8 @@ package com.anjlab.eclipse.tapestry5.internal;
 import org.eclipse.jdt.core.ICompilationUnit;
 import org.eclipse.jdt.core.JavaModelException;
 import org.eclipse.jdt.core.dom.AST;
+import org.eclipse.jdt.core.dom.ASTVisitor;
+import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.ui.services.IDisposable;
 
 import com.anjlab.eclipse.tapestry5.EclipseUtils;
@@ -27,8 +29,8 @@ public class CompilationUnitContext implements IDisposable
     private final CompilationUnitLifecycle lifecycle;
     private ICompilationUnit compilationUnit;
     private boolean cuCreated;
-    private AST ast;
-    private boolean astParsed;
+    private CompilationUnit parsedUnit;
+    private boolean cuParsed;
     
     public CompilationUnitContext(CompilationUnitLifecycle lifecycle)
     {
@@ -47,14 +49,14 @@ public class CompilationUnitContext implements IDisposable
         return compilationUnit;
     }
     
-    public AST getAST()
+    private CompilationUnit getParsedUnit()
     {
-        if (!astParsed)
+        if (!cuParsed)
         {
-            astParsed = true;
+            cuParsed = true;
             try
             {
-                ast = EclipseUtils.parse(compilationUnit).getAST();
+                parsedUnit = EclipseUtils.parse(compilationUnit);
             }
             catch (Exception e)
             {
@@ -62,7 +64,22 @@ public class CompilationUnitContext implements IDisposable
             }
         }
         
-        return ast;
+        return parsedUnit;
+    }
+    
+    public void accept(ASTVisitor visitor)
+    {
+        CompilationUnit unit = getParsedUnit();
+        if (unit != null)
+        {
+            unit.accept(visitor);
+        }
+    }
+    
+    public AST getAST()
+    {
+        CompilationUnit unit = getParsedUnit();
+        return unit == null ? null : unit.getAST();
     }
     
     @Override
