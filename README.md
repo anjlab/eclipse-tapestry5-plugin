@@ -11,7 +11,7 @@ Go to *Window* -> *Show View* -> *Other...*, filter by "Tapestry" and select "Ta
 Tapestry Context View will appear (top right on this screenshot):
 
   - Provides context for opened Tapestry file
-  - Includes code/template files of selected page/component, as well as list of properties files and @Import'ed assets
+  - Includes code/template files of selected page/component, as well as list of properties files, @Import'ed and @Path @Inject'ed assets
   - Click on the file in a view to open this file
   - Simple validation implemented to highlight assets & JavaScript stacks that couldn't be resolved (supports default/`classpath:` or `context:` binding prefixes for assets)
 
