@@ -44,6 +44,14 @@ public class ViewLabelDecorator extends LabelProvider implements ILightweightLab
             {
                 decoration.addSuffix(" " + data);
             }
+            else if (element instanceof TreeParent)
+            {
+                int childCount = ((TreeParent) element).getChildCount();
+                if (childCount > 0)
+                {
+                    decoration.addSuffix(" " + childCount);
+                }
+            }
         }
     }
 

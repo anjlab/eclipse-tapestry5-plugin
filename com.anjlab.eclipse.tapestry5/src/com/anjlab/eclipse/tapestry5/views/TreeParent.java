@@ -24,6 +24,11 @@ public class TreeParent extends TreeObject
         child.setParent(null);
     }
 
+    public int getChildCount()
+    {
+        return children.size();
+    }
+    
     public TreeObject[] getChildren()
     {
         return (TreeObject[]) children.toArray(new TreeObject[children.size()]);
