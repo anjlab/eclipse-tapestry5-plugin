@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.commons.lang.StringUtils;
 import org.eclipse.core.resources.IFile;
@@ -13,8 +14,10 @@ import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.jdt.core.IAnnotation;
 import org.eclipse.jdt.core.IClassFile;
 import org.eclipse.jdt.core.IMemberValuePair;
+import org.eclipse.jdt.core.IMethod;
 import org.eclipse.jdt.core.IType;
 import org.eclipse.jdt.core.JavaModelException;
+import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTVisitor;
 import org.eclipse.jdt.core.dom.ClassInstanceCreation;
 import org.eclipse.jdt.core.dom.CompilationUnit;
@@ -25,6 +28,8 @@ import org.eclipse.jdt.core.dom.SimpleName;
 import org.eclipse.jdt.core.dom.SimpleType;
 import org.eclipse.jdt.core.dom.Type;
 import org.eclipse.jdt.core.dom.TypeLiteral;
+
+import com.anjlab.eclipse.tapestry5.TapestryService.BuilderMethodServiceDeclaration;
 
 public abstract class TapestryModule
 {
@@ -53,7 +58,7 @@ public abstract class TapestryModule
         this.moduleClass = moduleClass;
     }
     
-    public static TapestryModule createTapestryModule(TapestryProject project, IType moduleClass, ObjectCallback<TapestryModule> moduleCreated)
+    public static TapestryModule createTapestryModule(TapestryProject project, IType moduleClass, ObjectCallback<TapestryModule, RuntimeException> moduleCreated)
     {
         final TapestryModule module;
         
@@ -127,7 +132,7 @@ public abstract class TapestryModule
         findComponents(monitor);
     }
     
-    private List<TapestryModule> subModules;
+    private volatile List<TapestryModule> subModules;
     
     public List<TapestryModule> subModules()
     {
@@ -180,7 +185,7 @@ public abstract class TapestryModule
                                 createTapestryModule(
                                         project,
                                         subModuleClass,
-                                        new ObjectCallback<TapestryModule>()
+                                        new ObjectCallback<TapestryModule, RuntimeException>()
                                         {
                                             @Override
                                             public void callback(TapestryModule obj)
@@ -306,7 +311,7 @@ public abstract class TapestryModule
         });
     }
 
-    private List<LibraryMapping> libraryMappings;
+    private volatile List<LibraryMapping> libraryMappings;
 
     public List<LibraryMapping> libraryMappings()
     {
@@ -398,7 +403,118 @@ public abstract class TapestryModule
             }
         });
     }
+    
+    private volatile List<TapestryService> services;
+    
+    public List<TapestryService> services()
+    {
+        if (services == null)
+        {
+            findServices(new NullProgressMonitor());
+        }
+        return services;
+    }
+    
+    private synchronized void findServices(final IProgressMonitor monitor)
+    {
+        if (services != null)
+        {
+            return;
+        }
+        
+        services = new ArrayList<TapestryService>();
+        
+        enumServiceBuilderMethods();
+        
+        //  TODO More sources
+        
+        final CompilationUnit compilationUnit = getModuleClassCompilationUnit();
+        
+        if (compilationUnit == null)
+        {
+            return;
+        }
+        
+        compilationUnit.accept(new ASTVisitor()
+        {
+            @Override
+            public boolean visit(MethodInvocation node)
+            {
+                // TODO binder.bind()
+                return super.visit(node);
+            }
+        });
+    }
 
+    private void enumServiceBuilderMethods()
+    {
+        try
+        {
+            for (IMethod method : getModuleClass().getMethods())
+            {
+                if (!isServiceBuilderMethod(method))
+                {
+                    continue;
+                }
+                
+                // TODO builder methods
+                // TODO contributions
+                // TODO @Startup
+                // TODO decorations
+                // TODO advises
+                
+                IAnnotation annotation = TapestryUtils.findAnnotation(
+                        method.getAnnotations(), "org.apache.tapestry5.ioc.annotations.ServiceId");
+                
+                String typeName = EclipseUtils.resolveTypeNameForMember(moduleClass, method, method.getReturnType());
+                
+                final AtomicReference<String> serviceId = new AtomicReference<String>();
+                
+                if (annotation != null)
+                {
+                    TapestryUtils.readValueFromAnnotation(
+                            annotation,
+                            "value",
+                            getEclipseProject(),
+                            AST.newAST(AST.JLS8),
+                            new ObjectCallback<String, JavaModelException>()
+                            {
+                                @Override
+                                public void callback(String value) throws JavaModelException
+                                {
+                                    serviceId.set(value);
+                                }
+                            });
+                }
+                else
+                {
+                    String id = method.getElementName().substring("build".length());
+                    
+                    if (StringUtils.isEmpty(id))
+                    {
+                        int lastDot = typeName.lastIndexOf('.');
+                        
+                        id = lastDot != -1 ? typeName.substring(lastDot + 1) : typeName;
+                    }
+                    
+                    serviceId.set(id);
+                }
+                
+                services.add(new TapestryService(TapestryModule.this, typeName, serviceId.get(), new BuilderMethodServiceDeclaration(method)));
+            }
+        }
+        catch (JavaModelException e)
+        {
+            Activator.getDefault().logError(
+                    "Error enumerating builder methods for " + getModuleClass().getFullyQualifiedName(), e);
+        }
+    }
+    
+    private boolean isServiceBuilderMethod(IMethod method)
+    {
+        return method.getElementName().startsWith("build");
+    }
+    
     private CompilationUnit compilationUnit;
     
     private CompilationUnit getModuleClassCompilationUnit()
@@ -446,9 +562,9 @@ public abstract class TapestryModule
         return components;
     }
     
-    public interface ObjectCallback<T>
+    public interface ObjectCallback<T, E extends Throwable>
     {
-        void callback(T obj);
+        void callback(T obj) throws E;
     }
     
     private synchronized void findComponents(IProgressMonitor monitor)
@@ -465,7 +581,7 @@ public abstract class TapestryModule
             components.addAll(intermediateComponents);
         }
         
-        ObjectCallback<Object> componentClassFound = createComponentClassFoundHandler();
+        ObjectCallback<Object, RuntimeException> componentClassFound = createComponentClassFoundHandler();
         
         for (LibraryMapping mapping : libraryMappings())
         {
@@ -503,9 +619,9 @@ public abstract class TapestryModule
 
     private List<TapestryContext> intermediateComponents;
 
-    private ObjectCallback<Object> createComponentClassFoundHandler()
+    private ObjectCallback<Object, RuntimeException> createComponentClassFoundHandler()
     {
-        ObjectCallback<Object> componentClassFound = new ObjectCallback<Object>()
+        ObjectCallback<Object, RuntimeException> componentClassFound = new ObjectCallback<Object, RuntimeException>()
         {
             @Override
             public void callback(Object obj)
@@ -549,7 +665,7 @@ public abstract class TapestryModule
         return componentClassFound;
     }
 
-    protected abstract void enumJavaClassesRecursively(IProgressMonitor monitor, String rootPackage, ObjectCallback<Object> callback);
+    protected abstract void enumJavaClassesRecursively(IProgressMonitor monitor, String rootPackage, ObjectCallback<Object, RuntimeException> callback);
 
     public abstract TapestryFile getModuleFile();
 

@@ -1,7 +1,5 @@
 package com.anjlab.eclipse.tapestry5.views.project;
 
-import org.eclipse.jdt.core.IJavaElement;
-import org.eclipse.jdt.ui.JavaUI;
 import org.eclipse.jface.viewers.DoubleClickEvent;
 import org.eclipse.jface.viewers.IDoubleClickListener;
 import org.eclipse.jface.viewers.ISelection;
@@ -13,11 +11,13 @@ import org.eclipse.ui.IWorkbenchWindow;
 import org.eclipse.ui.part.ViewPart;
 
 import com.anjlab.eclipse.tapestry5.Activator;
+import com.anjlab.eclipse.tapestry5.EclipseUtils;
 import com.anjlab.eclipse.tapestry5.JavaScriptStack;
 import com.anjlab.eclipse.tapestry5.TapestryContext;
 import com.anjlab.eclipse.tapestry5.TapestryFile;
 import com.anjlab.eclipse.tapestry5.TapestryModule;
 import com.anjlab.eclipse.tapestry5.TapestryProject;
+import com.anjlab.eclipse.tapestry5.TapestryService;
 import com.anjlab.eclipse.tapestry5.views.NameSorter;
 import com.anjlab.eclipse.tapestry5.views.TapestryDecoratingLabelProvider;
 import com.anjlab.eclipse.tapestry5.views.TreeObject;
@@ -73,24 +73,16 @@ public class TapestryProjectOutlineView extends ViewPart
                     
                     if (data instanceof TapestryModule)
                     {
-                        openDeclaration(((TapestryModule) data).getModuleClass());
+                        EclipseUtils.openDeclaration(((TapestryModule) data).getModuleClass());
                     }
                     else if (data instanceof JavaScriptStack)
                     {
-                        openDeclaration(((JavaScriptStack) data).getDeclaration());
+                        EclipseUtils.openDeclaration(((JavaScriptStack) data).getDeclaration());
                     }
-                }
-            }
-
-            private void openDeclaration(IJavaElement element)
-            {
-                try
-                {
-                    JavaUI.openInEditor(element);
-                }
-                catch (Exception e)
-                {
-                    Activator.getDefault().logError("Error opening " + element.getElementName(), e);
+                    else if (data instanceof TapestryService)
+                    {
+                        ((TapestryService) data).getDeclaration().openInEditor();
+                    }
                 }
             }
         });

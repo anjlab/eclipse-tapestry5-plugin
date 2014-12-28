@@ -34,7 +34,7 @@ public class JarTapestryModule extends TapestryModule
     }
     
     @Override
-    protected void enumJavaClassesRecursively(IProgressMonitor monitor, String rootPackage, ObjectCallback<Object> callback)
+    protected void enumJavaClassesRecursively(IProgressMonitor monitor, String rootPackage, ObjectCallback<Object, RuntimeException> callback)
     {
         IParent root = (IParent) getModuleClass().getAncestor(IJavaElement.PACKAGE_FRAGMENT_ROOT);
         
@@ -59,7 +59,7 @@ public class JarTapestryModule extends TapestryModule
         }
     }
 
-    private void enumJavaClassesRecursively(IProgressMonitor monitor, IPackageFragment packageFragment, ObjectCallback<Object> callback) throws JavaModelException
+    private void enumJavaClassesRecursively(IProgressMonitor monitor, IPackageFragment packageFragment, ObjectCallback<Object, RuntimeException> callback) throws JavaModelException
     {
         for (IJavaElement child : packageFragment.getChildren())
         {

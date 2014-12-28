@@ -19,8 +19,10 @@ import org.eclipse.jdt.core.IClassFile;
 import org.eclipse.jdt.core.ICompilationUnit;
 import org.eclipse.jdt.core.IJarEntryResource;
 import org.eclipse.jdt.core.IJavaProject;
+import org.eclipse.jdt.core.IMemberValuePair;
 import org.eclipse.jdt.core.IPackageFragmentRoot;
 import org.eclipse.jdt.core.JavaModelException;
+import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.Annotation;
 import org.eclipse.jdt.internal.ui.javaeditor.IClassFileEditorInput;
 import org.eclipse.jface.viewers.ISelection;
@@ -35,6 +37,8 @@ import org.eclipse.ui.IWorkbenchWindow;
 import org.eclipse.ui.PlatformUI;
 import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
+
+import com.anjlab.eclipse.tapestry5.TapestryModule.ObjectCallback;
 
 @SuppressWarnings("restriction")
 public class TapestryUtils
@@ -740,6 +744,38 @@ public class TapestryUtils
         
         return isTapestryDefaultNamespace(namespace)
             || namespace.startsWith("tapestry-library:");
+    }
+
+    public static void readValueFromAnnotation(
+            IAnnotation annotation, String memberName, IProject project, AST ast,
+            ObjectCallback<String, JavaModelException> callback)
+                    throws JavaModelException
+    {
+        if (annotation == null)
+        {
+            return;
+        }
+        
+        IMemberValuePair[] pairs = annotation.getMemberValuePairs();
+        
+        for (IMemberValuePair pair : pairs)
+        {
+            if (memberName.equals(pair.getMemberName()))
+            {
+                if (pair.getValueKind() == IMemberValuePair.K_UNKNOWN)
+                {
+                    //  The value is unknown at this stage
+                    continue;
+                }
+                else
+                {
+                    //  This is the path of @Inject'ed Asset
+                    String value = EclipseUtils.eval(pair.getValue(), pair.getValueKind(), ast, project);
+                    
+                    callback.callback(value);
+                }
+            }
+        }
     }
 
 }

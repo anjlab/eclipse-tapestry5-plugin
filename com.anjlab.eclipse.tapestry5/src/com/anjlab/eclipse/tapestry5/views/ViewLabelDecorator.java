@@ -8,6 +8,7 @@ import org.eclipse.jface.viewers.LabelProvider;
 import com.anjlab.eclipse.tapestry5.JavaScriptStack;
 import com.anjlab.eclipse.tapestry5.LibraryMapping;
 import com.anjlab.eclipse.tapestry5.TapestryModule;
+import com.anjlab.eclipse.tapestry5.TapestryService;
 
 public class ViewLabelDecorator extends LabelProvider implements ILightweightLabelDecorator
 {
@@ -30,6 +31,10 @@ public class ViewLabelDecorator extends LabelProvider implements ILightweightLab
             else if (data instanceof JavaScriptStack)
             {
                 decoration.addSuffix(" " + ((JavaScriptStack) data).getDeclaration().getFullyQualifiedName());
+            }
+            else if (data instanceof TapestryService)
+            {
+                decoration.addSuffix(" " + ((TapestryService) data).getClassName());
             }
             else if (data instanceof Throwable)
             {

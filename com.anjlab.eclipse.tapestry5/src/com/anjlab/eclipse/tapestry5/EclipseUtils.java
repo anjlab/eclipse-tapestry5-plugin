@@ -14,10 +14,14 @@ import org.eclipse.core.runtime.Platform;
 import org.eclipse.jdt.core.ICompilationUnit;
 import org.eclipse.jdt.core.IField;
 import org.eclipse.jdt.core.IJavaElement;
+import org.eclipse.jdt.core.IMember;
+import org.eclipse.jdt.core.IMemberValuePair;
 import org.eclipse.jdt.core.IPackageFragmentRoot;
 import org.eclipse.jdt.core.IType;
 import org.eclipse.jdt.core.JavaCore;
 import org.eclipse.jdt.core.JavaModelException;
+import org.eclipse.jdt.core.Signature;
+import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTParser;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.Name;
@@ -30,6 +34,7 @@ import org.eclipse.jdt.core.search.SearchParticipant;
 import org.eclipse.jdt.core.search.SearchPattern;
 import org.eclipse.jdt.core.search.SearchRequestor;
 import org.eclipse.jdt.internal.ui.javaeditor.EditorUtility;
+import org.eclipse.jdt.ui.JavaUI;
 import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.jface.viewers.ITreeSelection;
@@ -270,9 +275,9 @@ public class EclipseUtils
         return null;
     }
 
-    public static IType findTypeDeclaration(IProject project, String moduleClassName)
+    public static IType findTypeDeclaration(IProject project, String className)
     {
-        SearchPattern pattern = SearchPattern.createPattern(moduleClassName,
+        SearchPattern pattern = SearchPattern.createPattern(className,
                 IJavaSearchConstants.TYPE, IJavaSearchConstants.DECLARATIONS, SearchPattern.R_FULL_MATCH);
         
         final List<SearchMatch> matches = searchJava(project, pattern);
@@ -384,6 +389,18 @@ public class EclipseUtils
         return null;
     }
 
+    public static String eval(Object value, int valueKind, AST ast, IProject project)
+    {
+        if (ast != null
+                && (valueKind == IMemberValuePair.K_SIMPLE_NAME
+                    || valueKind == IMemberValuePair.K_QUALIFIED_NAME))
+        {
+            Name name = ast.newName((String) value);
+            return evalExpression(project, name);
+        }
+        return (String) value;
+    }
+
     public static String evalExpression(IProject project, Object expr)
     {
         if (expr instanceof String)
@@ -404,6 +421,11 @@ public class EclipseUtils
             {
                 try
                 {
+                    //  XXX String literals sometimes returned in quotes as they present in source code,
+                    //  for example:
+                    //      String foo = "bar";
+                    //  may be returned as "bar" (in quotes) instead of just bar (without quotes).
+                    
                     return (String) field.getConstant();
                 }
                 catch (JavaModelException e)
@@ -479,6 +501,45 @@ public class EclipseUtils
             parent = parent.getParent();
         }
         return false;
+    }
+
+    public static void openDeclaration(IJavaElement element)
+    {
+        if (element == null)
+        {
+            return;
+        }
+        
+        try
+        {
+            JavaUI.openInEditor(element);
+        }
+        catch (Exception e)
+        {
+            Activator.getDefault().logError("Error opening " + element.getElementName(), e);
+        }
+    }
+
+    public static String resolveTypeNameForMember(IType type, IMember member, String typeSignature)
+            throws JavaModelException
+    {
+        String typeName = Signature.toString(typeSignature);
+        
+        if (member.isBinary())
+        {
+            return typeName;
+        }
+        
+        String[][] resolvedTypes = type.resolveType(typeName);
+        
+        if (resolvedTypes == null)
+        {
+            return typeName;
+        }
+        else
+        {
+            return resolvedTypes[0][0] + "." + resolvedTypes[0][1];
+        }
     }
 
 }

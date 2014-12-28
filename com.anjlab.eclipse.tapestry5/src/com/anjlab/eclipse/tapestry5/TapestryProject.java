@@ -199,7 +199,7 @@ public class TapestryProject
             
             TapestryModule appModule = addModule(monitor, modules, project,
                     appPackage + ".services." + StringUtils.capitalize(filterName) + "Module",
-                    new ObjectCallback<TapestryModule>()
+                    new ObjectCallback<TapestryModule, RuntimeException>()
                     {
                         @Override
                         public void callback(TapestryModule module)
@@ -232,7 +232,7 @@ public class TapestryProject
                 
                 for (String moduleClassName : modeModules.split(","))
                 {
-                    addModule(monitor, modules, project, moduleClassName.trim(), new ObjectCallback<TapestryModule>()
+                    addModule(monitor, modules, project, moduleClassName.trim(), new ObjectCallback<TapestryModule, RuntimeException>()
                     {
                         @Override
                         public void callback(TapestryModule obj)
@@ -252,7 +252,7 @@ public class TapestryProject
         }
         
         // Handle new t5.4 TapestryModule class location
-        ObjectCallback<TapestryModule> coreObjectCallback = new ObjectCallback<TapestryModule>()
+        ObjectCallback<TapestryModule, RuntimeException> coreObjectCallback = new ObjectCallback<TapestryModule, RuntimeException>()
         {
             @Override
             public void callback(TapestryModule module)
@@ -275,7 +275,7 @@ public class TapestryProject
         // t5.4
         addModule(monitor, modules, project, "org.apache.tapestry5.modules.TapestryModule", coreObjectCallback);
         
-        addModule(monitor, modules, project, "org.apache.tapestry5.ioc.services.TapestryIOCModule", new ObjectCallback<TapestryModule>()
+        addModule(monitor, modules, project, "org.apache.tapestry5.ioc.services.TapestryIOCModule", new ObjectCallback<TapestryModule, RuntimeException>()
         {
             @Override
             public void callback(TapestryModule module)
@@ -334,7 +334,7 @@ public class TapestryProject
                                     for (String className : classes.split(","))
                                     {
                                         addModule(monitor, modules, project, className,
-                                                new ObjectCallback<TapestryModule>()
+                                                new ObjectCallback<TapestryModule, RuntimeException>()
                                                 {
                                                     @Override
                                                     public void callback(TapestryModule obj)
@@ -366,7 +366,7 @@ public class TapestryProject
         }
     }
 
-    private TapestryModule addModule(IProgressMonitor monitor, List<TapestryModule> modules, IProject project, String moduleClassName, ObjectCallback<TapestryModule> moduleCreated)
+    private TapestryModule addModule(IProgressMonitor monitor, List<TapestryModule> modules, IProject project, String moduleClassName, ObjectCallback<TapestryModule, RuntimeException> moduleCreated)
     {
         if (monitor.isCanceled())
         {

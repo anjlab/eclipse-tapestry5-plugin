@@ -21,9 +21,9 @@ import org.eclipse.jdt.core.ISourceRange;
 import org.eclipse.jdt.core.IType;
 import org.eclipse.jdt.core.JavaModelException;
 import org.eclipse.jdt.core.dom.AST;
-import org.eclipse.jdt.core.dom.Name;
 import org.eclipse.jdt.internal.ui.text.javadoc.JavadocContentAccess2;
 
+import com.anjlab.eclipse.tapestry5.TapestryModule.ObjectCallback;
 import com.anjlab.eclipse.tapestry5.internal.CompilationUnitContext;
 import com.anjlab.eclipse.tapestry5.internal.CompilationUnitContext.CompilationUnitLifecycle;
 import com.anjlab.eclipse.tapestry5.internal.CompilationUnitContext.ContextRunnable;
@@ -195,7 +195,7 @@ public abstract class TapestryContext
                             continue;
                         }
                         
-                        IAnnotation path = TapestryUtils.findAnnotation(
+                        final IAnnotation path = TapestryUtils.findAnnotation(
                                 annotations, "org.apache.tapestry5.annotations.Path");
                         
                         if (path == null)
@@ -203,25 +203,14 @@ public abstract class TapestryContext
                             continue;
                         }
                         
-                        IMemberValuePair[] pairs = path.getMemberValuePairs();
-                        for (IMemberValuePair pair : pairs)
+                        TapestryUtils.readValueFromAnnotation(path, "value", getProject(), context.getAST(), new ObjectCallback<String, JavaModelException>()
                         {
-                            if ("value".equals(pair.getMemberName()))
+                            @Override
+                            public void callback(String value) throws JavaModelException
                             {
-                                if (pair.getValueKind() == IMemberValuePair.K_UNKNOWN)
-                                {
-                                    //  The value is unknown at this stage
-                                    continue;
-                                }
-                                else
-                                {
-                                    //  This is the path of @Inject'ed Asset
-                                    String value = eval(pair.getValue(), pair.getValueKind(), context.getAST());
-                                    
-                                    files.add(new AssetReference(getJavaFile(), path.getSourceRange(), value));
-                                }
+                                files.add(new AssetReference(getJavaFile(), path.getSourceRange(), value));
                             }
-                        }
+                        });
                     }
                 }
             }
@@ -265,6 +254,7 @@ public abstract class TapestryContext
         });
     }
     
+    //  TODO Rewrite with callback
     private void processImport(IAnnotation annotation, String type, Object value, int valueKind, AST ast)
     {
         if (value instanceof Object[])
@@ -282,16 +272,9 @@ public abstract class TapestryContext
 
     private String eval(Object value, int valueKind, AST ast)
     {
-        if (ast != null
-                && (valueKind == IMemberValuePair.K_SIMPLE_NAME
-                    || valueKind == IMemberValuePair.K_QUALIFIED_NAME))
-        {
-            Name name = ast.newName((String) value);
-            value = EclipseUtils.evalExpression(getProject(), name);
-        }
-        return (String) value;
+        return EclipseUtils.eval(value, valueKind, ast, getProject());
     }
-    
+
     private void processImportedFile(IAnnotation annotation, String type, String fileName)
     {
         ISourceRange sourceRange = null;

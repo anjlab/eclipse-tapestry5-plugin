@@ -11,6 +11,7 @@ import com.anjlab.eclipse.tapestry5.JavaScriptStack;
 import com.anjlab.eclipse.tapestry5.LibraryMapping;
 import com.anjlab.eclipse.tapestry5.TapestryModule;
 import com.anjlab.eclipse.tapestry5.TapestryProject;
+import com.anjlab.eclipse.tapestry5.TapestryService;
 import com.anjlab.eclipse.tapestry5.views.TreeObject;
 import com.anjlab.eclipse.tapestry5.views.TreeParent;
 
@@ -65,16 +66,26 @@ public class TapestryProjectOutlineContentProvider implements ITreeContentProvid
                     {
                         stacksRoot.addChild(new TreeObject(javaScriptStack.getName(), javaScriptStack));
                     }
+                    
+                    List<TapestryService> services = module.services();
+                    
+                    TreeParent servicesRoot = newServicesNode(moduleRoot, new Object());
+                    
+                    for (TapestryService service : services)
+                    {
+                        servicesRoot.addChild(new TreeObject(service.getServiceId(), service));
+                    }
                 }
                 else
                 {
                     newLibraryMappingsNode(moduleRoot, EclipseUtils.SOURCE_NOT_FOUND);
                     newJavaScriptStacksNode(moduleRoot, EclipseUtils.SOURCE_NOT_FOUND);
+                    newServicesNode(moduleRoot, EclipseUtils.SOURCE_NOT_FOUND);
                 }
             }
         }
     }
-
+    
     private TreeParent newJavaScriptStacksNode(TreeParent parent, Object data)
     {
         TreeParent node = new TreeParent("JavaScript Stacks", data);
@@ -85,6 +96,13 @@ public class TapestryProjectOutlineContentProvider implements ITreeContentProvid
     private TreeParent newLibraryMappingsNode(TreeParent parent, Object data)
     {
         TreeParent node = new TreeParent("Library Mappings", data);
+        parent.addChild(node);
+        return node;
+    }
+    
+    private TreeParent newServicesNode(TreeParent parent, Object data)
+    {
+        TreeParent node = new TreeParent("Services", data);
         parent.addChild(node);
         return node;
     }
