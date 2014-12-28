@@ -33,7 +33,7 @@ public class JavaScriptStackReference extends AbstractFileReference
     private TapestryFile resolveFile(TapestryContext context, JavaScriptStack stack)
             throws UnresolvableReferenceException
     {
-        IType type = stack.getDeclaration();
+        IType type = (IType) stack.getReference().getElement();
         
         if (type.getClassFile() != null)
         {
@@ -88,7 +88,7 @@ public class JavaScriptStackReference extends AbstractFileReference
         
         return stack == null
              ? false
-             : stack.getDeclaration().exists();
+             : stack.getReference().getElement().exists();
     }
 
     private JavaScriptStack resolveStack()

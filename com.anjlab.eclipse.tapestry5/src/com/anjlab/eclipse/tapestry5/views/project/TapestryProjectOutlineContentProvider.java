@@ -12,6 +12,7 @@ import com.anjlab.eclipse.tapestry5.LibraryMapping;
 import com.anjlab.eclipse.tapestry5.TapestryModule;
 import com.anjlab.eclipse.tapestry5.TapestryProject;
 import com.anjlab.eclipse.tapestry5.TapestryService;
+import com.anjlab.eclipse.tapestry5.TapestryService.ServiceDefinition;
 import com.anjlab.eclipse.tapestry5.views.TreeObject;
 import com.anjlab.eclipse.tapestry5.views.TreeParent;
 
@@ -73,7 +74,16 @@ public class TapestryProjectOutlineContentProvider implements ITreeContentProvid
                     
                     for (TapestryService service : services)
                     {
-                        servicesRoot.addChild(new TreeObject(service.getServiceId(), service));
+                        ServiceDefinition definition = service.getDefinition();
+                        
+                        String serviceId = definition.getId();
+                        
+                        if (serviceId == null)
+                        {
+                            serviceId = "<Unknown>";
+                        }
+                        
+                        servicesRoot.addChild(new TreeObject(serviceId, service));
                     }
                 }
                 else

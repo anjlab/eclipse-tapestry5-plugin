@@ -208,6 +208,8 @@ public abstract class TapestryContext
                             @Override
                             public void callback(String value) throws JavaModelException
                             {
+                                //  This is the path of @Inject'ed Asset
+                                
                                 files.add(new AssetReference(getJavaFile(), path.getSourceRange(), value));
                             }
                         });

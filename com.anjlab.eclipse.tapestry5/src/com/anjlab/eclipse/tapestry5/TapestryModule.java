@@ -18,18 +18,19 @@ import org.eclipse.jdt.core.IMethod;
 import org.eclipse.jdt.core.IType;
 import org.eclipse.jdt.core.JavaModelException;
 import org.eclipse.jdt.core.dom.AST;
+import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.ASTVisitor;
 import org.eclipse.jdt.core.dom.ClassInstanceCreation;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.MethodInvocation;
 import org.eclipse.jdt.core.dom.Name;
-import org.eclipse.jdt.core.dom.QualifiedType;
 import org.eclipse.jdt.core.dom.SimpleName;
 import org.eclipse.jdt.core.dom.SimpleType;
 import org.eclipse.jdt.core.dom.Type;
 import org.eclipse.jdt.core.dom.TypeLiteral;
 
-import com.anjlab.eclipse.tapestry5.TapestryService.BuilderMethodServiceDeclaration;
+import com.anjlab.eclipse.tapestry5.DeclarationReference.ASTNodeReference;
+import com.anjlab.eclipse.tapestry5.TapestryService.ServiceDefinition;
 
 public abstract class TapestryModule
 {
@@ -260,50 +261,43 @@ public abstract class TapestryModule
                     return super.visit(node);
                 }
                 
-                TypeLiteral typeLiteral = (TypeLiteral) typeArg;
+                String className = EclipseUtils.toClassName((TypeLiteral) typeArg);
                 
-                Type type = typeLiteral.getType();
-                
-                String className = null;
-                
-                if (type instanceof SimpleType)
-                {
-                    className = ((SimpleType) type).getName().getFullyQualifiedName();
-                }
-                else if (type instanceof QualifiedType)
-                {
-                    className = ((QualifiedType) type).getName().getFullyQualifiedName();
-                }
-                else
+                if (className == null)
                 {
                     return super.visit(node);
                 }
                 
                 IType declaration = EclipseUtils.findTypeDeclaration(getEclipseProject(), className);
                 
-                if (declaration != null)
+                if (declaration == null)
                 {
-                    try
+                    return super.visit(node);
+                }
+                
+                try
+                {
+                    String[] interfaceNames = declaration.getSuperInterfaceNames();
+                    
+                    for (String interfaceName : interfaceNames)
                     {
-                        String[] interfaceNames = declaration.getSuperInterfaceNames();
-                        
-                        for (String interfaceName : interfaceNames)
+                        if (TapestryUtils.isTapestryJavaScriptStackInterface(interfaceName))
                         {
-                            if (TapestryUtils.isTapestryJavaScriptStackInterface(interfaceName))
-                            {
-                                Object stackExpr = node.arguments().get(0);
-                                String stackName = EclipseUtils.evalExpression(getEclipseProject(), stackExpr);
-                                
-                                javaScriptStacks.add(new JavaScriptStack(stackName, declaration,
-                                        Arrays.binarySearch(OVERRIDES, node.getName().toString()) >= 0));
-                            }
+                            Object stackExpr = node.arguments().get(0);
+                            String stackName = EclipseUtils.evalExpression(getEclipseProject(), stackExpr);
+                            
+                            javaScriptStacks.add(new JavaScriptStack(
+                                    stackName,
+                                    declaration,
+                                    Arrays.binarySearch(OVERRIDES, node.getName().toString()) >= 0,
+                                    new ASTNodeReference(getModuleClass(), node)));
                         }
                     }
-                    catch (JavaModelException e)
-                    {
-                        Activator.getDefault().logWarning(
-                                "Unable to get super interfaces of " + declaration);
-                    }
+                }
+                catch (JavaModelException e)
+                {
+                    Activator.getDefault().logWarning(
+                            "Unable to get super interfaces of " + declaration);
                 }
                 
                 return super.visit(node);
@@ -388,7 +382,7 @@ public abstract class TapestryModule
                             
                             if (prefix != null && !StringUtils.isEmpty(pkg))
                             {
-                                libraryMappings.add(new LibraryMapping(prefix, pkg));
+                                libraryMappings.add(new LibraryMapping(prefix, pkg, new ASTNodeReference(getModuleClass(), node)));
                             }
                             else
                             {
@@ -424,10 +418,13 @@ public abstract class TapestryModule
         
         services = new ArrayList<TapestryService>();
         
-        enumServiceBuilderMethods();
+        enumModuleMethods();
         
-        //  TODO More sources
-        
+        visitBindInvocations();
+    }
+
+    private void visitBindInvocations()
+    {
         final CompilationUnit compilationUnit = getModuleClassCompilationUnit();
         
         if (compilationUnit == null)
@@ -437,70 +434,160 @@ public abstract class TapestryModule
         
         compilationUnit.accept(new ASTVisitor()
         {
+            private TapestryService.ServiceDefinition serviceDefinition;
+            
+            private TapestryService.ServiceDefinition serviceDefinition()
+            {
+                if (serviceDefinition == null)
+                {
+                    serviceDefinition = new TapestryService.ServiceDefinition();
+                }
+                return serviceDefinition;
+            }
+            
+            private boolean analyzeInvocationChain(MethodInvocation node)
+            {
+                if (node.getExpression() instanceof MethodInvocation)
+                {
+                    visit((MethodInvocation) node.getExpression());
+                }
+                else
+                {
+                    //  Unsupported method chain, drop captured service definition
+                    serviceDefinition = null;
+                }
+                return false;
+            }
+            
             @Override
             public boolean visit(MethodInvocation node)
             {
-                // TODO binder.bind()
+                String identifier = node.getName().getIdentifier();
+                
+                if ("withMarker".equals(identifier))
+                {
+                    for (Object arg : node.arguments())
+                    {
+                        if (arg instanceof TypeLiteral)
+                        {
+                            serviceDefinition().addMarker(
+                                    EclipseUtils.toClassName((TypeLiteral) arg));
+                        }
+                    }
+                    return analyzeInvocationChain(node);
+                }
+                else if ("preventReloading".equals(identifier))
+                {
+                    serviceDefinition().setPreventReloading(true);
+                    return analyzeInvocationChain(node);
+                }
+                else if ("preventDecoration".equals(identifier))
+                {
+                    serviceDefinition().setPreventDecoration(true);
+                    return analyzeInvocationChain(node);
+                }
+                else if ("eagerLoad".equals(identifier))
+                {
+                    serviceDefinition().setEagerLoad(true);
+                    return analyzeInvocationChain(node);
+                }
+                else if ("scope".equals(identifier))
+                {
+                    if (node.arguments().size() == 1)
+                    {
+                        serviceDefinition().setScope(
+                                EclipseUtils.evalExpression(
+                                        getEclipseProject(), node.arguments().get(0)));
+                    }
+                    return analyzeInvocationChain(node);
+                }
+                else if ("withId".equals(identifier))
+                {
+                    if (node.arguments().size() == 1)
+                    {
+                        serviceDefinition().setId(
+                                EclipseUtils.evalExpression(
+                                        getEclipseProject(), node.arguments().get(0)));
+                    }
+                    return analyzeInvocationChain(node);
+                }
+                else if ("withSimpleId".equals(identifier))
+                {
+                    serviceDefinition().setSimpleId(true);
+                    return analyzeInvocationChain(node);
+                }
+                else if ("bind".equals(identifier))
+                {
+                    ASTNode intf = null;
+                    ASTNode impl = null;
+                    
+                    switch (node.arguments().size()) {
+                    case 2:
+                        //  Interface, Implementation
+                        intf = (ASTNode) node.arguments().get(0);
+                        impl = (ASTNode) node.arguments().get(1);
+                        break;
+                    case 1:
+                        //  Interface
+                        intf = (ASTNode) node.arguments().get(0);
+                        break;
+                    }
+                    
+                    if (intf instanceof TypeLiteral)
+                    {
+                        TapestryService.ServiceDefinition definition = serviceDefinition();
+                        
+                        definition.setIntfClass(EclipseUtils.toClassName((TypeLiteral) intf));
+                        
+                        if (impl instanceof TypeLiteral)
+                        {
+                            definition.setImplClass(EclipseUtils.toClassName((TypeLiteral) impl));
+                        }
+                        
+                        if (definition.isSimpleId())
+                        {
+                            if (StringUtils.isNotEmpty(definition.getImplClass()))
+                            {
+                                definition.setId(TapestryUtils.simpleName(definition.getImplClass()));
+                            }
+                        }
+                        else if (StringUtils.isEmpty(definition.getId()))
+                        {
+                            definition.setId(TapestryUtils.simpleName(definition.getIntfClass()));
+                        }
+                        
+                        services.add(new TapestryService(
+                                TapestryModule.this,
+                                definition,
+                                new ASTNodeReference(getModuleClass(), node)));
+                    }
+                    
+                    serviceDefinition = null;
+                    
+                    return false;
+                }
+                
                 return super.visit(node);
             }
         });
     }
 
-    private void enumServiceBuilderMethods()
+    private void enumModuleMethods()
     {
         try
         {
             for (IMethod method : getModuleClass().getMethods())
             {
-                if (!isServiceBuilderMethod(method))
-                {
-                    continue;
-                }
-                
                 // TODO builder methods
                 // TODO contributions
                 // TODO @Startup
                 // TODO decorations
                 // TODO advises
                 
-                IAnnotation annotation = TapestryUtils.findAnnotation(
-                        method.getAnnotations(), "org.apache.tapestry5.ioc.annotations.ServiceId");
-                
-                String typeName = EclipseUtils.resolveTypeNameForMember(moduleClass, method, method.getReturnType());
-                
-                final AtomicReference<String> serviceId = new AtomicReference<String>();
-                
-                if (annotation != null)
+                if (isServiceBuilderMethod(method))
                 {
-                    TapestryUtils.readValueFromAnnotation(
-                            annotation,
-                            "value",
-                            getEclipseProject(),
-                            AST.newAST(AST.JLS8),
-                            new ObjectCallback<String, JavaModelException>()
-                            {
-                                @Override
-                                public void callback(String value) throws JavaModelException
-                                {
-                                    serviceId.set(value);
-                                }
-                            });
+                    addServiceFromBuilderMethod(method);
                 }
-                else
-                {
-                    String id = method.getElementName().substring("build".length());
-                    
-                    if (StringUtils.isEmpty(id))
-                    {
-                        int lastDot = typeName.lastIndexOf('.');
-                        
-                        id = lastDot != -1 ? typeName.substring(lastDot + 1) : typeName;
-                    }
-                    
-                    serviceId.set(id);
-                }
-                
-                services.add(new TapestryService(TapestryModule.this, typeName, serviceId.get(), new BuilderMethodServiceDeclaration(method)));
             }
         }
         catch (JavaModelException e)
@@ -508,6 +595,55 @@ public abstract class TapestryModule
             Activator.getDefault().logError(
                     "Error enumerating builder methods for " + getModuleClass().getFullyQualifiedName(), e);
         }
+    }
+
+    private void addServiceFromBuilderMethod(IMethod method) throws JavaModelException
+    {
+        IAnnotation annotation = TapestryUtils.findAnnotation(
+                method.getAnnotations(), "org.apache.tapestry5.ioc.annotations.ServiceId");
+        
+        String typeName = EclipseUtils.resolveTypeNameForMember(moduleClass, method, method.getReturnType());
+        
+        final AtomicReference<String> serviceId = new AtomicReference<String>();
+        
+        if (annotation != null)
+        {
+            TapestryUtils.readValueFromAnnotation(
+                    annotation,
+                    "value",
+                    getEclipseProject(),
+                    AST.newAST(AST.JLS8),
+                    new ObjectCallback<String, JavaModelException>()
+                    {
+                        @Override
+                        public void callback(String value) throws JavaModelException
+                        {
+                            serviceId.set(value);
+                        }
+                    });
+        }
+        else
+        {
+            String id = method.getElementName().substring("build".length());
+            
+            if (StringUtils.isEmpty(id))
+            {
+                int lastDot = typeName.lastIndexOf('.');
+                
+                id = lastDot != -1 ? typeName.substring(lastDot + 1) : typeName;
+            }
+            
+            serviceId.set(id);
+        }
+        
+        //  TODO Check @Marker annotations
+        
+        services.add(new TapestryService(
+                TapestryModule.this,
+                new ServiceDefinition()
+                    .setIntfClass(typeName)
+                    .setId(serviceId.get()),
+                new DeclarationReference.JavaElementReference(method)));
     }
     
     private boolean isServiceBuilderMethod(IMethod method)

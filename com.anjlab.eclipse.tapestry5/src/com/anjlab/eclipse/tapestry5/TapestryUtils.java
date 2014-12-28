@@ -177,21 +177,25 @@ public class TapestryUtils
                 || "org.apache.tapestry5.services.javascript.JavaScriptStack".equals(interfaceName);
     }
 
+    public static String simpleName(String className)
+    {
+        int lastDot = className.lastIndexOf('.');
+        
+        if (lastDot != -1)
+        {
+            return className.substring(lastDot + 1);
+        }
+        
+        return className;
+    }
+    
     public static IAnnotation findAnnotation(IAnnotation[] annotations, String typeName)
     {
         for (IAnnotation annotation : annotations)
         {
             String name = annotation.getElementName();
             
-            if (name.equals(typeName))
-            {
-                return annotation;
-            }
-            
-            int lastDot = typeName.lastIndexOf('.');
-            
-            if (lastDot != -1 && lastDot < typeName.length() - 1
-                    && name.equals(typeName.substring(lastDot + 1)))
+            if (name.equals(typeName) || name.equals(simpleName(typeName)))
             {
                 return annotation;
             }
@@ -769,7 +773,6 @@ public class TapestryUtils
                 }
                 else
                 {
-                    //  This is the path of @Inject'ed Asset
                     String value = EclipseUtils.eval(pair.getValue(), pair.getValueKind(), ast, project);
                     
                     callback.callback(value);

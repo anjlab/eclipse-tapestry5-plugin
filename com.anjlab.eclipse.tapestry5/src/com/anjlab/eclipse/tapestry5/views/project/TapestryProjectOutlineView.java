@@ -13,6 +13,7 @@ import org.eclipse.ui.part.ViewPart;
 import com.anjlab.eclipse.tapestry5.Activator;
 import com.anjlab.eclipse.tapestry5.EclipseUtils;
 import com.anjlab.eclipse.tapestry5.JavaScriptStack;
+import com.anjlab.eclipse.tapestry5.LibraryMapping;
 import com.anjlab.eclipse.tapestry5.TapestryContext;
 import com.anjlab.eclipse.tapestry5.TapestryFile;
 import com.anjlab.eclipse.tapestry5.TapestryModule;
@@ -73,15 +74,19 @@ public class TapestryProjectOutlineView extends ViewPart
                     
                     if (data instanceof TapestryModule)
                     {
-                        EclipseUtils.openDeclaration(((TapestryModule) data).getModuleClass());
+                        EclipseUtils.openDeclaration(((TapestryModule) data).getModuleClass(), null);
+                    }
+                    else if (data instanceof LibraryMapping)
+                    {
+                        ((LibraryMapping) data).getReference().openInEditor();
                     }
                     else if (data instanceof JavaScriptStack)
                     {
-                        EclipseUtils.openDeclaration(((JavaScriptStack) data).getDeclaration());
+                        ((JavaScriptStack) data).getReference().openInEditor();
                     }
                     else if (data instanceof TapestryService)
                     {
-                        ((TapestryService) data).getDeclaration().openInEditor();
+                        ((TapestryService) data).getReference().openInEditor();
                     }
                 }
             }

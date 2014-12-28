@@ -30,11 +30,11 @@ public class ViewLabelDecorator extends LabelProvider implements ILightweightLab
             }
             else if (data instanceof JavaScriptStack)
             {
-                decoration.addSuffix(" " + ((JavaScriptStack) data).getDeclaration().getFullyQualifiedName());
+                decoration.addSuffix(" " + ((JavaScriptStack) data).getType().getFullyQualifiedName());
             }
             else if (data instanceof TapestryService)
             {
-                decoration.addSuffix(" " + ((TapestryService) data).getClassName());
+                decoration.addSuffix(" " + ((TapestryService) data).getDefinition().getIntfClass());
             }
             else if (data instanceof Throwable)
             {

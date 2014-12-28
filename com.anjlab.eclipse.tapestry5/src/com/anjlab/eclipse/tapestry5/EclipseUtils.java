@@ -22,10 +22,16 @@ import org.eclipse.jdt.core.JavaCore;
 import org.eclipse.jdt.core.JavaModelException;
 import org.eclipse.jdt.core.Signature;
 import org.eclipse.jdt.core.dom.AST;
+import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.ASTParser;
 import org.eclipse.jdt.core.dom.CompilationUnit;
+import org.eclipse.jdt.core.dom.ImportDeclaration;
 import org.eclipse.jdt.core.dom.Name;
+import org.eclipse.jdt.core.dom.QualifiedType;
+import org.eclipse.jdt.core.dom.SimpleType;
 import org.eclipse.jdt.core.dom.StringLiteral;
+import org.eclipse.jdt.core.dom.Type;
+import org.eclipse.jdt.core.dom.TypeLiteral;
 import org.eclipse.jdt.core.search.IJavaSearchConstants;
 import org.eclipse.jdt.core.search.IJavaSearchScope;
 import org.eclipse.jdt.core.search.SearchEngine;
@@ -503,7 +509,7 @@ public class EclipseUtils
         return false;
     }
 
-    public static void openDeclaration(IJavaElement element)
+    public static void openDeclaration(IJavaElement element, EditorCallback editorCallback)
     {
         if (element == null)
         {
@@ -512,7 +518,12 @@ public class EclipseUtils
         
         try
         {
-            JavaUI.openInEditor(element);
+            IEditorPart editor = JavaUI.openInEditor(element);
+            
+            if (editorCallback != null)
+            {
+                editorCallback.editorOpened(editor);
+            }
         }
         catch (Exception e)
         {
@@ -540,6 +551,53 @@ public class EclipseUtils
         {
             return resolvedTypes[0][0] + "." + resolvedTypes[0][1];
         }
+    }
+
+    public static String toClassName(TypeLiteral typeLiteral)
+    {
+        Type type = typeLiteral.getType();
+        
+        Name name = null;
+        
+        if (type instanceof SimpleType)
+        {
+            name = ((SimpleType) type).getName();
+        }
+        else if (type instanceof QualifiedType)
+        {
+            name = ((QualifiedType) type).getName();
+        }
+        else
+        {
+            return null;
+        }
+        
+        return name.isQualifiedName()
+                 ? name.getFullyQualifiedName()
+                 : tryResolveFQNameFromImports(typeLiteral.getRoot(), name.getFullyQualifiedName());
+    }
+
+    private static String tryResolveFQNameFromImports(ASTNode root, String simpleName)
+    {
+        if (!(root instanceof CompilationUnit))
+        {
+            return simpleName;
+        }
+        
+        CompilationUnit compilationUnit = (CompilationUnit) root;
+        
+        for (Object importObj : compilationUnit.imports())
+        {
+            ImportDeclaration importDecl = (ImportDeclaration) importObj;
+            
+            if (importDecl.getName().getFullyQualifiedName().endsWith("." + simpleName))
+            {
+                return importDecl.getName().getFullyQualifiedName();
+            }
+        }
+        
+        //  Assume it's from the same package
+        return compilationUnit.getPackage().getName().getFullyQualifiedName() + "." + simpleName;
     }
 
 }

@@ -4,11 +4,13 @@ public class LibraryMapping
 {
     private String pathPrefix;
     private String rootPackage;
+    private DeclarationReference reference;
     
-    public LibraryMapping(String pathPrefix, String rootPackage)
+    public LibraryMapping(String pathPrefix, String rootPackage, DeclarationReference reference)
     {
         this.pathPrefix = pathPrefix;
         this.rootPackage = rootPackage;
+        this.reference = reference;
     }
     
     public String getPathPrefix()
@@ -26,5 +28,9 @@ public class LibraryMapping
     public void setRootPackage(String rootPackage)
     {
         this.rootPackage = rootPackage;
+    }
+    public DeclarationReference getReference()
+    {
+        return reference;
     }
 }
