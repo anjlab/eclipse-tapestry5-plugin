@@ -4,7 +4,6 @@ import org.eclipse.jface.viewers.DoubleClickEvent;
 import org.eclipse.jface.viewers.IDoubleClickListener;
 import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.jface.viewers.IStructuredSelection;
-import org.eclipse.jface.viewers.TreePath;
 import org.eclipse.jface.viewers.TreeViewer;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.widgets.Composite;
@@ -97,6 +96,8 @@ public class TapestryProjectOutlineView extends ViewPart
         
         tapestryContextListener = new ITapestryContextListener()
         {
+            private boolean expanded;
+            
             @Override
             public void projectChanged(IWorkbenchWindow window, final TapestryProject newTapestryProject)
             {
@@ -112,11 +113,16 @@ public class TapestryProjectOutlineView extends ViewPart
                     @Override
                     public void run()
                     {
-                        TreePath[] expandedTreePaths = viewer.getExpandedTreePaths();
+                        TapestryProjectOutlineContentProvider contentProvider = new TapestryProjectOutlineContentProvider(newTapestryProject);
                         
-                        viewer.setContentProvider(new TapestryProjectOutlineContentProvider(newTapestryProject));
+                        viewer.setContentProvider(contentProvider);
                         
-                        viewer.setExpandedTreePaths(expandedTreePaths);
+                        if (!expanded)
+                        {
+                            //  Expand modules only once
+                            viewer.setExpandedElements(new Object[] { contentProvider.newModulesNode() });
+                            expanded = true;
+                        }
                     }
                 });
             }

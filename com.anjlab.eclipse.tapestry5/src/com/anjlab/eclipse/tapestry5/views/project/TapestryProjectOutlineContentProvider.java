@@ -21,7 +21,7 @@ public class TapestryProjectOutlineContentProvider implements ITreeContentProvid
 {
     private TreeParent invisibleRoot;
     private TapestryProject project;
-
+    
     public TapestryProjectOutlineContentProvider(TapestryProject project)
     {
         this.project = project;
@@ -38,7 +38,7 @@ public class TapestryProjectOutlineContentProvider implements ITreeContentProvid
         
         if (project != null)
         {
-            TreeParent modulesRoot = new TreeParent("Modules", new DataObject("ModulesRoot"));
+            TreeParent modulesRoot = newModulesNode();
             
             invisibleRoot.addChild(modulesRoot);
             
@@ -95,6 +95,11 @@ public class TapestryProjectOutlineContentProvider implements ITreeContentProvid
                 }
             }
         }
+    }
+    
+    public TreeParent newModulesNode()
+    {
+        return new TreeParent("Modules", new DataObject("ModulesRoot"));
     }
     
     private TreeParent newJavaScriptStacksNode(TreeParent parent, Object data)
