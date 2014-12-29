@@ -75,15 +75,17 @@ public class TapestryProjectOutlineView extends ViewPart
                     
                     if (data instanceof TapestryModule)
                     {
-                        EclipseUtils.openDeclaration(((TapestryModule) data).getModuleClass(), null);
+                        EclipseUtils.openDeclaration(
+                                ((TapestryModule) data).getModuleClass(), null);
+                    }
+                    else if (data instanceof JavaScriptStack)
+                    {
+                        EclipseUtils.openDeclaration(
+                                ((JavaScriptStack) data).getType(), null);
                     }
                     else if (data instanceof LibraryMapping)
                     {
                         ((LibraryMapping) data).getReference().openInEditor();
-                    }
-                    else if (data instanceof JavaScriptStack)
-                    {
-                        ((JavaScriptStack) data).getReference().openInEditor();
                     }
                     else if (data instanceof TapestryService)
                     {
