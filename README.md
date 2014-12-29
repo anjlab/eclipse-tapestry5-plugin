@@ -58,8 +58,9 @@ This view displays structure of your Tapestry5 project:
 
   - Select your main Tapestry5 project (i.e. the project with `web.xml`) in the "Project Explorer" to see its outline
   - View all Tapestry5 modules available in classpath of the main Tapestry5 project
-  - View [library mappings](http://tapestry.apache.org/component-libraries.html#ComponentLibraries-Step4%3AConfigurethevirtualfolder) and [JavaScript stacks](https://tapestry.apache.org/javascript.html#JavaScript-JavaScriptStacks) declared in each module (only available if source code attached to the module class)
-  - Double click on module name or JavaScript stack to open its source code
+  - View [library mappings](http://tapestry.apache.org/component-libraries.html#ComponentLibraries-Step4%3AConfigurethevirtualfolder), [JavaScript stacks](https://tapestry.apache.org/javascript.html#JavaScript-JavaScriptStacks), and [services](http://tapestry.apache.org/defining-tapestry-ioc-services.html) declared in each module (only available if source code attached to the module class)
+  - Double click on Module name or JavaScript stack to open its source code
+  - Double click on Library mapping or Service to open its declaration
   - Content of this view will be updated automatically in background when you're adding new or updating existing modules, changing `web.xml`, or editing your pages/components files
   - More to come...
 
