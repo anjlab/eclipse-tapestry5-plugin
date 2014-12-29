@@ -861,6 +861,12 @@ public abstract class TapestryModule
         return this.moduleClass.equals(((TapestryModule) obj).moduleClass);
     }
 
+    @Override
+    public int hashCode()
+    {
+        return moduleClass.getFullyQualifiedName().hashCode();
+    }
+    
     public String getComponentName(TapestryContext context)
     {
         String packageName = context.getPackageName();
@@ -891,5 +897,4 @@ public abstract class TapestryModule
     {
         return componentFullName.substring((componentsPackage + ".").length());
     }
-
 }

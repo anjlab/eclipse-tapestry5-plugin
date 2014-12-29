@@ -4,6 +4,7 @@ import org.eclipse.jface.viewers.DoubleClickEvent;
 import org.eclipse.jface.viewers.IDoubleClickListener;
 import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.jface.viewers.IStructuredSelection;
+import org.eclipse.jface.viewers.TreePath;
 import org.eclipse.jface.viewers.TreeViewer;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.widgets.Composite;
@@ -109,7 +110,11 @@ public class TapestryProjectOutlineView extends ViewPart
                     @Override
                     public void run()
                     {
+                        TreePath[] expandedTreePaths = viewer.getExpandedTreePaths();
+                        
                         viewer.setContentProvider(new TapestryProjectOutlineContentProvider(newTapestryProject));
+                        
+                        viewer.setExpandedTreePaths(expandedTreePaths);
                     }
                 });
             }

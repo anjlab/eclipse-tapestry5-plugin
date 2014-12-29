@@ -4,6 +4,33 @@ import java.util.ArrayList;
 
 public class TreeParent extends TreeObject
 {
+    public static final class DataObject
+    {
+        private final String data;
+        
+        public DataObject(String data)
+        {
+            if (data == null)
+            {
+                throw new IllegalArgumentException("Nulls not allowed");
+            }
+            this.data = data;
+        }
+        
+        @Override
+        public boolean equals(Object obj)
+        {
+            return obj instanceof DataObject
+                && data.equals(((DataObject) obj).data);
+        }
+        
+        @Override
+        public int hashCode()
+        {
+            return data.hashCode();
+        }
+    }
+    
     private ArrayList<TreeObject> children;
 
     public TreeParent(String name, Object data)

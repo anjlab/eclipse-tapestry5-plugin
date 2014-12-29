@@ -15,6 +15,7 @@ import com.anjlab.eclipse.tapestry5.TapestryService;
 import com.anjlab.eclipse.tapestry5.TapestryService.ServiceDefinition;
 import com.anjlab.eclipse.tapestry5.views.TreeObject;
 import com.anjlab.eclipse.tapestry5.views.TreeParent;
+import com.anjlab.eclipse.tapestry5.views.TreeParent.DataObject;
 
 public class TapestryProjectOutlineContentProvider implements ITreeContentProvider
 {
@@ -37,7 +38,7 @@ public class TapestryProjectOutlineContentProvider implements ITreeContentProvid
         
         if (project != null)
         {
-            TreeParent modulesRoot = new TreeParent("Modules", new Object());
+            TreeParent modulesRoot = new TreeParent("Modules", new DataObject("ModulesRoot"));
             
             invisibleRoot.addChild(modulesRoot);
             
@@ -51,7 +52,7 @@ public class TapestryProjectOutlineContentProvider implements ITreeContentProvid
                 {
                     List<LibraryMapping> libraryMappings = module.libraryMappings();
                     
-                    TreeParent mappingsRoot = newLibraryMappingsNode(moduleRoot, new Object());
+                    TreeParent mappingsRoot = newLibraryMappingsNode(moduleRoot, new DataObject("LibraryMappingsNode"));
                     
                     for (LibraryMapping libraryMapping : libraryMappings)
                     {
@@ -61,7 +62,7 @@ public class TapestryProjectOutlineContentProvider implements ITreeContentProvid
                     
                     List<JavaScriptStack> stacks = module.javaScriptStacks();
                     
-                    TreeParent stacksRoot = newJavaScriptStacksNode(moduleRoot, new Object());
+                    TreeParent stacksRoot = newJavaScriptStacksNode(moduleRoot, new DataObject("JavaScriptStacksNode"));
                     
                     for (JavaScriptStack javaScriptStack : stacks)
                     {
@@ -70,7 +71,7 @@ public class TapestryProjectOutlineContentProvider implements ITreeContentProvid
                     
                     List<TapestryService> services = module.services();
                     
-                    TreeParent servicesRoot = newServicesNode(moduleRoot, new Object());
+                    TreeParent servicesRoot = newServicesNode(moduleRoot, new DataObject("ServicesNode"));
                     
                     for (TapestryService service : services)
                     {
