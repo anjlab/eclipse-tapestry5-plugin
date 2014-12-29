@@ -52,7 +52,7 @@ Tapestry5 completion proposals now available for all WTP Editors.
 
 Go to *Window* -> *Show View* -> *Other...*, filter by "Tapestry" and select "Tapestry Project Outline".
 
-![TapestryProjectOutline](https://f.cloud.github.com/assets/76579/1591215/cb6da226-529e-11e3-8db7-e482f5aedb11.png)
+<img src="https://cloud.githubusercontent.com/assets/76579/5566950/29f5b88c-8f49-11e4-91a7-7d51613e9879.png" width="750" alt="Tapestry Project Outline view">
 
 This view displays structure of your Tapestry5 project:
 
