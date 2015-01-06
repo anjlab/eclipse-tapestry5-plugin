@@ -773,12 +773,30 @@ public class TapestryUtils
                 }
                 else
                 {
-                    String value = EclipseUtils.eval(pair.getValue(), pair.getValueKind(), ast, project);
-                    
-                    callback.callback(value);
+                    Object[] values = pair.getValue().getClass().isArray()
+                            ? (Object[]) pair.getValue()
+                            : new Object[] { pair.getValue() };
+           
+                   for (Object value : values)
+                   {
+                       String eval = EclipseUtils.eval(value, pair.getValueKind(), ast, project);
+                       
+                       callback.callback(eval);
+                   }
                 }
             }
         }
     }
+
+    public static final String ORG_APACHE_TAPESTRY5_IOC_ANNOTATIONS_SUB_MODULE = "org.apache.tapestry5.ioc.annotations.SubModule";
+    public static final String ORG_APACHE_TAPESTRY5_IOC_ANNOTATIONS_ADVISE = "org.apache.tapestry5.ioc.annotations.Advise";
+    public static final String ORG_APACHE_TAPESTRY5_IOC_ANNOTATIONS_SERVICE_ID = "org.apache.tapestry5.ioc.annotations.ServiceId";
+    public static final String ORG_APACHE_TAPESTRY5_IOC_ANNOTATIONS_CONTRIBUTE = "org.apache.tapestry5.ioc.annotations.Contribute";
+    public static final String ORG_APACHE_TAPESTRY5_IOC_ANNOTATIONS_STARTUP = "org.apache.tapestry5.ioc.annotations.Startup";
+    public static final String ORG_APACHE_TAPESTRY5_IOC_ANNOTATIONS_DECORATE = "org.apache.tapestry5.ioc.annotations.Decorate";
+    public static final String ORG_APACHE_TAPESTRY5_IOC_ANNOTATIONS_ORDER = "org.apache.tapestry5.ioc.annotations.Order";
+    public static final String ORG_APACHE_TAPESTRY5_IOC_ANNOTATIONS_MATCH = "org.apache.tapestry5.ioc.annotations.Match";
+    public static final String ORG_APACHE_TAPESTRY5_IOC_ANNOTATIONS_OPTIONAL = "org.apache.tapestry5.ioc.annotations.Optional";
+    public static final String ORG_APACHE_TAPESTRY5_IOC_ANNOTATIONS_MARKER = "org.apache.tapestry5.ioc.annotations.Marker";
 
 }

@@ -3,7 +3,9 @@ package com.anjlab.eclipse.tapestry5;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.commons.lang.StringUtils;
@@ -11,6 +13,7 @@ import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.NullProgressMonitor;
+import org.eclipse.jdt.core.IAnnotatable;
 import org.eclipse.jdt.core.IAnnotation;
 import org.eclipse.jdt.core.IClassFile;
 import org.eclipse.jdt.core.IMemberValuePair;
@@ -30,10 +33,23 @@ import org.eclipse.jdt.core.dom.Type;
 import org.eclipse.jdt.core.dom.TypeLiteral;
 
 import com.anjlab.eclipse.tapestry5.DeclarationReference.ASTNodeReference;
+import com.anjlab.eclipse.tapestry5.DeclarationReference.JavaElementReference;
+import com.anjlab.eclipse.tapestry5.TapestryService.InstrumenterType;
+import com.anjlab.eclipse.tapestry5.TapestryService.Matcher;
 import com.anjlab.eclipse.tapestry5.TapestryService.ServiceDefinition;
+import com.anjlab.eclipse.tapestry5.TapestryService.ServiceInstrumenter;
+import com.anjlab.eclipse.tapestry5.internal.AndMatcher;
+import com.anjlab.eclipse.tapestry5.internal.GlobPatternMatcher;
+import com.anjlab.eclipse.tapestry5.internal.IdentityIdMatcher;
+import com.anjlab.eclipse.tapestry5.internal.MarkerMatcher;
+import com.anjlab.eclipse.tapestry5.internal.OrMatcher;
 
 public abstract class TapestryModule
 {
+    private static final String BUILD_METHOD_NAME_PREFIX = "build";
+    private static final String CONTRIBUTE_METHOD_NAME_PREFIX = "contribute";
+    private static final String ADVISE_METHOD_NAME_PREFIX = "advise";
+    private static final String DECORATE_METHOD_NAME_PREFIX = "decorate";
     private TapestryProject project;
     private IType moduleClass;
     private List<ModuleReference> references = new ArrayList<ModuleReference>();
@@ -124,6 +140,8 @@ public abstract class TapestryModule
     {
         monitor.subTask("Analyzing " + moduleClass.getFullyQualifiedName() + "...");
         
+        findMarkers(monitor);
+        
         findSubModules(monitor);
         
         findLibraryMappings(monitor);
@@ -131,6 +149,56 @@ public abstract class TapestryModule
         findJavaScriptStacks(monitor);
         
         findComponents(monitor);
+    }
+    
+    private volatile List<String> markers;
+    
+    private synchronized void findMarkers(IProgressMonitor monitor)
+    {
+        if (markers != null)
+        {
+            return;
+        }
+        
+        try
+        {
+            markers = readMarkerAnnotation(moduleClass);
+        }
+        catch (JavaModelException e)
+        {
+            Activator.getDefault().logError("Error getting markers for " + getName(), e);
+        }
+    }
+
+    private List<String> readMarkerAnnotation(IAnnotatable annotatable) throws JavaModelException
+    {
+        List<String> markers = new ArrayList<String>();
+        
+        IAnnotation annotation = TapestryUtils.findAnnotation(annotatable.getAnnotations(),
+                TapestryUtils.ORG_APACHE_TAPESTRY5_IOC_ANNOTATIONS_MARKER);
+        
+        if (annotation != null)
+        {
+            String[] typeLiterals = readValuesFromAnnotation(annotation, "value");
+            
+            for (String typeLiteral : typeLiterals)
+            {
+                String typeName = EclipseUtils.resolveTypeName(moduleClass, typeLiteral);
+                
+                markers.add(typeName);
+            }
+        }
+        
+        return markers;
+    }
+
+    public List<String> markers()
+    {
+        if (markers == null)
+        {
+            findMarkers(new NullProgressMonitor());
+        }
+        return markers;
     }
     
     private volatile List<TapestryModule> subModules;
@@ -157,7 +225,7 @@ public abstract class TapestryModule
         try
         {
             IAnnotation annotation = TapestryUtils.findAnnotation(
-                    moduleClass.getAnnotations(), "org.apache.tapestry5.ioc.annotations.SubModule");
+                    moduleClass.getAnnotations(), TapestryUtils.ORG_APACHE_TAPESTRY5_IOC_ANNOTATIONS_SUB_MODULE);
             
             if (annotation == null)
             {
@@ -399,6 +467,9 @@ public abstract class TapestryModule
     }
     
     private volatile List<TapestryService> services;
+    private volatile List<ServiceInstrumenter> decorators;
+    private volatile List<ServiceInstrumenter> advisors;
+    private volatile List<ServiceInstrumenter> contributors;
     
     public List<TapestryService> services()
     {
@@ -409,6 +480,33 @@ public abstract class TapestryModule
         return services;
     }
     
+    public List<ServiceInstrumenter> decorators()
+    {
+        if (decorators == null)
+        {
+            findServices(new NullProgressMonitor());
+        }
+        return decorators;
+    }
+    
+    public List<ServiceInstrumenter> advisors()
+    {
+        if (advisors == null)
+        {
+            findServices(new NullProgressMonitor());
+        }
+        return advisors;
+    }
+    
+    public List<ServiceInstrumenter> contributors()
+    {
+        if (contributors == null)
+        {
+            findServices(new NullProgressMonitor());
+        }
+        return contributors;
+    }
+    
     private synchronized void findServices(final IProgressMonitor monitor)
     {
         if (services != null)
@@ -417,6 +515,10 @@ public abstract class TapestryModule
         }
         
         services = new ArrayList<TapestryService>();
+        
+        decorators = new ArrayList<ServiceInstrumenter>();
+        advisors = new ArrayList<ServiceInstrumenter>();
+        contributors = new ArrayList<ServiceInstrumenter>();
         
         enumModuleMethods();
         
@@ -466,6 +568,8 @@ public abstract class TapestryModule
                 
                 if ("withMarker".equals(identifier))
                 {
+                    //  Copy annotations from module class
+                    serviceDefinition().addMarkers(markers());
                     for (Object arg : node.arguments())
                     {
                         if (arg instanceof TypeLiteral)
@@ -578,15 +682,25 @@ public abstract class TapestryModule
         {
             for (IMethod method : getModuleClass().getMethods())
             {
-                // TODO builder methods
-                // TODO contributions
-                // TODO @Startup
-                // TODO decorations
-                // TODO advises
-                
                 if (isServiceBuilderMethod(method))
                 {
                     addServiceFromBuilderMethod(method);
+                }
+                else if (isDecoratorMethod(method))
+                {
+                    addServiceDecorator(method);
+                }
+                else if (isAdvisorMethod(method))
+                {
+                    addServiceAdvisor(method);
+                }
+                else if (isContributorMethod(method))
+                {
+                    addContributionMethod(method);
+                }
+                else if (isStartupMethod(method))
+                {
+                    addStartupContributor(method);
                 }
             }
         }
@@ -597,10 +711,198 @@ public abstract class TapestryModule
         }
     }
 
+    private void addStartupContributor(IMethod method) throws JavaModelException
+    {
+        contributors.add(new ServiceInstrumenter()
+            .setType(InstrumenterType.CONTRIBUTOR)
+            .setId(method.getElementName())
+            .setReference(new JavaElementReference(method))
+            .setServiceMatcher(new IdentityIdMatcher("RegistryStartup"))
+            .setConstraints(extractConstraints(method)));
+    }
+
+    private void addContributionMethod(IMethod method) throws JavaModelException
+    {
+        IAnnotation annotation = TapestryUtils.findAnnotation(method.getAnnotations(),
+                TapestryUtils.ORG_APACHE_TAPESTRY5_IOC_ANNOTATIONS_CONTRIBUTE);
+        
+        String serviceInterface = annotation == null ? null
+                : readValueFromAnnotation(annotation, "value");
+        
+        String id = annotation == null
+                ? stripMethodPrefix(method, CONTRIBUTE_METHOD_NAME_PREFIX)
+                : TapestryUtils.simpleName(serviceInterface);
+        
+        List<String> markers = extractMarkers(method, new HashSet<String>(Arrays.asList(
+                TapestryUtils.ORG_APACHE_TAPESTRY5_IOC_ANNOTATIONS_CONTRIBUTE,
+                TapestryUtils.ORG_APACHE_TAPESTRY5_IOC_ANNOTATIONS_ORDER,
+                TapestryUtils.ORG_APACHE_TAPESTRY5_IOC_ANNOTATIONS_MATCH)));
+        
+        Matcher serviceMatcher = createMatcher(method, id, markers);
+        
+        contributors.add(new ServiceInstrumenter()
+            .setType(InstrumenterType.CONTRIBUTOR)
+            .setId(id)
+            .setReference(new JavaElementReference(method))
+            .setServiceMatcher(serviceMatcher)
+            .setConstraints(extractConstraints(method)));
+    }
+
+    private void addServiceAdvisor(IMethod method) throws JavaModelException
+    {
+        advisors.add(
+                createInstrumenter(method,
+                        TapestryUtils.ORG_APACHE_TAPESTRY5_IOC_ANNOTATIONS_ADVISE,
+                        ADVISE_METHOD_NAME_PREFIX,
+                        InstrumenterType.ADVISOR));
+    }
+
+    private void addServiceDecorator(IMethod method) throws JavaModelException
+    {
+        decorators.add(
+                createInstrumenter(method,
+                        TapestryUtils.ORG_APACHE_TAPESTRY5_IOC_ANNOTATIONS_DECORATE,
+                        DECORATE_METHOD_NAME_PREFIX,
+                        InstrumenterType.DECORATOR));
+    }
+
+    private ServiceInstrumenter createInstrumenter(IMethod method, String instrumenterAnnotation, String methodNamePrefix, InstrumenterType instrumenterType) throws JavaModelException {
+        IAnnotation annotation = TapestryUtils.findAnnotation(method.getAnnotations(),
+                instrumenterAnnotation);
+        
+        String serviceInterface = annotation == null ? null
+                : readValueFromAnnotation(annotation, "serviceInterface");
+        
+        String id = annotation == null
+                ? stripMethodPrefix(method, methodNamePrefix)
+                : extractId(serviceInterface, readValueFromAnnotation(annotation, "id"));
+        
+        List<String> markers = extractMarkers(method, new HashSet<String>(Arrays.asList(
+                instrumenterAnnotation,
+                TapestryUtils.ORG_APACHE_TAPESTRY5_IOC_ANNOTATIONS_ORDER,
+                TapestryUtils.ORG_APACHE_TAPESTRY5_IOC_ANNOTATIONS_MATCH)));
+        
+        Matcher serviceMatcher = createMatcher(method, id, markers);
+        
+        return new ServiceInstrumenter()
+                .setType(instrumenterType)
+                .setId(id)
+                .setReference(new JavaElementReference(method))
+                .setServiceMatcher(serviceMatcher)
+                .setConstraints(extractConstraints(method));
+    }
+
+    private String[] extractConstraints(IMethod method) throws JavaModelException
+    {
+        IAnnotation annotation = TapestryUtils.findAnnotation(method.getAnnotations(),
+                TapestryUtils.ORG_APACHE_TAPESTRY5_IOC_ANNOTATIONS_ORDER);
+        
+        return annotation == null ? null : readValuesFromAnnotation(annotation, "value");
+    }
+
+    private Matcher createMatcher(IMethod method, String serviceId, List<String> markers) throws JavaModelException
+    {
+        IAnnotation match = TapestryUtils.findAnnotation(method.getAnnotations(),
+                TapestryUtils.ORG_APACHE_TAPESTRY5_IOC_ANNOTATIONS_MATCH);
+        
+        Matcher patternMatcher;
+        
+        if (match != null)
+        {
+            patternMatcher = new OrMatcher();
+            
+            String[] patterns = readValuesFromAnnotation(match, "value");
+            
+            for (String pattern : patterns)
+            {
+                ((OrMatcher) patternMatcher).add(new GlobPatternMatcher(pattern));
+            }
+        }
+        else
+        {
+            patternMatcher = new IdentityIdMatcher(serviceId);
+        }
+        
+        if (markers.size() > 0)
+        {
+            OrMatcher markerMatcher = new OrMatcher();
+            
+            for (String marker : markers)
+            {
+                markerMatcher.add(new MarkerMatcher(marker));
+            }
+            
+            AndMatcher andMatcher = new AndMatcher();
+            andMatcher.add(patternMatcher);
+            andMatcher.add(markerMatcher);
+            
+            return andMatcher;
+        }
+        
+        return patternMatcher;
+    }
+
+    private List<String> extractMarkers(IAnnotatable annotatable, Set<String> skipAnnotations) throws JavaModelException
+    {
+        List<String> markers = new ArrayList<String>();
+        
+        for (IAnnotation annotation : annotatable.getAnnotations())
+        {
+            String typeName = EclipseUtils.resolveTypeName(
+                    moduleClass, annotation.getElementName());
+            
+            if (skipAnnotations.contains(typeName))
+            {
+                continue;
+            }
+            
+            markers.add(typeName);
+        }
+        return markers;
+    }
+
+    private String extractId(String serviceInterface, String id)
+    {
+        return StringUtils.isEmpty(id) ? TapestryUtils.simpleName(serviceInterface) : id;
+    }
+
+    private boolean isStartupMethod(IMethod method) throws JavaModelException
+    {
+        return method.getElementName().equals("startup")
+                || TapestryUtils.findAnnotation(
+                        method.getAnnotations(),
+                        TapestryUtils.ORG_APACHE_TAPESTRY5_IOC_ANNOTATIONS_STARTUP) != null;
+    }
+
+    private boolean isContributorMethod(IMethod method) throws JavaModelException
+    {
+        return method.getElementName().startsWith(CONTRIBUTE_METHOD_NAME_PREFIX)
+                || TapestryUtils.findAnnotation(
+                        method.getAnnotations(),
+                        TapestryUtils.ORG_APACHE_TAPESTRY5_IOC_ANNOTATIONS_CONTRIBUTE) != null;
+    }
+
+    private boolean isAdvisorMethod(IMethod method) throws JavaModelException
+    {
+        return method.getElementName().startsWith(ADVISE_METHOD_NAME_PREFIX)
+                || TapestryUtils.findAnnotation(
+                        method.getAnnotations(),
+                        TapestryUtils.ORG_APACHE_TAPESTRY5_IOC_ANNOTATIONS_ADVISE) != null;
+    }
+
+    private boolean isDecoratorMethod(IMethod method) throws JavaModelException
+    {
+        return method.getElementName().startsWith(DECORATE_METHOD_NAME_PREFIX)
+            || TapestryUtils.findAnnotation(
+                    method.getAnnotations(),
+                    TapestryUtils.ORG_APACHE_TAPESTRY5_IOC_ANNOTATIONS_DECORATE) != null;
+    }
+
     private void addServiceFromBuilderMethod(IMethod method) throws JavaModelException
     {
         IAnnotation annotation = TapestryUtils.findAnnotation(
-                method.getAnnotations(), "org.apache.tapestry5.ioc.annotations.ServiceId");
+                method.getAnnotations(),
+                TapestryUtils.ORG_APACHE_TAPESTRY5_IOC_ANNOTATIONS_SERVICE_ID);
         
         String typeName = EclipseUtils.resolveTypeNameForMember(moduleClass, method, method.getReturnType());
         
@@ -608,47 +910,65 @@ public abstract class TapestryModule
         
         if (annotation != null)
         {
-            TapestryUtils.readValueFromAnnotation(
-                    annotation,
-                    "value",
-                    getEclipseProject(),
-                    AST.newAST(AST.JLS8),
-                    new ObjectCallback<String, JavaModelException>()
-                    {
-                        @Override
-                        public void callback(String value) throws JavaModelException
-                        {
-                            serviceId.set(value);
-                        }
-                    });
+            serviceId.set(readValueFromAnnotation(annotation, "value"));
         }
         else
         {
-            String id = method.getElementName().substring("build".length());
+            String id = stripMethodPrefix(method, BUILD_METHOD_NAME_PREFIX);
             
             if (StringUtils.isEmpty(id))
             {
-                int lastDot = typeName.lastIndexOf('.');
-                
-                id = lastDot != -1 ? typeName.substring(lastDot + 1) : typeName;
+                id = TapestryUtils.simpleName(typeName);
             }
             
             serviceId.set(id);
         }
         
-        //  TODO Check @Marker annotations
-        
         services.add(new TapestryService(
                 TapestryModule.this,
                 new ServiceDefinition()
                     .setIntfClass(typeName)
-                    .setId(serviceId.get()),
-                new DeclarationReference.JavaElementReference(method)));
+                    .setId(serviceId.get())
+                    .addMarkers(markers())
+                    .addMarkers(readMarkerAnnotation(method)),
+                new JavaElementReference(method)));
+    }
+
+    private String readValueFromAnnotation(IAnnotation annotation, String name) throws JavaModelException
+    {
+        String[] values = readValuesFromAnnotation(annotation, name);
+        return values.length > 0 ? values[0] : null;
+    }
+
+    private String[] readValuesFromAnnotation(IAnnotation annotation, String name) throws JavaModelException
+    {
+        final List<String> values = new ArrayList<String>();
+        
+        TapestryUtils.readValueFromAnnotation(
+                annotation,
+                name,
+                getEclipseProject(),
+                AST.newAST(AST.JLS8),
+                new ObjectCallback<String, JavaModelException>()
+                {
+                    @Override
+                    public void callback(String value) throws JavaModelException
+                    {
+                        values.add(value);
+                    }
+                });
+        
+        return values.toArray(new String[values.size()]);
+    }
+
+    private String stripMethodPrefix(IMethod method, String prefix)
+    {
+        return method.getElementName().substring(prefix.length());
     }
     
     private boolean isServiceBuilderMethod(IMethod method)
     {
-        return method.getElementName().startsWith("build");
+        return method.getElementName().startsWith(BUILD_METHOD_NAME_PREFIX);
     }
     
     private CompilationUnit compilationUnit;

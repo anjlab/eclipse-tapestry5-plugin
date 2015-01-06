@@ -541,6 +541,11 @@ public class EclipseUtils
             return typeName;
         }
         
+        return resolveTypeName(type, typeName);
+    }
+
+    public static String resolveTypeName(IType type, String typeName) throws JavaModelException
+    {
         String[][] resolvedTypes = type.resolveType(typeName);
         
         if (resolvedTypes == null)

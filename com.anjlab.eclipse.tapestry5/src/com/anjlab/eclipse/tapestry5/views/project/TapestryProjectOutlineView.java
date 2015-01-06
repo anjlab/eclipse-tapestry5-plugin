@@ -19,6 +19,7 @@ import com.anjlab.eclipse.tapestry5.TapestryFile;
 import com.anjlab.eclipse.tapestry5.TapestryModule;
 import com.anjlab.eclipse.tapestry5.TapestryProject;
 import com.anjlab.eclipse.tapestry5.TapestryService;
+import com.anjlab.eclipse.tapestry5.TapestryService.ServiceInstrumenter;
 import com.anjlab.eclipse.tapestry5.views.NameSorter;
 import com.anjlab.eclipse.tapestry5.views.TapestryDecoratingLabelProvider;
 import com.anjlab.eclipse.tapestry5.views.TreeObject;
@@ -90,6 +91,10 @@ public class TapestryProjectOutlineView extends ViewPart
                     {
                         ((TapestryService) data).getReference().openInEditor();
                     }
+                    else if (data instanceof ServiceInstrumenter)
+                    {
+                        ((ServiceInstrumenter) data).getReference().openInEditor();
+                    }
                 }
             }
         });
@@ -120,7 +125,7 @@ public class TapestryProjectOutlineView extends ViewPart
                         if (!expanded)
                         {
                             //  Expand modules only once
-                            viewer.setExpandedElements(new Object[] { contentProvider.newModulesNode() });
+                            viewer.setExpandedElements(new Object[] { contentProvider.getModulesRoot() });
                             expanded = true;
                         }
                     }

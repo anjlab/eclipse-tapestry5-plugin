@@ -1,14 +1,90 @@
 package com.anjlab.eclipse.tapestry5;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.Set;
 
 
 public class TapestryService
 {
+    public enum InstrumenterType
+    {
+        DECORATOR, ADVISOR, CONTRIBUTOR
+    }
+
+    public static interface Matcher
+    {
+        boolean matches(TapestryService service);
+    }
+    
+    public static class ServiceInstrumenter
+    {
+        private Matcher serviceMatcher;
+        private DeclarationReference reference;
+        private String id;
+        private String[] constraints;
+        private InstrumenterType type;
+        private boolean optional;
+        
+        public InstrumenterType getType()
+        {
+            return type;
+        }
+        public ServiceInstrumenter setType(InstrumenterType type)
+        {
+            this.type = type;
+            return this;
+        }
+        public ServiceInstrumenter setOptional(boolean optional)
+        {
+            this.optional = optional;
+            return this;
+        }
+        public boolean isOptional()
+        {
+            return optional;
+        }
+        public Matcher getServiceMatcher()
+        {
+            return serviceMatcher;
+        }
+        public ServiceInstrumenter setServiceMatcher(Matcher serviceMatcher)
+        {
+            this.serviceMatcher = serviceMatcher;
+            return this;
+        }
+        public DeclarationReference getReference()
+        {
+            return reference;
+        }
+        public ServiceInstrumenter setReference(DeclarationReference reference)
+        {
+            this.reference = reference;
+            return this;
+        }
+        public String getId()
+        {
+            return id;
+        }
+        public ServiceInstrumenter setId(String id)
+        {
+            this.id = id;
+            return this;
+        }
+        public String[] getConstraints()
+        {
+            return constraints;
+        }
+        public ServiceInstrumenter setConstraints(String[] constraints)
+        {
+            this.constraints = constraints;
+            return this;
+        }
+    }
+    
     public static class ServiceDefinition
     {
-        private final List<String> markers = new ArrayList<String>();
+        private final Set<String> markers = new HashSet<String>();
         private boolean preventReloading;
         private boolean preventDecoration;
         private boolean eagerLoad;
@@ -90,13 +166,18 @@ public class TapestryService
             this.implClass = implClass;
             return this;
         }
-        public List<String> getMarkers()
+        public Set<String> getMarkers()
         {
             return markers;
         }
         public ServiceDefinition addMarker(String className)
         {
             markers.add(className);
+            return this;
+        }
+        public ServiceDefinition addMarkers(Collection<String> markers)
+        {
+            this.markers.addAll(markers);
             return this;
         }
     }
