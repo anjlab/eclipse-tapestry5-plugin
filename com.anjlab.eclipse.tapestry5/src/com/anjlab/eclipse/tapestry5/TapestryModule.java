@@ -39,6 +39,7 @@ import com.anjlab.eclipse.tapestry5.TapestryService.Matcher;
 import com.anjlab.eclipse.tapestry5.TapestryService.ServiceDefinition;
 import com.anjlab.eclipse.tapestry5.TapestryService.ServiceInstrumenter;
 import com.anjlab.eclipse.tapestry5.internal.AndMatcher;
+import com.anjlab.eclipse.tapestry5.internal.IdentityMatcher;
 import com.anjlab.eclipse.tapestry5.internal.GlobPatternMatcher;
 import com.anjlab.eclipse.tapestry5.internal.IdentityIdMatcher;
 import com.anjlab.eclipse.tapestry5.internal.MarkerMatcher;
@@ -682,32 +683,41 @@ public abstract class TapestryModule
         {
             for (IMethod method : getModuleClass().getMethods())
             {
-                if (isServiceBuilderMethod(method))
+                try
                 {
-                    addServiceFromBuilderMethod(method);
+                    if (isServiceBuilderMethod(method))
+                    {
+                        addServiceFromBuilderMethod(method);
+                    }
+                    else if (isDecoratorMethod(method))
+                    {
+                        addServiceDecorator(method);
+                    }
+                    else if (isAdvisorMethod(method))
+                    {
+                        addServiceAdvisor(method);
+                    }
+                    else if (isContributorMethod(method))
+                    {
+                        addContributionMethod(method);
+                    }
+                    else if (isStartupMethod(method))
+                    {
+                        addStartupContributor(method);
+                    }
                 }
-                else if (isDecoratorMethod(method))
+                catch (Exception e)
                 {
-                    addServiceDecorator(method);
-                }
-                else if (isAdvisorMethod(method))
-                {
-                    addServiceAdvisor(method);
-                }
-                else if (isContributorMethod(method))
-                {
-                    addContributionMethod(method);
-                }
-                else if (isStartupMethod(method))
-                {
-                    addStartupContributor(method);
+                    Activator.getDefault().logError(
+                            "Error handling method " + method.getElementName()
+                            + " for " + getModuleClass().getFullyQualifiedName(), e);
                 }
             }
         }
-        catch (JavaModelException e)
+        catch (Exception e)
         {
             Activator.getDefault().logError(
-                    "Error enumerating builder methods for " + getModuleClass().getFullyQualifiedName(), e);
+                    "Error enumerating methods for " + getModuleClass().getFullyQualifiedName(), e);
         }
     }
 
@@ -715,7 +725,7 @@ public abstract class TapestryModule
     {
         contributors.add(new ServiceInstrumenter()
             .setType(InstrumenterType.CONTRIBUTOR)
-            .setId(method.getElementName())
+            .setId("RegistryStartup")
             .setReference(new JavaElementReference(method))
             .setServiceMatcher(new IdentityIdMatcher("RegistryStartup"))
             .setConstraints(extractConstraints(method)));
@@ -731,7 +741,7 @@ public abstract class TapestryModule
         
         String id = annotation == null
                 ? stripMethodPrefix(method, CONTRIBUTE_METHOD_NAME_PREFIX)
-                : TapestryUtils.simpleName(serviceInterface);
+                : extractId(serviceInterface, null);
         
         List<String> markers = extractMarkers(method, new HashSet<String>(Arrays.asList(
                 TapestryUtils.ORG_APACHE_TAPESTRY5_IOC_ANNOTATIONS_CONTRIBUTE,
@@ -766,7 +776,10 @@ public abstract class TapestryModule
                         InstrumenterType.DECORATOR));
     }
 
-    private ServiceInstrumenter createInstrumenter(IMethod method, String instrumenterAnnotation, String methodNamePrefix, InstrumenterType instrumenterType) throws JavaModelException {
+    private ServiceInstrumenter createInstrumenter(
+            IMethod method, String instrumenterAnnotation, String methodNamePrefix, InstrumenterType instrumenterType)
+                    throws JavaModelException
+    {
         IAnnotation annotation = TapestryUtils.findAnnotation(method.getAnnotations(),
                 instrumenterAnnotation);
         
@@ -820,7 +833,10 @@ public abstract class TapestryModule
         }
         else
         {
-            patternMatcher = new IdentityIdMatcher(serviceId);
+            patternMatcher = StringUtils.isNotEmpty(serviceId)
+                    ? new IdentityIdMatcher(serviceId)
+                    // Match everything, ambiguity would probably be resolved with markers
+                    : new IdentityMatcher(true);
         }
         
         if (markers.size() > 0)
@@ -863,7 +879,11 @@ public abstract class TapestryModule
 
     private String extractId(String serviceInterface, String id)
     {
-        return StringUtils.isEmpty(id) ? TapestryUtils.simpleName(serviceInterface) : id;
+        return StringUtils.isNotEmpty(id)
+             ? id
+             : StringUtils.isNotEmpty(serviceInterface)
+                 ? TapestryUtils.simpleName(serviceInterface)
+                 : null;
     }
 
     private boolean isStartupMethod(IMethod method) throws JavaModelException

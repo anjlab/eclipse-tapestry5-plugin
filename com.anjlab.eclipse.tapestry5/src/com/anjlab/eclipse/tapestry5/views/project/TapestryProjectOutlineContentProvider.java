@@ -101,7 +101,7 @@ public class TapestryProjectOutlineContentProvider implements ITreeContentProvid
                         
                         if (id == null)
                         {
-                            id = "<Unknown>";
+                            id = "<No-Id>";
                         }
                         
                         decoratorsRoot.addChild(new TreeObject(id, decorator));
@@ -115,7 +115,7 @@ public class TapestryProjectOutlineContentProvider implements ITreeContentProvid
                         
                         if (id == null)
                         {
-                            id = "<Unknown>";
+                            id = "<No-Id>";
                         }
                         
                         advisorsRoot.addChild(new TreeObject(id, advisor));
