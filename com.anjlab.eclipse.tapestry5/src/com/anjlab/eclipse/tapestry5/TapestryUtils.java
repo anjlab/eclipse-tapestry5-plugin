@@ -214,16 +214,6 @@ public class TapestryUtils
         return isTapestryImportAnnotationName(annotation.getTypeName().getFullyQualifiedName());
     }
 
-    public static TapestryContext createTapestryContext(TapestryFile forFile)
-    {
-        if (forFile instanceof LocalFile)
-        {
-            return new LocalTapestryContext(forFile);
-        }
-        
-        return TapestryContext.emptyContext();
-    }
-
     public static TapestryContext createTapestryContext(IFile file)
     {
         return new LocalTapestryContext(file);

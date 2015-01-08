@@ -661,6 +661,9 @@ public abstract class TapestryModule
                             definition.setId(TapestryUtils.simpleName(definition.getIntfClass()));
                         }
                         
+                        copyMarkersFrom(definition.getIntfClass());
+                        copyMarkersFrom(definition.getImplClass());
+
                         services.add(new TapestryService(
                                 TapestryModule.this,
                                 definition,
@@ -673,6 +676,32 @@ public abstract class TapestryModule
                 }
                 
                 return super.visit(node);
+            }
+
+            private void copyMarkersFrom(String className)
+            {
+                if (StringUtils.isEmpty(className))
+                {
+                    return;
+                }
+
+                IType type = EclipseUtils.findTypeDeclaration(getEclipseProject(), className);
+
+                if (type == null)
+                {
+                    return;
+                }
+
+                try
+                {
+                    List<String> markers = readMarkerAnnotation(type);
+
+                    serviceDefinition().addMarkers(markers);
+                }
+                catch (JavaModelException e)
+                {
+                    // Ignore
+                }
             }
         });
     }
