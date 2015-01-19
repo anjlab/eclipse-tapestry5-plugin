@@ -120,3 +120,12 @@ Or drag &amp; drop this icon into a running Eclipse:
 </a>
 
 **Note:** Not sure if this is an Eclipse Marketplace bug, but for some reason when you install the plugin using drag &amp; drop you will only see one feature (Basic). If you install using update site then you should see all 3 features available.
+
+### Thanks To
+
+![YourKit](http://www.yourkit.com/images/yklogo.png)
+
+YourKit supports open source projects with its full-featured Java Profiler.
+YourKit, LLC is the creator of <a href="http://www.yourkit.com/java/profiler/index.jsp">YourKit Java Profiler</a>
+and <a href="http://www.yourkit.com/.net/profiler/index.jsp">YourKit .NET Profiler</a>,
+innovative and intelligent tools for profiling Java and .NET applications.
