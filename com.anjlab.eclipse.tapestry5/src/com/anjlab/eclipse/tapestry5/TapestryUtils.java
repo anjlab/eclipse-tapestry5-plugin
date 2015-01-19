@@ -216,7 +216,14 @@ public class TapestryUtils
 
     public static TapestryContext createTapestryContext(IFile file)
     {
-        return new LocalTapestryContext(file);
+        try
+        {
+            return new LocalTapestryContext(file);
+        }
+        catch (RuntimeException e)
+        {
+            throw new RuntimeException("Error creating context from " + file, e);
+        }
     }
 
     public static TapestryContext createTapestryContext(IWorkbenchWindow window)
@@ -344,12 +351,26 @@ public class TapestryUtils
 
     public static TapestryContext createTapestryContext(IJarEntryResource jarEntry)
     {
-        return new JarTapestryContext(jarEntry);
+        try
+        {
+            return new JarTapestryContext(jarEntry);
+        }
+        catch (RuntimeException e)
+        {
+            throw new RuntimeException("Error creating context from " + jarEntry, e);
+        }
     }
 
     public static TapestryContext createTapestryContext(IClassFile classFile)
     {
-        return new JarTapestryContext(classFile);
+        try
+        {
+            return new JarTapestryContext(classFile);
+        }
+        catch (RuntimeException e)
+        {
+            throw new RuntimeException("Error creating context from " + classFile, e);
+        }
     }
 
     public static TapestryFile getTapestryFileFromPage(IWorkbenchPage page)
