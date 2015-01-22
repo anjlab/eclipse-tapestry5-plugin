@@ -997,7 +997,7 @@ public abstract class TapestryModule
                 annotation,
                 name,
                 getEclipseProject(),
-                AST.newAST(AST.JLS8),
+                AST.newAST(EclipseUtils.getParserLevel()),
                 new ObjectCallback<String, JavaModelException>()
                 {
                     @Override

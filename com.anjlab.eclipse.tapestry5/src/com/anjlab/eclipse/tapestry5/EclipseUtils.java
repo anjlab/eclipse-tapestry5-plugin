@@ -344,12 +344,7 @@ public class EclipseUtils
             throw new IllegalStateException(SOURCE_NOT_FOUND);
         }
         
-        if (parserLevel == -1)
-        {
-            parserLevel = getParserLevel();
-        }
-        
-        ASTParser parser = ASTParser.newParser(parserLevel);
+        ASTParser parser = ASTParser.newParser(getParserLevel());
         parser.setKind(ASTParser.K_COMPILATION_UNIT);
         parser.setSource(source.toCharArray());
         parser.setResolveBindings(true);
@@ -358,20 +353,26 @@ public class EclipseUtils
 
     private static int parserLevel = -1;
 
-    private static int getParserLevel()
+    @SuppressWarnings("deprecation")
+    public static int getParserLevel()
     {
-        try
+        if (parserLevel == -1)
         {
-            int JLS8 = 8;
-            // Try to use Java 8's AST.JLS8
-            ASTParser.newParser(JLS8);
-            return JLS8;
+            try
+            {
+                int JLS8 = 8;
+                // Try to use Java 8's AST.JLS8
+                ASTParser.newParser(JLS8);
+                parserLevel = JLS8;
+            }
+            catch (IllegalArgumentException e)
+            {
+                //  Fallback to Java 7
+                parserLevel = AST.JLS4;
+            }
         }
-        catch (IllegalArgumentException e)
-        {
-            //  Fallback to Java 7
-            return 4; //  AST.JLS4
-        }
+
+        return parserLevel;
     }
 
     public static IProject getProjectFromSelection(ISelection selection)
