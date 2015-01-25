@@ -40,6 +40,7 @@ public class Activator extends AbstractUIPlugin implements IWebXmlListener
     private TapestryProjectWatchdog tapestryProjectWatchdog;
     private TapestryModuleFactory tapestryModuleFactory;
     private EclipseClasspathWatchdog eclipseClasspathWatchdog;
+    private TapestryContextFactory tapestryContextFactory;
     
     /**
      * The constructor
@@ -78,6 +79,8 @@ public class Activator extends AbstractUIPlugin implements IWebXmlListener
         eclipseClasspathWatchdog = new EclipseClasspathWatchdog();
         eclipseClasspathWatchdog.addListener(null, tapestryModuleFactory);
         eclipseClasspathWatchdog.start();
+        
+        tapestryContextFactory = new TapestryContextFactory();
     }
 
     private Map<String, Map<String, Object>> projectCache;
@@ -117,6 +120,8 @@ public class Activator extends AbstractUIPlugin implements IWebXmlListener
         eclipseClasspathWatchdog = null;
         
         tapestryModuleFactory = null;
+        
+        tapestryContextFactory = null;
         
         projectCache = null;
         
@@ -236,6 +241,11 @@ public class Activator extends AbstractUIPlugin implements IWebXmlListener
     public TapestryModuleFactory getTapestryModuleFactory()
     {
         return tapestryModuleFactory;
+    }
+
+    public TapestryContextFactory getTapestryContextFactory()
+    {
+        return tapestryContextFactory;
     }
 
     private static Image tapestryLogoIcon;

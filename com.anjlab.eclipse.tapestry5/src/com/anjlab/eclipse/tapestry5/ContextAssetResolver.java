@@ -28,7 +28,10 @@ public class ContextAssetResolver implements AssetResolver
                         
                         if (file != null)
                         {
-                            return TapestryUtils.createTapestryContext(file).getInitialFile();
+                            return Activator.getDefault()
+                                    .getTapestryContextFactory()
+                                    .createTapestryContext(file)
+                                    .getInitialFile();
                         }
                     }
                 }

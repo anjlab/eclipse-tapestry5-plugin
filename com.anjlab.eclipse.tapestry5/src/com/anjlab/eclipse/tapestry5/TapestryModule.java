@@ -1121,7 +1121,9 @@ public abstract class TapestryModule
                 
                 if (obj instanceof IFile)
                 {
-                    componentContext = TapestryUtils.createTapestryContext((IFile) obj);
+                    componentContext = Activator.getDefault()
+                            .getTapestryContextFactory()
+                            .createTapestryContext((IFile) obj);
                 }
                 else if (obj instanceof IClassFile)
                 {
@@ -1130,7 +1132,9 @@ public abstract class TapestryModule
                     //  Ignore inner classes
                     if (!classFile.getElementName().contains("$"))
                     {
-                        componentContext = TapestryUtils.createTapestryContext(classFile);
+                        componentContext = Activator.getDefault()
+                                .getTapestryContextFactory()
+                                .createTapestryContext(classFile);
                     }
                 }
                 

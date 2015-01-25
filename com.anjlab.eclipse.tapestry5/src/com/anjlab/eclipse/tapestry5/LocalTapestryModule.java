@@ -26,7 +26,10 @@ public class LocalTapestryModule extends TapestryModule
         {
             resource = getModuleClass().getUnderlyingResource();
             IFile file = (IFile) resource.getAdapter(IFile.class);
-            return TapestryUtils.createTapestryContext(file).getInitialFile();
+            return Activator.getDefault()
+                    .getTapestryContextFactory()
+                    .createTapestryContext(file)
+                    .getInitialFile();
         }
         catch (JavaModelException e)
         {

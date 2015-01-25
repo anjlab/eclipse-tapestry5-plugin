@@ -15,6 +15,7 @@ import org.eclipse.ui.ISelectionListener;
 import org.eclipse.ui.IWorkbenchPart;
 import org.eclipse.ui.IWorkbenchWindow;
 
+import com.anjlab.eclipse.tapestry5.Activator;
 import com.anjlab.eclipse.tapestry5.EclipseUtils;
 import com.anjlab.eclipse.tapestry5.TapestryContext;
 import com.anjlab.eclipse.tapestry5.TapestryFile;
@@ -95,7 +96,9 @@ public class TapestryContextWatchdog extends AbstractWatchdog
                                 
                                 if (TapestryUtils.isJavaFile(affectedFile.getProjectRelativePath()))
                                 {
-                                    context = TapestryUtils.createTapestryContext(affectedFile);
+                                    context = Activator.getDefault()
+                                            .getTapestryContextFactory()
+                                            .createTapestryContext(affectedFile);
                                     
                                     changeContext(window, context);
                                 }

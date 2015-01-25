@@ -23,7 +23,11 @@ public class JarTapestryModule extends TapestryModule
     public TapestryFile getModuleFile()
     {
         IClassFile classFile = getModuleClass().getClassFile();
-        TapestryContext context = TapestryUtils.createTapestryContext(classFile);
+        
+        TapestryContext context = Activator.getDefault()
+                .getTapestryContextFactory()
+                .createTapestryContext(classFile);
+        
         return context.getInitialFile();
     }
     
@@ -130,7 +134,10 @@ public class JarTapestryModule extends TapestryModule
     {
         if (pathEquals(parent, path))
         {
-            return TapestryUtils.createTapestryContext(parent).getInitialFile();
+            return Activator.getDefault()
+                    .getTapestryContextFactory()
+                    .createTapestryContext(parent)
+                    .getInitialFile();
         }
         
         if (segmentIndex >= segments.length)
@@ -172,14 +179,20 @@ public class JarTapestryModule extends TapestryModule
                     {
                         IClassFile classFile = (IClassFile) child;
                         
-                        return TapestryUtils.createTapestryContext(classFile).getInitialFile();
+                        return Activator.getDefault()
+                                .getTapestryContextFactory()
+                                .createTapestryContext(classFile)
+                                .getInitialFile();
                     }
                     
                     if (child instanceof IJarEntryResource)
                     {
                         IJarEntryResource jarEntry = (IJarEntryResource) child;
                         
-                        return TapestryUtils.createTapestryContext(jarEntry).getInitialFile();
+                        return Activator.getDefault()
+                                .getTapestryContextFactory()
+                                .createTapestryContext(jarEntry)
+                                .getInitialFile();
                     }
                 }
                 else
@@ -190,7 +203,10 @@ public class JarTapestryModule extends TapestryModule
                     {
                         if (classFile.getElementName().equalsIgnoreCase(segments[1]))
                         {
-                            return TapestryUtils.createTapestryContext(classFile).getInitialFile();
+                            return Activator.getDefault()
+                                    .getTapestryContextFactory()
+                                    .createTapestryContext(classFile)
+                                    .getInitialFile();
                         }
                     }
                     
@@ -202,7 +218,10 @@ public class JarTapestryModule extends TapestryModule
                             
                             if (pathEquals(jarEntry, path))
                             {
-                                return TapestryUtils.createTapestryContext(jarEntry).getInitialFile();
+                                return Activator.getDefault()
+                                        .getTapestryContextFactory()
+                                        .createTapestryContext(jarEntry)
+                                        .getInitialFile();
                             }
                         }
                     }

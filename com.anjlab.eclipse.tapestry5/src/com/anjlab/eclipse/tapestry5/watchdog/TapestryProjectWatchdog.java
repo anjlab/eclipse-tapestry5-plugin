@@ -34,6 +34,7 @@ import org.eclipse.ui.IWorkbenchPage;
 import org.eclipse.ui.IWorkbenchPart;
 import org.eclipse.ui.IWorkbenchWindow;
 
+import com.anjlab.eclipse.tapestry5.Activator;
 import com.anjlab.eclipse.tapestry5.EclipseUtils;
 import com.anjlab.eclipse.tapestry5.LibraryMapping;
 import com.anjlab.eclipse.tapestry5.TapestryContext;
@@ -244,7 +245,9 @@ public class TapestryProjectWatchdog extends AbstractWatchdog
                         continue;
                     }
                     
-                    TapestryContext context = TapestryUtils.createTapestryContext(affectedFile);
+                    TapestryContext context = Activator.getDefault()
+                            .getTapestryContextFactory()
+                            .createTapestryContext(affectedFile);
                     
                     for (Entry<IWorkbenchWindow, TapestryProject> entry : currentProjects.entrySet())
                     {

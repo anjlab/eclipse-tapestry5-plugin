@@ -214,18 +214,6 @@ public class TapestryUtils
         return isTapestryImportAnnotationName(annotation.getTypeName().getFullyQualifiedName());
     }
 
-    public static TapestryContext createTapestryContext(IFile file)
-    {
-        try
-        {
-            return new LocalTapestryContext(file);
-        }
-        catch (RuntimeException e)
-        {
-            throw new RuntimeException("Error creating context from " + file, e);
-        }
-    }
-
     public static TapestryContext createTapestryContext(IWorkbenchWindow window)
     {
         TapestryFile file = getTapestryFileFromSelection(window.getSelectionService().getSelection());
@@ -349,30 +337,6 @@ public class TapestryUtils
         return null;
     }
 
-    public static TapestryContext createTapestryContext(IJarEntryResource jarEntry)
-    {
-        try
-        {
-            return new JarTapestryContext(jarEntry);
-        }
-        catch (RuntimeException e)
-        {
-            throw new RuntimeException("Error creating context from " + jarEntry, e);
-        }
-    }
-
-    public static TapestryContext createTapestryContext(IClassFile classFile)
-    {
-        try
-        {
-            return new JarTapestryContext(classFile);
-        }
-        catch (RuntimeException e)
-        {
-            throw new RuntimeException("Error creating context from " + classFile, e);
-        }
-    }
-
     public static TapestryFile getTapestryFileFromPage(IWorkbenchPage page)
     {
         if (page == null)
@@ -393,7 +357,10 @@ public class TapestryUtils
         {
             IFileEditorInput fileEditorInput = (IFileEditorInput) editorInput;
             
-            return createTapestryContext(fileEditorInput.getFile()).getInitialFile();
+            return Activator.getDefault()
+                    .getTapestryContextFactory()
+                    .createTapestryContext(fileEditorInput.getFile())
+                    .getInitialFile();
         }
         
         if (editorInput instanceof IStorageEditorInput)
@@ -404,7 +371,10 @@ public class TapestryUtils
                 
                 if (storage instanceof IJarEntryResource)
                 {
-                    return createTapestryContext((IJarEntryResource) storage).getInitialFile();
+                    return Activator.getDefault()
+                            .getTapestryContextFactory()
+                            .createTapestryContext((IJarEntryResource) storage)
+                            .getInitialFile();
                 }
             }
             catch (CoreException e)
@@ -420,7 +390,10 @@ public class TapestryUtils
             
             if (classFile != null)
             {
-                return createTapestryContext(classFile).getInitialFile();
+                return Activator.getDefault()
+                        .getTapestryContextFactory()
+                        .createTapestryContext(classFile)
+                        .getInitialFile();
             }
         }
         
@@ -448,12 +421,18 @@ public class TapestryUtils
         
         if (firstElement instanceof IClassFile)
         {
-            return createTapestryContext((IClassFile) firstElement).getInitialFile();
+            return Activator.getDefault()
+                    .getTapestryContextFactory()
+                    .createTapestryContext((IClassFile) firstElement)
+                    .getInitialFile();
         }
         
         if (firstElement instanceof IJarEntryResource)
         {
-            return createTapestryContext((IJarEntryResource) firstElement).getInitialFile();
+            return Activator.getDefault()
+                    .getTapestryContextFactory()
+                    .createTapestryContext((IJarEntryResource) firstElement)
+                    .getInitialFile();
         }
         
         if (firstElement instanceof ITreeSelection)
@@ -523,7 +502,10 @@ public class TapestryUtils
             
             if (file != null)
             {
-                return createTapestryContext(file).getInitialFile();
+                return Activator.getDefault()
+                        .getTapestryContextFactory()
+                        .createTapestryContext(file)
+                        .getInitialFile();
             }
         }
         
@@ -581,7 +563,10 @@ public class TapestryUtils
                 
                 if (file != null)
                 {
-                    return createTapestryContext(file).getInitialFile();
+                    return Activator.getDefault()
+                            .getTapestryContextFactory()
+                            .createTapestryContext(file)
+                            .getInitialFile();
                 }
             }
         }
