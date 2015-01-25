@@ -93,6 +93,11 @@ public abstract class TapestryModule
     
     public void setReference(ModuleReference reference)
     {
+        if (references.size() > 0)
+        {
+            throw new IllegalStateException();
+        }
+        
         addReference(reference);
     }
     

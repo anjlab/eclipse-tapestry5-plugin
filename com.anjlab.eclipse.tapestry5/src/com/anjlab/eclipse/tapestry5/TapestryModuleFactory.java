@@ -59,6 +59,8 @@ public class TapestryModuleFactory implements IEclipseClasspathListener
         if (moduleClass.getResource() != null)
         {
             module = new LocalTapestryModule(project, moduleClass);
+            
+            notifyModuleCreated(moduleCreated, module);
         }
         else
         {
@@ -82,15 +84,22 @@ public class TapestryModuleFactory implements IEclipseClasspathListener
                 module = new JarTapestryModule(project, moduleClass);
                 
                 projectModules.put(project.getProject(), module);
+                
+                notifyModuleCreated(moduleCreated, module);
             }
         }
         
+        return module;
+    }
+
+    private void notifyModuleCreated(
+            ObjectCallback<TapestryModule, RuntimeException> moduleCreated,
+            final TapestryModule module)
+    {
         if (moduleCreated != null)
         {
             moduleCreated.callback(module);
         }
-        
-        return module;
     }
     
 }
