@@ -14,6 +14,7 @@ import org.eclipse.ui.IWorkbenchWindow;
 import org.eclipse.ui.plugin.AbstractUIPlugin;
 import org.osgi.framework.BundleContext;
 
+import com.anjlab.eclipse.tapestry5.watchdog.EclipseClasspathWatchdog;
 import com.anjlab.eclipse.tapestry5.watchdog.ITapestryContextListener;
 import com.anjlab.eclipse.tapestry5.watchdog.IWebXmlListener;
 import com.anjlab.eclipse.tapestry5.watchdog.TapestryContextWatchdog;
@@ -37,6 +38,8 @@ public class Activator extends AbstractUIPlugin implements IWebXmlListener
     private TapestryContextWatchdog tapestryContextWatchdog;
     private WebXmlWatchdog webXmlWatchdog;
     private TapestryProjectWatchdog tapestryProjectWatchdog;
+    private TapestryModuleFactory tapestryModuleFactory;
+    private EclipseClasspathWatchdog eclipseClasspathWatchdog;
     
     /**
      * The constructor
@@ -69,6 +72,12 @@ public class Activator extends AbstractUIPlugin implements IWebXmlListener
         
         tapestryProjectWatchdog = new TapestryProjectWatchdog();
         tapestryProjectWatchdog.start();
+        
+        tapestryModuleFactory = new TapestryModuleFactory();
+        
+        eclipseClasspathWatchdog = new EclipseClasspathWatchdog();
+        eclipseClasspathWatchdog.addListener(null, tapestryModuleFactory);
+        eclipseClasspathWatchdog.start();
     }
 
     private Map<String, Map<String, Object>> projectCache;
@@ -102,6 +111,12 @@ public class Activator extends AbstractUIPlugin implements IWebXmlListener
         
         tapestryContextWatchdog.stop();
         tapestryContextWatchdog = null;
+        
+        eclipseClasspathWatchdog.stop();
+        eclipseClasspathWatchdog.removeListener(null, tapestryModuleFactory);
+        eclipseClasspathWatchdog = null;
+        
+        tapestryModuleFactory = null;
         
         projectCache = null;
         
@@ -216,6 +231,11 @@ public class Activator extends AbstractUIPlugin implements IWebXmlListener
     public void removeTapestryProjectListener(IWorkbenchWindow window, ITapestryContextListener listener)
     {
         tapestryProjectWatchdog.removeListener(window, listener);
+    }
+
+    public TapestryModuleFactory getTapestryModuleFactory()
+    {
+        return tapestryModuleFactory;
     }
 
     private static Image tapestryLogoIcon;

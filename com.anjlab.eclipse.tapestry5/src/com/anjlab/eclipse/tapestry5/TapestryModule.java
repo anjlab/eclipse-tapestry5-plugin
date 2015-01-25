@@ -76,27 +76,6 @@ public abstract class TapestryModule
         this.moduleClass = moduleClass;
     }
     
-    public static TapestryModule createTapestryModule(TapestryProject project, IType moduleClass, ObjectCallback<TapestryModule, RuntimeException> moduleCreated)
-    {
-        final TapestryModule module;
-        
-        if (moduleClass.getResource() != null)
-        {
-            module = new LocalTapestryModule(project, moduleClass);
-        }
-        else
-        {
-            module = new JarTapestryModule(project, moduleClass);
-        }
-        
-        if (moduleCreated != null)
-        {
-            moduleCreated.callback(module);
-        }
-        
-        return module;
-    }
-    
     public TapestryProject getProject()
     {
         return project;
@@ -252,7 +231,9 @@ public abstract class TapestryModule
                     if (subModuleClass != null)
                     {
                         subModules.add(
-                                createTapestryModule(
+                                Activator.getDefault()
+                                    .getTapestryModuleFactory()
+                                    .createTapestryModule(
                                         project,
                                         subModuleClass,
                                         new ObjectCallback<TapestryModule, RuntimeException>()

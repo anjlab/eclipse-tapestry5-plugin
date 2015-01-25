@@ -382,7 +382,9 @@ public class TapestryProject
             return null;
         }
         
-        TapestryModule module = TapestryModule.createTapestryModule(this, moduleClass, moduleCreated);
+        TapestryModule module = Activator.getDefault()
+                .getTapestryModuleFactory()
+                .createTapestryModule(this, moduleClass, moduleCreated);
         
         addModule(monitor, modules, module);
         
