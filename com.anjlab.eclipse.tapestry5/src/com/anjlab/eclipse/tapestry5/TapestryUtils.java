@@ -785,6 +785,7 @@ public class TapestryUtils
     }
 
     public static final String ORG_APACHE_TAPESTRY5_IOC_ANNOTATIONS_SUB_MODULE = "org.apache.tapestry5.ioc.annotations.SubModule";
+    public static final String ORG_APACHE_TAPESTRY5_IOC_ANNOTATIONS_IMPORT_MODULE = "org.apache.tapestry5.ioc.annotations.ImportModule";
     public static final String ORG_APACHE_TAPESTRY5_IOC_ANNOTATIONS_ADVISE = "org.apache.tapestry5.ioc.annotations.Advise";
     public static final String ORG_APACHE_TAPESTRY5_IOC_ANNOTATIONS_SERVICE_ID = "org.apache.tapestry5.ioc.annotations.ServiceId";
     public static final String ORG_APACHE_TAPESTRY5_IOC_ANNOTATIONS_CONTRIBUTE = "org.apache.tapestry5.ioc.annotations.Contribute";

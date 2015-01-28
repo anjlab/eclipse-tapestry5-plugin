@@ -209,8 +209,7 @@ public abstract class TapestryModule
         
         try
         {
-            IAnnotation annotation = TapestryUtils.findAnnotation(
-                    moduleClass.getAnnotations(), TapestryUtils.ORG_APACHE_TAPESTRY5_IOC_ANNOTATIONS_SUB_MODULE);
+            IAnnotation annotation = findSubmoduleAnnotation();
             
             if (annotation == null)
             {
@@ -264,6 +263,22 @@ public abstract class TapestryModule
         {
             Activator.getDefault().logError("Error getting submodules for " + getName(), e);
         }
+    }
+
+    private IAnnotation findSubmoduleAnnotation() throws JavaModelException
+    {
+        IAnnotation annotation = TapestryUtils.findAnnotation(
+                moduleClass.getAnnotations(),
+                TapestryUtils.ORG_APACHE_TAPESTRY5_IOC_ANNOTATIONS_SUB_MODULE);
+        
+        if (annotation == null)
+        {
+            annotation = TapestryUtils.findAnnotation(
+                    moduleClass.getAnnotations(),
+                    TapestryUtils.ORG_APACHE_TAPESTRY5_IOC_ANNOTATIONS_IMPORT_MODULE);
+        }
+        
+        return annotation;
     }
     
     private List<JavaScriptStack> javaScriptStacks;
