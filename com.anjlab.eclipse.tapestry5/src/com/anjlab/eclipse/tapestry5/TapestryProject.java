@@ -23,6 +23,7 @@ import org.eclipse.jdt.core.IType;
 import org.eclipse.jdt.core.JavaCore;
 import org.eclipse.jdt.core.JavaModelException;
 
+import com.anjlab.eclipse.tapestry5.DeclarationReference.NonJavaReference;
 import com.anjlab.eclipse.tapestry5.TapestryModule.ModuleReference;
 import com.anjlab.eclipse.tapestry5.TapestryModule.ObjectCallback;
 import com.anjlab.eclipse.tapestry5.watchdog.WebXmlReader.WebXml;
@@ -205,7 +206,7 @@ public class TapestryProject
                         public void callback(TapestryModule module)
                         {
                             module.setAppModule(true);
-                            module.setReference(new ModuleReference()
+                            module.setReference(new ModuleReference(new NonJavaReference())
                             {
                                 @Override
                                 public String getLabel()
@@ -237,7 +238,7 @@ public class TapestryProject
                         @Override
                         public void callback(TapestryModule obj)
                         {
-                            obj.setReference(new ModuleReference()
+                            obj.setReference(new ModuleReference(new NonJavaReference())
                             {
                                 @Override
                                 public String getLabel()
@@ -258,7 +259,7 @@ public class TapestryProject
             public void callback(TapestryModule module)
             {
                 module.setTapestryCoreModule(true);
-                module.setReference(new ModuleReference()
+                module.setReference(new ModuleReference(new NonJavaReference())
                 {
                     @Override
                     public String getLabel()
@@ -280,10 +281,10 @@ public class TapestryProject
             @Override
             public void callback(TapestryModule module)
             {
-                module.setReference(new ModuleReference()
+                module.setReference(new ModuleReference(new NonJavaReference())
                 {
                     @Override
-                    String getLabel()
+                    public String getLabel()
                     {
                         return "Tapestry IoC Module";
                     }
@@ -339,7 +340,7 @@ public class TapestryProject
                                                     @Override
                                                     public void callback(TapestryModule obj)
                                                     {
-                                                        obj.setReference(new ModuleReference()
+                                                        obj.setReference(new ModuleReference(new NonJavaReference())
                                                         {
                                                             @Override
                                                             public String getLabel()

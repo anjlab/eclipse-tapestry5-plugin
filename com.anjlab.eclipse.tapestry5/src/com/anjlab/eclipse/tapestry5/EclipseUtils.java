@@ -284,7 +284,9 @@ public class EclipseUtils
     public static IType findTypeDeclaration(IProject project, String className)
     {
         SearchPattern pattern = SearchPattern.createPattern(className,
-                IJavaSearchConstants.TYPE, IJavaSearchConstants.DECLARATIONS, SearchPattern.R_FULL_MATCH);
+                IJavaSearchConstants.TYPE,
+                IJavaSearchConstants.DECLARATIONS,
+                SearchPattern.R_FULL_MATCH);
         
         final List<SearchMatch> matches = searchJava(project, pattern);
         
@@ -559,7 +561,7 @@ public class EclipseUtils
         }
     }
 
-    public static String toClassName(TypeLiteral typeLiteral)
+    public static String toClassName(IProject project, TypeLiteral typeLiteral)
     {
         Type type = typeLiteral.getType();
         
@@ -580,28 +582,39 @@ public class EclipseUtils
         
         return name.isQualifiedName()
                  ? name.getFullyQualifiedName()
-                 : tryResolveFQNameFromImports(typeLiteral.getRoot(), name.getFullyQualifiedName());
+                 : tryResolveFQNameFromImports(project, typeLiteral.getRoot(), name.getFullyQualifiedName());
     }
 
-    private static String tryResolveFQNameFromImports(ASTNode root, String simpleName)
+    private static String tryResolveFQNameFromImports(IProject project, ASTNode root, String simpleName)
     {
         if (!(root instanceof CompilationUnit))
         {
             return simpleName;
         }
-        
+
         CompilationUnit compilationUnit = (CompilationUnit) root;
-        
+
         for (Object importObj : compilationUnit.imports())
         {
             ImportDeclaration importDecl = (ImportDeclaration) importObj;
-            
+
             if (importDecl.getName().getFullyQualifiedName().endsWith("." + simpleName))
             {
                 return importDecl.getName().getFullyQualifiedName();
             }
+            else if (importDecl.isOnDemand())
+            {
+                String packageName = importDecl.getName().getFullyQualifiedName();
+
+                String candidate = packageName + "." + simpleName;
+
+                if (EclipseUtils.findTypeDeclaration(project, candidate) != null)
+                {
+                    return candidate;
+                }
+            }
         }
-        
+
         //  Assume it's from the same package
         return compilationUnit.getPackage().getName().getFullyQualifiedName() + "." + simpleName;
     }

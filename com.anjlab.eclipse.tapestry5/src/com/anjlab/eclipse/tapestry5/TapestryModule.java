@@ -61,8 +61,20 @@ public abstract class TapestryModule
     
     public static abstract class ModuleReference
     {
-        abstract String getLabel();
+        private final DeclarationReference reference;
         
+        public ModuleReference(DeclarationReference reference)
+        {
+            this.reference = reference;
+        }
+
+        public DeclarationReference getReference()
+        {
+            return reference;
+        }
+
+        public abstract String getLabel();
+
         @Override
         public String toString()
         {
@@ -245,7 +257,7 @@ public abstract class TapestryModule
                                             @Override
                                             public void callback(TapestryModule obj)
                                             {
-                                                obj.setReference(new ModuleReference()
+                                                obj.setReference(new ModuleReference(new JavaElementReference(annotation))
                                                 {
                                                     @Override
                                                     public String getLabel()
@@ -331,7 +343,7 @@ public abstract class TapestryModule
                     return super.visit(node);
                 }
                 
-                String className = EclipseUtils.toClassName((TypeLiteral) typeArg);
+                String className = EclipseUtils.toClassName(getEclipseProject(), (TypeLiteral) typeArg);
                 
                 if (className == null)
                 {
@@ -577,7 +589,7 @@ public abstract class TapestryModule
                         if (arg instanceof TypeLiteral)
                         {
                             serviceDefinition().addMarker(
-                                    EclipseUtils.toClassName((TypeLiteral) arg));
+                                    EclipseUtils.toClassName(getEclipseProject(), (TypeLiteral) arg));
                         }
                     }
                     return analyzeInvocationChain(node);
@@ -643,11 +655,11 @@ public abstract class TapestryModule
                     {
                         TapestryService.ServiceDefinition definition = serviceDefinition();
                         
-                        definition.setIntfClass(EclipseUtils.toClassName((TypeLiteral) intf));
+                        definition.setIntfClass(EclipseUtils.toClassName(getEclipseProject(), (TypeLiteral) intf));
                         
                         if (impl instanceof TypeLiteral)
                         {
-                            definition.setImplClass(EclipseUtils.toClassName((TypeLiteral) impl));
+                            definition.setImplClass(EclipseUtils.toClassName(getEclipseProject(), (TypeLiteral) impl));
                         }
                         
                         if (definition.isSimpleId())

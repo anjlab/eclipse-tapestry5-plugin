@@ -1,19 +1,39 @@
 package com.anjlab.eclipse.tapestry5.views.project;
 
+import org.apache.commons.lang.ObjectUtils;
+import org.eclipse.core.resources.IFile;
+import org.eclipse.core.runtime.ListenerList;
+import org.eclipse.jdt.core.IClassFile;
+import org.eclipse.jdt.core.IJavaElement;
+import org.eclipse.jdt.core.IType;
+import org.eclipse.jdt.core.dom.ASTNode;
+import org.eclipse.jdt.internal.ui.javaeditor.IClassFileEditorInput;
 import org.eclipse.jface.viewers.DoubleClickEvent;
 import org.eclipse.jface.viewers.IDoubleClickListener;
 import org.eclipse.jface.viewers.ISelection;
+import org.eclipse.jface.viewers.ISelectionChangedListener;
+import org.eclipse.jface.viewers.ISelectionProvider;
 import org.eclipse.jface.viewers.IStructuredSelection;
+import org.eclipse.jface.viewers.SelectionChangedEvent;
+import org.eclipse.jface.viewers.StructuredSelection;
+import org.eclipse.jface.viewers.TreeSelection;
 import org.eclipse.jface.viewers.TreeViewer;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.widgets.Composite;
+import org.eclipse.ui.IEditorInput;
+import org.eclipse.ui.IEditorPart;
+import org.eclipse.ui.IFileEditorInput;
+import org.eclipse.ui.IWorkbenchPage;
 import org.eclipse.ui.IWorkbenchWindow;
 import org.eclipse.ui.part.ViewPart;
 
 import com.anjlab.eclipse.tapestry5.Activator;
+import com.anjlab.eclipse.tapestry5.DeclarationReference;
+import com.anjlab.eclipse.tapestry5.DeclarationReference.ASTNodeReference;
 import com.anjlab.eclipse.tapestry5.EclipseUtils;
 import com.anjlab.eclipse.tapestry5.JavaScriptStack;
 import com.anjlab.eclipse.tapestry5.LibraryMapping;
+import com.anjlab.eclipse.tapestry5.SetEditorCaretPositionOffsetLength;
 import com.anjlab.eclipse.tapestry5.TapestryContext;
 import com.anjlab.eclipse.tapestry5.TapestryFile;
 import com.anjlab.eclipse.tapestry5.TapestryModule;
@@ -41,8 +61,45 @@ import com.anjlab.eclipse.tapestry5.watchdog.ITapestryContextListener;
  * <p>
  */
 
+@SuppressWarnings("restriction")
 public class TapestryProjectOutlineView extends ViewPart
 {
+    private final class SimpleSelectionProvider implements
+            ISelectionProvider
+    {
+        private final ListenerList listeners = new ListenerList();
+        private ISelection selection;
+        
+        @Override
+        public void setSelection(ISelection selection)
+        {
+            this.selection = selection;
+            
+            for (Object l : listeners.getListeners())
+            {
+                ((ISelectionChangedListener) l).selectionChanged(new SelectionChangedEvent(this, selection));
+            }
+        }
+
+        @Override
+        public void removeSelectionChangedListener(ISelectionChangedListener listener)
+        {
+            listeners.remove(listener);
+        }
+
+        @Override
+        public ISelection getSelection()
+        {
+            return selection;
+        }
+
+        @Override
+        public void addSelectionChangedListener(ISelectionChangedListener listener)
+        {
+            listeners.add(listener);
+        }
+    }
+
     /**
      * The ID of the view as specified by the extension.
      */
@@ -56,11 +113,189 @@ public class TapestryProjectOutlineView extends ViewPart
      */
     public void createPartControl(Composite parent)
     {
+        getSite().setSelectionProvider(new SimpleSelectionProvider());
+
         viewer = new TreeViewer(parent, SWT.MULTI | SWT.H_SCROLL | SWT.V_SCROLL);
         viewer.setContentProvider(new TapestryProjectOutlineContentProvider(Activator.getDefault().getTapestryProject(getSite().getWorkbenchWindow())));
         viewer.setLabelProvider(new TapestryDecoratingLabelProvider(new ViewLabelProvider()));
         viewer.setSorter(new NameSorter());
         viewer.setInput(getViewSite());
+        viewer.addSelectionChangedListener(new ISelectionChangedListener()
+        {
+            @Override
+            public void selectionChanged(SelectionChangedEvent event)
+            {
+                Object selectedObject = getSelectedTapestryObject(event);
+                
+                //  Expose selected object via selection provider for other Eclipse components,
+                //  for example, for JavaDoc view.
+                //  
+                //  JavaDoc view understands IJavaElement, this is what we can publish.
+                //  TODO We also sometimes may have ASTNode instead of IJavaElement which it doesn't understand,
+                //  TBD what to do with them: these may be LibraryMappings and services bound via binder.bind().
+                
+                if (selectedObject instanceof TapestryService)
+                {
+                    TapestryService service = (TapestryService) selectedObject;
+                    
+                    TapestryProjectOutlineContentProvider contentProvider =
+                            (TapestryProjectOutlineContentProvider) viewer.getContentProvider();
+                    
+                    IType element = EclipseUtils.findTypeDeclaration(
+                            contentProvider.getProject().getProject(),
+                            service.getDefinition().getIntfClass());
+                    
+                    if (element != null)
+                    {
+                        getSite().getSelectionProvider().setSelection(new StructuredSelection(element));
+                        
+                        updateSelectionInActiveEditor(service.getReference());
+                        
+                        return;
+                    }
+                }
+                
+                if (selectedObject instanceof ServiceInstrumenter)
+                {
+                    ServiceInstrumenter instrumenter = (ServiceInstrumenter) selectedObject;
+                    
+                    IJavaElement element = instrumenter.getReference().getElement();
+                    
+                    if (element != null)
+                    {
+                        getSite().getSelectionProvider().setSelection(new StructuredSelection(element));
+                        
+                        updateSelectionInActiveEditor(instrumenter.getReference());
+                        
+                        return;
+                    }
+                }
+                
+                if (selectedObject instanceof LibraryMapping)
+                {
+                    LibraryMapping mapping = (LibraryMapping) selectedObject;
+                    
+                    DeclarationReference element = mapping.getReference();
+                    
+                    if (element != null)
+                    {
+                        getSite().getSelectionProvider().setSelection(new StructuredSelection(element));
+                        
+                        updateSelectionInActiveEditor(element);
+                        
+                        return;
+                    }
+                }
+                
+                if (selectedObject instanceof JavaScriptStack)
+                {
+                    JavaScriptStack stack = (JavaScriptStack) selectedObject;
+                    
+                    IJavaElement element = stack.getType();
+                    
+                    if (element != null)
+                    {
+                        getSite().getSelectionProvider().setSelection(new StructuredSelection(element));
+                        
+                        updateSelectionInActiveEditor(stack.getReference());
+                        
+                        return;
+                    }
+                }
+                
+                if (selectedObject instanceof TapestryModule)
+                {
+                    TapestryModule module = (TapestryModule) selectedObject;
+                    
+                    IJavaElement element = module.getModuleClass();
+                    
+                    if (element != null)
+                    {
+                        getSite().getSelectionProvider().setSelection(new StructuredSelection(element));
+                        
+                        updateSelectionInActiveEditor(module.getReference().getReference());
+                        
+                        return;
+                    }
+                }
+                
+                getSite().getSelectionProvider().setSelection(new ISelection()
+                {
+                    @Override
+                    public boolean isEmpty()
+                    {
+                        return true;
+                    }
+                });
+            }
+
+            private void updateSelectionInActiveEditor(DeclarationReference reference)
+            {
+                //  TODO Get in-editor location information for IJavaElement
+                
+                if (reference instanceof ASTNodeReference)
+                {
+                    ASTNodeReference element = (ASTNodeReference) reference;
+                    
+                    ASTNode node = element.getNode();
+                    
+                    IWorkbenchPage activePage = getSite().getWorkbenchWindow().getActivePage();
+                    
+                    if (activePage != null)
+                    {
+                        IEditorPart activeEditor = activePage.getActiveEditor();
+                        
+                        if (activeEditor != null)
+                        {
+                            IEditorInput input = activeEditor.getEditorInput();
+                            
+                            if (input instanceof IClassFileEditorInput)
+                            {
+                                IClassFile classFile = ((IClassFileEditorInput) input).getClassFile();
+                                
+                                if (ObjectUtils.equals(classFile.getType(), element.getElement().getPrimaryElement()))
+                                {
+                                    new SetEditorCaretPositionOffsetLength(node.getStartPosition(), node.getLength())
+                                        .editorOpened(activeEditor);
+                                }
+                            }
+                            else if (input instanceof IFileEditorInput)
+                            {
+                                IFile file = ((IFileEditorInput) input).getFile();
+                                
+                                if (ObjectUtils.equals(file, element.getElement().getResource()))
+                                {
+                                    new SetEditorCaretPositionOffsetLength(node.getStartPosition(), node.getLength())
+                                        .editorOpened(activeEditor);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            private Object getSelectedTapestryObject(SelectionChangedEvent event)
+            {
+                ISelection selection = event.getSelection();
+                
+                if (selection instanceof TreeSelection)
+                {
+                    TreeSelection treeSelection = (TreeSelection) selection;
+                    
+                    if (treeSelection.size() == 1)
+                    {
+                        if (treeSelection.getFirstElement() instanceof TreeObject)
+                        {
+                            TreeObject treeObject = (TreeObject) treeSelection.getFirstElement();
+                            
+                            return treeObject.getData();
+                        }
+                    }
+                }
+                
+                return null;
+            }
+        });
         viewer.addDoubleClickListener(new IDoubleClickListener()
         {
             public void doubleClick(DoubleClickEvent event)

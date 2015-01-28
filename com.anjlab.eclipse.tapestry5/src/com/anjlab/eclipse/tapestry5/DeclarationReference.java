@@ -22,6 +22,11 @@ public interface DeclarationReference
             return element;
         }
         
+        public ASTNode getNode()
+        {
+            return node;
+        }
+        
         @Override
         public void openInEditor()
         {
@@ -53,6 +58,22 @@ public interface DeclarationReference
         }
     }
 
+    public static class NonJavaReference implements DeclarationReference
+    {
+        @Override
+        public IJavaElement getElement()
+        {
+            return null;
+        }
+
+        @Override
+        public void openInEditor()
+        {
+            //  TODO In some cases we do know the file name and location,
+            //  so we should implement this method for these cases
+        }
+    }
+    
     IJavaElement getElement();
 
     void openInEditor();
