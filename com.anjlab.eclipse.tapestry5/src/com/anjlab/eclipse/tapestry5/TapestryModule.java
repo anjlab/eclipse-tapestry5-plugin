@@ -221,7 +221,7 @@ public abstract class TapestryModule
         
         try
         {
-            IAnnotation annotation = findSubmoduleAnnotation();
+            final IAnnotation annotation = findSubmoduleAnnotation();
             
             if (annotation == null)
             {
