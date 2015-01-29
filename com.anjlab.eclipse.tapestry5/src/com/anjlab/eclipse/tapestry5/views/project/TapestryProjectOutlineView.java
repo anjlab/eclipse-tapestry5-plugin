@@ -5,8 +5,9 @@ import org.eclipse.core.resources.IFile;
 import org.eclipse.core.runtime.ListenerList;
 import org.eclipse.jdt.core.IClassFile;
 import org.eclipse.jdt.core.IJavaElement;
+import org.eclipse.jdt.core.ISourceReference;
 import org.eclipse.jdt.core.IType;
-import org.eclipse.jdt.core.dom.ASTNode;
+import org.eclipse.jdt.core.JavaModelException;
 import org.eclipse.jdt.internal.ui.javaeditor.IClassFileEditorInput;
 import org.eclipse.jface.viewers.DoubleClickEvent;
 import org.eclipse.jface.viewers.IDoubleClickListener;
@@ -231,47 +232,80 @@ public class TapestryProjectOutlineView extends ViewPart
 
             private void updateSelectionInActiveEditor(DeclarationReference reference)
             {
-                //  TODO Get in-editor location information for IJavaElement
-                
                 if (reference instanceof ASTNodeReference)
                 {
-                    ASTNodeReference element = (ASTNodeReference) reference;
+                    ASTNodeReference astReference = (ASTNodeReference) reference;
                     
-                    ASTNode node = element.getNode();
-                    
-                    IWorkbenchPage activePage = getSite().getWorkbenchWindow().getActivePage();
-                    
-                    if (activePage != null)
+                    updateSelectionInActiveEditor(
+                            astReference,
+                            astReference.getNode().getStartPosition(),
+                            astReference.getNode().getLength());
+                }
+                else
+                {
+                    if (reference.getElement() instanceof ISourceReference)
                     {
-                        IEditorPart activeEditor = activePage.getActiveEditor();
+                        ISourceReference sourceReference = (ISourceReference) reference.getElement();
                         
-                        if (activeEditor != null)
+                        if (sourceReference.exists())
                         {
-                            IEditorInput input = activeEditor.getEditorInput();
-                            
-                            if (input instanceof IClassFileEditorInput)
+                            try
                             {
-                                IClassFile classFile = ((IClassFileEditorInput) input).getClassFile();
-                                
-                                if (ObjectUtils.equals(classFile.getType(), element.getElement().getPrimaryElement()))
-                                {
-                                    new SetEditorCaretPositionOffsetLength(node.getStartPosition(), node.getLength())
-                                        .editorOpened(activeEditor);
-                                }
+                                updateSelectionInActiveEditor(
+                                        reference,
+                                        sourceReference.getSourceRange().getOffset(),
+                                        sourceReference.getSourceRange().getLength());
                             }
-                            else if (input instanceof IFileEditorInput)
+                            catch (JavaModelException e)
                             {
-                                IFile file = ((IFileEditorInput) input).getFile();
-                                
-                                if (ObjectUtils.equals(file, element.getElement().getResource()))
-                                {
-                                    new SetEditorCaretPositionOffsetLength(node.getStartPosition(), node.getLength())
-                                        .editorOpened(activeEditor);
-                                }
+                                //  Ignore
                             }
                         }
                     }
                 }
+            }
+
+            private void updateSelectionInActiveEditor(DeclarationReference reference, int offset, int length)
+            {
+                IWorkbenchPage activePage = getSite().getWorkbenchWindow().getActivePage();
+                
+                if (activePage != null)
+                {
+                    IEditorPart activeEditor = activePage.getActiveEditor();
+                    
+                    if (activeEditor != null)
+                    {
+                        IEditorInput input = activeEditor.getEditorInput();
+                        
+                        if (input instanceof IClassFileEditorInput)
+                        {
+                            IClassFile classFile = ((IClassFileEditorInput) input).getClassFile();
+                            
+                            if (ObjectUtils.equals(classFile.getType(), findParentType(reference.getElement())))
+                            {
+                                new SetEditorCaretPositionOffsetLength(offset, length).editorOpened(activeEditor);
+                            }
+                        }
+                        else if (input instanceof IFileEditorInput)
+                        {
+                            IFile file = ((IFileEditorInput) input).getFile();
+                            
+                            if (ObjectUtils.equals(file, reference.getElement().getResource()))
+                            {
+                                new SetEditorCaretPositionOffsetLength(offset, length).editorOpened(activeEditor);
+                            }
+                        }
+                    }
+                }
+            }
+
+            private Object findParentType(IJavaElement element)
+            {
+                while (!(element instanceof IType) && element != null)
+                {
+                    element = element.getParent();
+                }
+                return element;
             }
 
             private Object getSelectedTapestryObject(SelectionChangedEvent event)
