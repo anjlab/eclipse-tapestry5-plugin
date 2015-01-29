@@ -146,6 +146,8 @@ public abstract class TapestryModule
         findJavaScriptStacks(monitor);
         
         findComponents(monitor);
+        
+        findServices(monitor);
     }
     
     private volatile List<String> markers;
@@ -534,12 +536,12 @@ public abstract class TapestryModule
         advisors = new ArrayList<ServiceInstrumenter>();
         contributors = new ArrayList<ServiceInstrumenter>();
         
-        enumModuleMethods();
+        enumModuleMethods(monitor);
         
-        visitBindInvocations();
+        visitBindInvocations(monitor);
     }
 
-    private void visitBindInvocations()
+    private void visitBindInvocations(final IProgressMonitor monitor)
     {
         final CompilationUnit compilationUnit = getModuleClassCompilationUnit();
         
@@ -578,6 +580,11 @@ public abstract class TapestryModule
             @Override
             public boolean visit(MethodInvocation node)
             {
+                if (monitor.isCanceled())
+                {
+                    return false;
+                }
+                
                 String identifier = node.getName().getIdentifier();
                 
                 if ("withMarker".equals(identifier))
@@ -719,12 +726,17 @@ public abstract class TapestryModule
         });
     }
 
-    private void enumModuleMethods()
+    private void enumModuleMethods(IProgressMonitor monitor)
     {
         try
         {
             for (IMethod method : getModuleClass().getMethods())
             {
+                if (monitor.isCanceled())
+                {
+                    return;
+                }
+                
                 try
                 {
                     if (isServiceBuilderMethod(method))
