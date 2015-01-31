@@ -411,7 +411,7 @@ public abstract class TapestryModule
                     {
                         String identifier = ((SimpleName) instanceArg).getIdentifier();
                         Declaration declaration = declarations.findClosest(identifier);
-                        if (declaration != null)
+                        if (declaration != null && StringUtils.isNotEmpty(declaration.className))
                         {
                             secondArgumentType = EclipseUtils.findTypeDeclaration(getEclipseProject(), declaration.className);
                         }
