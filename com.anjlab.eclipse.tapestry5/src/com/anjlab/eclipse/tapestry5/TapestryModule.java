@@ -336,7 +336,7 @@ public abstract class TapestryModule
         
         javaScriptStacks = new ArrayList<JavaScriptStack>();
         
-        ASTVisitor javaScriptStackCapturingVisitor = new ASTVisitor()
+        final ASTVisitor javaScriptStackCapturingVisitor = new ASTVisitor()
         {
             private final DeclarationCapturingScope declarations =
                     new DeclarationCapturingScope();
@@ -491,13 +491,13 @@ public abstract class TapestryModule
                 }
                 else if (contributionDeclaration instanceof JavaElementReference)
                 {
-                    IJavaElement element = ((JavaElementReference) contributionDeclaration).getElement();
+                    final IJavaElement element = ((JavaElementReference) contributionDeclaration).getElement();
                     
                     if (element instanceof IMethod)
                     {
                         //  Parse source code of method definition
                         
-                        CompilationUnit unit = getModuleClassCompilationUnit();
+                        final CompilationUnit unit = getModuleClassCompilationUnit();
                         
                         if (unit != null)
                         {
