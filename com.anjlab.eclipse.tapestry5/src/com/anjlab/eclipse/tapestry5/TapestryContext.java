@@ -275,18 +275,21 @@ public abstract class TapestryContext
                                     ? requireDefinition.moduleName
                                     : requireDefinition.moduleName + ":" + requireDefinition.functionName;
                             
+                            final int offset = node.getStartPosition();
+                            final int length = node.getLength();
+                            
                             files.add(new ModuleReference(getJavaFile(), new ISourceRange()
                             {
                                 @Override
                                 public int getOffset()
                                 {
-                                    return node.getStartPosition();
+                                    return offset;
                                 }
                                 
                                 @Override
                                 public int getLength()
                                 {
-                                    return node.getLength();
+                                    return length;
                                 }
                             }, reference));
                         }
