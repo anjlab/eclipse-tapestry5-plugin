@@ -430,21 +430,13 @@ public abstract class TapestryModule
                 
                 try
                 {
+                    tryAddJavaScriptStack(node, secondArgumentType, secondArgumentType.getFullyQualifiedName());
+                    
                     String[] interfaceNames = secondArgumentType.getSuperInterfaceNames();
                     
                     for (String interfaceName : interfaceNames)
                     {
-                        if (TapestryUtils.isTapestryJavaScriptStackInterface(interfaceName))
-                        {
-                            Object stackExpr = node.arguments().get(0);
-                            String stackName = EclipseUtils.evalExpression(getEclipseProject(), stackExpr);
-                            
-                            javaScriptStacks.add(new JavaScriptStack(
-                                    stackName,
-                                    secondArgumentType,
-                                    Arrays.binarySearch(OVERRIDES, node.getName().toString()) >= 0,
-                                    new ASTNodeReference(getModuleClass(), node)));
-                        }
+                        tryAddJavaScriptStack(node, secondArgumentType, interfaceName);
                     }
                 }
                 catch (JavaModelException e)
@@ -454,6 +446,22 @@ public abstract class TapestryModule
                 }
                 
                 return super.visit(node);
+            }
+
+            private void tryAddJavaScriptStack(MethodInvocation node,
+                    IType secondArgumentType, String interfaceName)
+            {
+                if (TapestryUtils.isTapestryJavaScriptStackInterface(interfaceName))
+                {
+                    Object stackExpr = node.arguments().get(0);
+                    String stackName = EclipseUtils.evalExpression(getEclipseProject(), stackExpr);
+                    
+                    javaScriptStacks.add(new JavaScriptStack(
+                            stackName,
+                            secondArgumentType,
+                            Arrays.binarySearch(OVERRIDES, node.getName().toString()) >= 0,
+                            new ASTNodeReference(getModuleClass(), node)));
+                }
             }
         };
         
