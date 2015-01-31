@@ -8,6 +8,7 @@ import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.apache.commons.lang.StringUtils;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IMarker;
 import org.eclipse.core.resources.IProject;
@@ -21,6 +22,8 @@ import org.eclipse.jdt.core.ISourceRange;
 import org.eclipse.jdt.core.IType;
 import org.eclipse.jdt.core.JavaModelException;
 import org.eclipse.jdt.core.dom.AST;
+import org.eclipse.jdt.core.dom.ASTVisitor;
+import org.eclipse.jdt.core.dom.MethodInvocation;
 import org.eclipse.jdt.internal.ui.text.javadoc.JavadocContentAccess2;
 
 import com.anjlab.eclipse.tapestry5.TapestryModule.ObjectCallback;
@@ -150,6 +153,7 @@ public abstract class TapestryContext
         {
             addImports(context);
             addInjectedAssets(context);
+            addRequireJSModules(context);
         }
         finally
         {
@@ -228,6 +232,105 @@ public abstract class TapestryContext
                         });
                     }
                 }
+            }
+        });
+    }
+    
+    private static class RequireDefinition
+    {
+        private String moduleName;
+        private String functionName;
+    }
+    
+    private void addRequireJSModules(CompilationUnitContext context)
+    {
+        analyzeCompilationUnit("analyzing RequireJS modules", context, new ContextRunnable()
+        {
+            @Override
+            public void run(CompilationUnitContext context) throws JavaModelException
+            {
+                context.accept(new ASTVisitor()
+                {
+                    private RequireDefinition requireDefinition;
+                    
+                    private RequireDefinition requireDefinition()
+                    {
+                        if (requireDefinition == null)
+                        {
+                            requireDefinition = new RequireDefinition();
+                        }
+                        return requireDefinition;
+                    }
+                    
+                    private boolean analyzeInvocationChain(MethodInvocation node)
+                    {
+                        if (node.getExpression() instanceof MethodInvocation)
+                        {
+                            visit((MethodInvocation) node.getExpression());
+                        }
+                        
+                        if (requireDefinition != null && StringUtils.isNotEmpty(requireDefinition.moduleName))
+                        {
+                            String reference = StringUtils.isEmpty(requireDefinition.functionName)
+                                    ? requireDefinition.moduleName
+                                    : requireDefinition.moduleName + ":" + requireDefinition.functionName;
+                            
+                            files.add(new ModuleReference(getJavaFile(), new ISourceRange()
+                            {
+                                @Override
+                                public int getOffset()
+                                {
+                                    return node.getStartPosition();
+                                }
+                                
+                                @Override
+                                public int getLength()
+                                {
+                                    return node.getLength();
+                                }
+                            }, reference));
+                        }
+                        
+                        requireDefinition = null;
+                        
+                        return false;
+                    }
+                    
+                    @Override
+                    public boolean visit(MethodInvocation node)
+                    {
+                        String identifier = node.getName().getIdentifier();
+                        
+                        if ("require".equals(identifier))
+                        {
+                            if (node.arguments().size() != 1)
+                            {
+                                return false;
+                            }
+                            
+                            requireDefinition().moduleName =
+                                    EclipseUtils.evalExpression(
+                                            getProject(), node.arguments().get(0));
+                            
+                            return analyzeInvocationChain(node);
+                        }
+                        else if ("invoke".equals(identifier))
+                        {
+                            if (node.arguments().size() != 1)
+                            {
+                                return false;
+                            }
+                            
+                            requireDefinition().functionName =
+                                    EclipseUtils.evalExpression(
+                                            getProject(), node.arguments().get(0));
+                            
+                            return analyzeInvocationChain(node);
+                        }
+                        
+                        return super.visit(node);
+                    }
+                });
             }
         });
     }
