@@ -93,6 +93,19 @@ public abstract class TapestryContext
             {
                 return null;
             }
+            
+            @Override
+            public FileLookup createLookup()
+            {
+                return new FileLookup()
+                {
+                    @Override
+                    public TapestryFile findClasspathFileCaseInsensitive(String path)
+                    {
+                        return null;
+                    }
+                };
+            }
         };
     }
     
@@ -241,7 +254,8 @@ public abstract class TapestryContext
                     {
                         if ("library".equals(pair.getMemberName())
                                 || "stylesheet".equals(pair.getMemberName())
-                                || "stack".equals(pair.getMemberName()))
+                                || "stack".equals(pair.getMemberName())
+                                || "module".equals(pair.getMemberName()))
                         {
                             processImport(
                                     annotation,
@@ -292,6 +306,10 @@ public abstract class TapestryContext
         if ("stack".equals(type))
         {
             files.add(new JavaScriptStackReference(getJavaFile(), fileName, sourceRange));
+        }
+        else if ("module".equals(type))
+        {
+            files.add(new ModuleReference(getJavaFile(), sourceRange, fileName));
         }
         else
         {
@@ -647,4 +665,6 @@ public abstract class TapestryContext
             return null;
         }
     }
+
+    public abstract FileLookup createLookup();
 }

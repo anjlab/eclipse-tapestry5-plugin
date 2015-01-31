@@ -215,4 +215,10 @@ public class JarTapestryContext extends TapestryContext
         
         return type;
     }
+    
+    @Override
+    public FileLookup createLookup()
+    {
+        return new JarFileLookup(getJavaType());
+    }
 }

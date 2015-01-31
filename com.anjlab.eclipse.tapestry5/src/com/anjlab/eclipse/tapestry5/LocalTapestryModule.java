@@ -4,7 +4,6 @@ import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.jdt.core.IJavaElement;
-import org.eclipse.jdt.core.IJavaProject;
 import org.eclipse.jdt.core.IPackageFragment;
 import org.eclipse.jdt.core.IPackageFragmentRoot;
 import org.eclipse.jdt.core.IType;
@@ -97,8 +96,7 @@ public class LocalTapestryModule extends TapestryModule
     @Override
     public TapestryFile findClasspathFileCaseInsensitive(String path)
     {
-        IJavaProject javaProject = getModuleClass().getJavaProject();
-        
-        return TapestryUtils.findFileInSourceFolders(javaProject, path);
+        return new LocalFileLookup(getModuleClass())
+            .findClasspathFileCaseInsensitive(path);
     }
 }

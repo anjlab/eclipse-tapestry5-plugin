@@ -35,6 +35,7 @@ public class AssetReference extends AbstractFileReference
         {
             return asset.path;
         }
+        
         return asset.path.substring(separatorIndex + 1);
     }
     

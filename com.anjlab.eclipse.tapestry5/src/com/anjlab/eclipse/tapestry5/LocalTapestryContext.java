@@ -357,4 +357,10 @@ public class LocalTapestryContext extends TapestryContext
         
         return type;
     }
+    
+    @Override
+    public FileLookup createLookup()
+    {
+        return new LocalFileLookup(getJavaType());
+    }
 }
