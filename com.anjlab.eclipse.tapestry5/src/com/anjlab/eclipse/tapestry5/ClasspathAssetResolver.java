@@ -110,7 +110,7 @@ public class ClasspathAssetResolver implements AssetResolver
         }
     }
 
-    private UnresolvableReferenceException createAssetException(final String path, Throwable cause)
+    protected UnresolvableReferenceException createAssetException(final String path, Throwable cause)
     {
         return new UnresolvableReferenceException("Couldn't resolve classpath asset from path '" + path + "'", cause);
     }

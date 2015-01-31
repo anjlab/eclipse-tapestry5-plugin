@@ -132,7 +132,7 @@ public class TapestryUtils
     {
         if ("classpath".equals(bindingPrefix))
         {
-            return new ClasspathAssetResolver();
+            return new ClasspathAssetResolver2();
         }
         else if ("context".equals(bindingPrefix))
         {
