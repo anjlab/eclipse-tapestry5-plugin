@@ -409,6 +409,15 @@ public abstract class TapestryModule
                         if (declaration != null && StringUtils.isNotEmpty(declaration.className))
                         {
                             secondArgumentType = EclipseUtils.findTypeDeclaration(getEclipseProject(), declaration.className);
+                            
+                            //  This may be an interface name of @Inject'ed service.
+                            //  Interface name is enough right now, but it may be handy
+                            //  to find corresponding implementation class to implement additional features.
+                            //  Finding an implementation is not a trivial operation:
+                            //  - a service may be injected by ID,
+                            //  - or using marker annotations,
+                            //  and we may not have enough information at this time.
+                            //  We should keep the declaration reference to find this information later.
                         }
                     }
                     else if (instanceArg instanceof ClassInstanceCreation)
@@ -448,8 +457,7 @@ public abstract class TapestryModule
                 return super.visit(node);
             }
 
-            private void tryAddJavaScriptStack(MethodInvocation node,
-                    IType secondArgumentType, String interfaceName)
+            private void tryAddJavaScriptStack(MethodInvocation node, IType type, String interfaceName)
             {
                 if (TapestryUtils.isTapestryJavaScriptStackInterface(interfaceName))
                 {
@@ -458,7 +466,7 @@ public abstract class TapestryModule
                     
                     javaScriptStacks.add(new JavaScriptStack(
                             stackName,
-                            secondArgumentType,
+                            type,
                             Arrays.binarySearch(OVERRIDES, node.getName().toString()) >= 0,
                             new ASTNodeReference(getModuleClass(), node)));
                 }
