@@ -11,12 +11,12 @@ import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.IResourceDelta;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.Platform;
-import org.eclipse.jdt.core.ICompilationUnit;
 import org.eclipse.jdt.core.IField;
 import org.eclipse.jdt.core.IJavaElement;
 import org.eclipse.jdt.core.IMember;
 import org.eclipse.jdt.core.IMemberValuePair;
 import org.eclipse.jdt.core.IPackageFragmentRoot;
+import org.eclipse.jdt.core.ISourceReference;
 import org.eclipse.jdt.core.IType;
 import org.eclipse.jdt.core.JavaCore;
 import org.eclipse.jdt.core.JavaModelException;
@@ -324,22 +324,28 @@ public class EclipseUtils
         return matches;
     }
 
-    public static CompilationUnit parse(ICompilationUnit unit)
+    public static ASTNode parse(ISourceReference reference, int kind)
+    {
+        String source = getSource(reference);
+        
+        return parse(source, kind);
+    }
+
+    private static String getSource(ISourceReference reference)
     {
         String source;
         try
         {
-            source = unit.getSource();
+            source = reference.getSource();
         }
         catch (JavaModelException e)
         {
             throw new IllegalStateException(SOURCE_NOT_FOUND, e);
         }
-        
-        return parse(source);
+        return source;
     }
 
-    public static CompilationUnit parse(String source)
+    public static ASTNode parse(String source, int kind)
     {
         if (source == null)
         {
@@ -347,10 +353,10 @@ public class EclipseUtils
         }
         
         ASTParser parser = ASTParser.newParser(getParserLevel());
-        parser.setKind(ASTParser.K_COMPILATION_UNIT);
+        parser.setKind(kind);
         parser.setSource(source.toCharArray());
         parser.setResolveBindings(true);
-        return (CompilationUnit) parser.createAST(null);
+        return parser.createAST(null);
     }
 
     private static int parserLevel = -1;
@@ -620,6 +626,15 @@ public class EclipseUtils
 
         //  Assume it's from the same package
         return compilationUnit.getPackage().getName().getFullyQualifiedName() + "." + simpleName;
+    }
+
+    public static IType findParentType(IJavaElement element)
+    {
+        while (!(element instanceof IType) && element != null)
+        {
+            element = element.getParent();
+        }
+        return (IType) element;
     }
 
 }

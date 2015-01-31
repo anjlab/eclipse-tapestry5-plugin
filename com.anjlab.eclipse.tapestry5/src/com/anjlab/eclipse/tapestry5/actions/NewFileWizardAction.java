@@ -20,6 +20,7 @@ import org.eclipse.jdt.core.JavaCore;
 import org.eclipse.jdt.core.JavaModelException;
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
+import org.eclipse.jdt.core.dom.ASTParser;
 import org.eclipse.jdt.core.dom.ASTVisitor;
 import org.eclipse.jdt.core.dom.Annotation;
 import org.eclipse.jdt.core.dom.ArrayInitializer;
@@ -48,11 +49,11 @@ import org.eclipse.ui.dialogs.WizardNewFileCreationPage;
 import com.anjlab.eclipse.tapestry5.Activator;
 import com.anjlab.eclipse.tapestry5.EclipseUtils;
 import com.anjlab.eclipse.tapestry5.EclipseUtils.EditorCallback;
-import com.anjlab.eclipse.tapestry5.templates.TapestryTemplates;
 import com.anjlab.eclipse.tapestry5.LocalFile;
 import com.anjlab.eclipse.tapestry5.SetEditorCaretPositionOffsetLength;
 import com.anjlab.eclipse.tapestry5.TapestryContext;
 import com.anjlab.eclipse.tapestry5.TapestryUtils;
+import com.anjlab.eclipse.tapestry5.templates.TapestryTemplates;
 
 public class NewFileWizardAction extends Action
 {
@@ -258,7 +259,7 @@ public class NewFileWizardAction extends Action
                 
                 final ICompilationUnit compilationUnit = (ICompilationUnit) javaElement;
                 
-                CompilationUnit unit = EclipseUtils.parse(compilationUnit);
+                CompilationUnit unit = (CompilationUnit) EclipseUtils.parse(compilationUnit, ASTParser.K_COMPILATION_UNIT);
                 
                 TapestryImportAnnotationContext rewriteContext = new TapestryImportAnnotationContext();
                 

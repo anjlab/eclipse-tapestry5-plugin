@@ -281,7 +281,7 @@ public class TapestryProjectOutlineView extends ViewPart
                         {
                             IClassFile classFile = ((IClassFileEditorInput) input).getClassFile();
                             
-                            if (ObjectUtils.equals(classFile.getType(), findParentType(reference.getElement())))
+                            if (ObjectUtils.equals(classFile.getType(), EclipseUtils.findParentType(reference.getElement())))
                             {
                                 new SetEditorCaretPositionOffsetLength(offset, length).editorOpened(activeEditor);
                             }
@@ -297,15 +297,6 @@ public class TapestryProjectOutlineView extends ViewPart
                         }
                     }
                 }
-            }
-
-            private Object findParentType(IJavaElement element)
-            {
-                while (!(element instanceof IType) && element != null)
-                {
-                    element = element.getParent();
-                }
-                return element;
             }
 
             private Object getSelectedTapestryObject(SelectionChangedEvent event)

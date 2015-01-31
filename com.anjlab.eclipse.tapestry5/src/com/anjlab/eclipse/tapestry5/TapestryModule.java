@@ -16,12 +16,14 @@ import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.jdt.core.IAnnotatable;
 import org.eclipse.jdt.core.IAnnotation;
 import org.eclipse.jdt.core.IClassFile;
+import org.eclipse.jdt.core.IJavaElement;
 import org.eclipse.jdt.core.IMemberValuePair;
 import org.eclipse.jdt.core.IMethod;
 import org.eclipse.jdt.core.IType;
 import org.eclipse.jdt.core.JavaModelException;
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
+import org.eclipse.jdt.core.dom.ASTParser;
 import org.eclipse.jdt.core.dom.ASTVisitor;
 import org.eclipse.jdt.core.dom.ClassInstanceCreation;
 import org.eclipse.jdt.core.dom.CompilationUnit;
@@ -151,10 +153,6 @@ public abstract class TapestryModule
         
         findLibraryMappings(monitor);
         
-        subTask(monitor, "JavaScript stacks");
-        
-        findJavaScriptStacks(monitor);
-        
         subTask(monitor, "components");
         
         findComponents(monitor);
@@ -162,6 +160,10 @@ public abstract class TapestryModule
         subTask(monitor, "services");
         
         findServices(monitor);
+        
+        subTask(monitor, "JavaScript stacks");
+        
+        findJavaScriptStacks(monitor);
     }
 
     private void subTask(IProgressMonitor monitor, String name)
@@ -334,14 +336,7 @@ public abstract class TapestryModule
         
         javaScriptStacks = new ArrayList<JavaScriptStack>();
         
-        CompilationUnit compilationUnit = getModuleClassCompilationUnit();
-        
-        if (compilationUnit == null)
-        {
-            return;
-        }
-        
-        compilationUnit.accept(new ASTVisitor()
+        ASTVisitor javaScriptStackCapturingVisitor = new ASTVisitor()
         {
             private final DeclarationCapturingScope declarations =
                     new DeclarationCapturingScope();
@@ -460,7 +455,69 @@ public abstract class TapestryModule
                 
                 return super.visit(node);
             }
-        });
+        };
+        
+        //  javaScriptStackCapturingVisitor is a heavy handler,
+        //  we don't want to parse every method declaration in it
+        //  So only parse actual JavaScriptStackSource contributions
+        
+        for (ServiceInstrumenter contributor : contributors())
+        {
+            final TapestryService javaScriptStackSource = new TapestryService(
+                    null,
+                    new ServiceDefinition()
+                        .setId("JavaScriptStackSource")
+                        .setIntfClass("org.apache.tapestry5.services.javascript.JavaScriptStackSource"),
+                    null);
+            
+            if (contributor.getServiceMatcher().matches(javaScriptStackSource))
+            {
+                DeclarationReference contributionDeclaration = contributor.getReference();
+                
+                if (contributionDeclaration instanceof ASTNodeReference)
+                {
+                    ASTNode node = ((ASTNodeReference) contributionDeclaration).getNode();
+                    
+                    //  Find declaring method
+                    while (!(node instanceof MethodDeclaration) && node != null)
+                    {
+                        node = node.getParent();
+                    }
+                    
+                    if (node != null)
+                    {
+                        node.accept(javaScriptStackCapturingVisitor);
+                    }
+                }
+                else if (contributionDeclaration instanceof JavaElementReference)
+                {
+                    IJavaElement element = ((JavaElementReference) contributionDeclaration).getElement();
+                    
+                    if (element instanceof IMethod)
+                    {
+                        //  Parse source code of method definition
+                        
+                        CompilationUnit unit = getModuleClassCompilationUnit();
+                        
+                        if (unit != null)
+                        {
+                            unit.accept(new ASTVisitor()
+                            {
+                                @Override
+                                public boolean visit(MethodDeclaration node)
+                                {
+                                    if (node.getName().getIdentifier().equals(element.getElementName()))
+                                    {
+                                        node.accept(javaScriptStackCapturingVisitor);
+                                    }
+                                    return false;
+                                }
+                            });
+                        }
+                    }
+                }
+            }
+        }
     }
 
     private volatile List<LibraryMapping> libraryMappings;
@@ -1150,7 +1207,7 @@ public abstract class TapestryModule
             return null;
         }
         
-        compilationUnit = EclipseUtils.parse(source);
+        compilationUnit = (CompilationUnit) EclipseUtils.parse(source, ASTParser.K_COMPILATION_UNIT);
         
         return compilationUnit;
     }

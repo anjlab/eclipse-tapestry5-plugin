@@ -3,6 +3,7 @@ package com.anjlab.eclipse.tapestry5.internal;
 import org.eclipse.jdt.core.ICompilationUnit;
 import org.eclipse.jdt.core.JavaModelException;
 import org.eclipse.jdt.core.dom.AST;
+import org.eclipse.jdt.core.dom.ASTParser;
 import org.eclipse.jdt.core.dom.ASTVisitor;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.ui.services.IDisposable;
@@ -56,7 +57,7 @@ public class CompilationUnitContext implements IDisposable
             cuParsed = true;
             try
             {
-                parsedUnit = EclipseUtils.parse(compilationUnit);
+                parsedUnit = (CompilationUnit) EclipseUtils.parse(compilationUnit, ASTParser.K_COMPILATION_UNIT);
             }
             catch (Exception e)
             {
