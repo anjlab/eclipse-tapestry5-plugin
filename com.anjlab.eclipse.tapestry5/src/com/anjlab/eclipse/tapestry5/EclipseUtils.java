@@ -563,8 +563,11 @@ public class EclipseUtils
 
     public static String toClassName(IProject project, TypeLiteral typeLiteral)
     {
-        Type type = typeLiteral.getType();
-        
+        return toClassName(project, typeLiteral.getType());
+    }
+
+    public static String toClassName(IProject project, Type type)
+    {
         Name name = null;
         
         if (type instanceof SimpleType)
@@ -582,7 +585,7 @@ public class EclipseUtils
         
         return name.isQualifiedName()
                  ? name.getFullyQualifiedName()
-                 : tryResolveFQNameFromImports(project, typeLiteral.getRoot(), name.getFullyQualifiedName());
+                 : tryResolveFQNameFromImports(project, type.getRoot(), name.getFullyQualifiedName());
     }
 
     private static String tryResolveFQNameFromImports(IProject project, ASTNode root, String simpleName)

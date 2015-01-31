@@ -25,10 +25,12 @@ import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.ASTVisitor;
 import org.eclipse.jdt.core.dom.ClassInstanceCreation;
 import org.eclipse.jdt.core.dom.CompilationUnit;
+import org.eclipse.jdt.core.dom.MethodDeclaration;
 import org.eclipse.jdt.core.dom.MethodInvocation;
 import org.eclipse.jdt.core.dom.Name;
 import org.eclipse.jdt.core.dom.SimpleName;
 import org.eclipse.jdt.core.dom.SimpleType;
+import org.eclipse.jdt.core.dom.SingleVariableDeclaration;
 import org.eclipse.jdt.core.dom.Type;
 import org.eclipse.jdt.core.dom.TypeLiteral;
 
@@ -39,9 +41,11 @@ import com.anjlab.eclipse.tapestry5.TapestryService.Matcher;
 import com.anjlab.eclipse.tapestry5.TapestryService.ServiceDefinition;
 import com.anjlab.eclipse.tapestry5.TapestryService.ServiceInstrumenter;
 import com.anjlab.eclipse.tapestry5.internal.AndMatcher;
-import com.anjlab.eclipse.tapestry5.internal.IdentityMatcher;
+import com.anjlab.eclipse.tapestry5.internal.DeclarationCapturingScope;
+import com.anjlab.eclipse.tapestry5.internal.DeclarationCapturingScope.Declaration;
 import com.anjlab.eclipse.tapestry5.internal.GlobPatternMatcher;
 import com.anjlab.eclipse.tapestry5.internal.IdentityIdMatcher;
+import com.anjlab.eclipse.tapestry5.internal.IdentityMatcher;
 import com.anjlab.eclipse.tapestry5.internal.MarkerMatcher;
 import com.anjlab.eclipse.tapestry5.internal.OrMatcher;
 
@@ -135,19 +139,34 @@ public abstract class TapestryModule
     
     public void initialize(IProgressMonitor monitor)
     {
-        monitor.subTask("Analyzing " + moduleClass.getFullyQualifiedName() + "...");
+        subTask(monitor, "markers");
         
         findMarkers(monitor);
         
+        subTask(monitor, "imported modules");
+        
         findSubModules(monitor);
+        
+        subTask(monitor, "library mappings");
         
         findLibraryMappings(monitor);
         
+        subTask(monitor, "JavaScript stacks");
+        
         findJavaScriptStacks(monitor);
+        
+        subTask(monitor, "components");
         
         findComponents(monitor);
         
+        subTask(monitor, "services");
+        
         findServices(monitor);
+    }
+
+    private void subTask(IProgressMonitor monitor, String name)
+    {
+        monitor.subTask("Analyzing " + moduleClass.getFullyQualifiedName() + " (" + name + ")...");
     }
     
     private volatile List<String> markers;
@@ -324,6 +343,36 @@ public abstract class TapestryModule
         
         compilationUnit.accept(new ASTVisitor()
         {
+            private final DeclarationCapturingScope declarations =
+                    new DeclarationCapturingScope();
+            
+            @Override
+            public boolean visit(MethodDeclaration node)
+            {
+                //  Capture method arguments in a scope
+                declarations.enterScope();
+                for (Object arg : node.parameters())
+                {
+                    if (arg instanceof SingleVariableDeclaration)
+                    {
+                        SingleVariableDeclaration variableDeclaration = (SingleVariableDeclaration) arg;
+                        
+                        declarations.add(new Declaration(
+                                variableDeclaration.getName().getIdentifier(),
+                                EclipseUtils.toClassName(getEclipseProject(), variableDeclaration.getType()),
+                                variableDeclaration));
+                    }
+                }
+                return super.visit(node);
+            }
+            
+            @Override
+            public void endVisit(MethodDeclaration node)
+            {
+                super.endVisit(node);
+                declarations.exitScope();
+            }
+            
             @Override
             public boolean visit(MethodInvocation node)
             {
@@ -332,36 +381,61 @@ public abstract class TapestryModule
                     return false;
                 }
                 
-                if (Arrays.binarySearch(ADD_OVERRIDE_INSTANCE, node.getName().toString()) < 0
-                        || node.arguments().size() != 2)
+                IType secondArgumentType = null;
+                
+                if (Arrays.binarySearch(ADD_OVERRIDE_INSTANCE, node.getName().toString()) >= 0
+                        && node.arguments().size() == 2)
                 {
-                    return super.visit(node);
+                    Object typeArg = node.arguments().get(1);
+                    
+                    if (typeArg instanceof TypeLiteral)
+                    {
+                        String className = EclipseUtils.toClassName(getEclipseProject(), (TypeLiteral) typeArg);
+                        
+                        if (StringUtils.isNotEmpty(className))
+                        {
+                            secondArgumentType = EclipseUtils.findTypeDeclaration(getEclipseProject(), className);
+                        }
+                    }
+                }
+                else if (Arrays.binarySearch(ADD_OVERRIDE, node.getName().toString()) >= 0
+                        && node.arguments().size() == 2)
+                {
+                    Object instanceArg = node.arguments().get(1);
+                    
+                    //  Maybe one of:
+                    //  1) new JavaScriptStack()
+                    //  2) simpleName
+                    
+                    if (instanceArg instanceof SimpleName)
+                    {
+                        String identifier = ((SimpleName) instanceArg).getIdentifier();
+                        Declaration declaration = declarations.findClosest(identifier);
+                        if (declaration != null)
+                        {
+                            secondArgumentType = EclipseUtils.findTypeDeclaration(getEclipseProject(), declaration.className);
+                        }
+                    }
+                    else if (instanceArg instanceof ClassInstanceCreation)
+                    {
+                        String className = EclipseUtils.toClassName(
+                                getEclipseProject(), ((ClassInstanceCreation) instanceArg).getType());
+                        
+                        if (StringUtils.isNotEmpty(className))
+                        {
+                            secondArgumentType = EclipseUtils.findTypeDeclaration(getEclipseProject(), className);
+                        }
+                    }
                 }
                 
-                Object typeArg = node.arguments().get(1);
-                
-                if (!(typeArg instanceof TypeLiteral))
-                {
-                    return super.visit(node);
-                }
-                
-                String className = EclipseUtils.toClassName(getEclipseProject(), (TypeLiteral) typeArg);
-                
-                if (className == null)
-                {
-                    return super.visit(node);
-                }
-                
-                IType declaration = EclipseUtils.findTypeDeclaration(getEclipseProject(), className);
-                
-                if (declaration == null)
+                if (secondArgumentType == null)
                 {
                     return super.visit(node);
                 }
                 
                 try
                 {
-                    String[] interfaceNames = declaration.getSuperInterfaceNames();
+                    String[] interfaceNames = secondArgumentType.getSuperInterfaceNames();
                     
                     for (String interfaceName : interfaceNames)
                     {
@@ -372,7 +446,7 @@ public abstract class TapestryModule
                             
                             javaScriptStacks.add(new JavaScriptStack(
                                     stackName,
-                                    declaration,
+                                    secondArgumentType,
                                     Arrays.binarySearch(OVERRIDES, node.getName().toString()) >= 0,
                                     new ASTNodeReference(getModuleClass(), node)));
                         }
@@ -381,7 +455,7 @@ public abstract class TapestryModule
                 catch (JavaModelException e)
                 {
                     Activator.getDefault().logWarning(
-                            "Unable to get super interfaces of " + declaration);
+                            "Unable to get super interfaces of " + secondArgumentType);
                 }
                 
                 return super.visit(node);
