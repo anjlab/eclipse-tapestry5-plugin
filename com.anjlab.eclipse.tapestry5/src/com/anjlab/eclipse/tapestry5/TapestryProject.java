@@ -564,4 +564,22 @@ public class TapestryProject
              ? null
              : stacks.get(0);
     }
+
+    public LibraryMapping findLibraryMapping(String packageName)
+    {
+        List<LibraryMapping> mappings = new ArrayList<LibraryMapping>();
+        
+        for (TapestryModule module : modules())
+        {
+            for (LibraryMapping mapping : module.libraryMappings())
+            {
+                if (packageName.startsWith(mapping.getRootPackage()))
+                {
+                    mappings.add(mapping);
+                }
+            }
+        }
+        
+        return mappings.size() > 0 ? mappings.get(0) : null;
+    }
 }

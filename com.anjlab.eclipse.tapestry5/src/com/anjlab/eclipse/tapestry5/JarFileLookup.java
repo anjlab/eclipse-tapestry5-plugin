@@ -20,6 +20,12 @@ public class JarFileLookup implements FileLookup
     }
 
     @Override
+    public String findClasspathRelativePath(TapestryFile file)
+    {
+        return file.getPath().toPortableString();
+    }
+
+    @Override
     public TapestryFile findClasspathFileCaseInsensitive(String path)
     {
         if (relativeTo == null)

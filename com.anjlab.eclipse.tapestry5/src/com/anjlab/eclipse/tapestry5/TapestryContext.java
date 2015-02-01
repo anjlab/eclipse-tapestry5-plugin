@@ -107,6 +107,13 @@ public abstract class TapestryContext
                     {
                         return null;
                     }
+                    
+                    @Override
+                    public String findClasspathRelativePath(TapestryFile file)
+                            throws JavaModelException
+                    {
+                        return null;
+                    }
                 };
             }
         };
