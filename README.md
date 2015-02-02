@@ -13,7 +13,7 @@ Tapestry Context View will appear (top right on this screenshot):
   - Provides context for opened Tapestry file
   - Includes code/template files of selected page/component, as well as list of properties files, @Import'ed and @Path @Inject'ed assets
   - Click on the file in a view to open this file
-  - Simple validation implemented to highlight assets & JavaScript stacks that couldn't be resolved (supports default/`classpath:` or `context:` binding prefixes for assets)
+  - Simple validation implemented to highlight assets, JavaScript stacks & T5.4 modules that couldn't be resolved (supports default/`classpath:` or `context:` binding prefixes for assets)
 
 ![Screenshot](https://f.cloud.github.com/assets/76579/1105085/c106e906-1918-11e3-9525-68839dcc89b2.png)
 
@@ -52,15 +52,16 @@ Tapestry5 completion proposals now available for all WTP Editors.
 
 Go to *Window* -> *Show View* -> *Other...*, filter by "Tapestry" and select "Tapestry Project Outline".
 
-<img src="https://cloud.githubusercontent.com/assets/76579/5566950/29f5b88c-8f49-11e4-91a7-7d51613e9879.png" width="750" alt="Tapestry Project Outline view">
+<img src="https://cloud.githubusercontent.com/assets/76579/5996402/084a58d2-aaba-11e4-9b06-a0eefe1ff862.png" width="600" alt="Tapestry Project Outline view">
 
 This view displays structure of your Tapestry5 project:
 
   - Select your main Tapestry5 project (i.e. the project with `web.xml`) in the "Project Explorer" to see its outline
   - View all Tapestry5 modules available in classpath of the main Tapestry5 project
-  - View [library mappings](http://tapestry.apache.org/component-libraries.html#ComponentLibraries-Step4%3AConfigurethevirtualfolder), [JavaScript stacks](https://tapestry.apache.org/javascript.html#JavaScript-JavaScriptStacks), and [services](http://tapestry.apache.org/defining-tapestry-ioc-services.html) declared in each module (only available if source code attached to the module class)
+  - View [library mappings](http://tapestry.apache.org/component-libraries.html#ComponentLibraries-Step4%3AConfigurethevirtualfolder), [JavaScript stacks](https://tapestry.apache.org/javascript.html#JavaScript-JavaScriptStacks), [Tapestry services](http://tapestry.apache.org/defining-tapestry-ioc-services.html), [decorators](http://tapestry.apache.org/tapestry-ioc-decorators.html), [advisors](http://tapestry.apache.org/service-advisors.html), and [configuration contributions](http://tapestry.apache.org/tapestry-ioc-configuration.html) declared in each module (only available if source code attached to the module class)
   - Double click on Module name or JavaScript stack to open its source code
-  - Double click on Library mapping or Service to open its declaration
+  - Double click on Library mapping, Service, Decorator, Advisor, or Contribution opens their declaration
+  - Selecting a item in Tapestry Project Outline view makes it appear in the Javadoc View and also highlights definition source range in a Java editor if the editor for this file is open & active
   - Content of this view will be updated automatically in background when you're adding new or updating existing modules, changing `web.xml`, or editing your pages/components files
   - More to come...
 
