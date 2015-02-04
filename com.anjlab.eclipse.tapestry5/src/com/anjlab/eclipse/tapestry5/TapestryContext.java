@@ -227,7 +227,7 @@ public abstract class TapestryContext
                             continue;
                         }
                         
-                        TapestryUtils.readValueFromAnnotation(path, "value", getProject(), context.getAST(), new ObjectCallback<String, JavaModelException>()
+                        EclipseUtils.readValueFromAnnotation(path, "value", getProject(), context.getAST(), new ObjectCallback<String, JavaModelException>()
                         {
                             @Override
                             public void callback(String value) throws JavaModelException
@@ -285,7 +285,7 @@ public abstract class TapestryContext
                             final int offset = node.getStartPosition();
                             final int length = node.getLength();
                             
-                            files.add(new ModuleReference(getJavaFile(), new ISourceRange()
+                            files.add(new JavaScriptModuleReference(getJavaFile(), new ISourceRange()
                             {
                                 @Override
                                 public int getOffset()
@@ -422,7 +422,7 @@ public abstract class TapestryContext
         }
         else if ("module".equals(type))
         {
-            files.add(new ModuleReference(getJavaFile(), sourceRange, fileName));
+            files.add(new JavaScriptModuleReference(getJavaFile(), sourceRange, fileName));
         }
         else
         {

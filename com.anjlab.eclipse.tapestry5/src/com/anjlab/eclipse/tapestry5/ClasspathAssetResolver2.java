@@ -67,7 +67,9 @@ public class ClasspathAssetResolver2 extends ClasspathAssetResolver
                 IPath subDir = parentDir.makeRelativeTo(rootPath).addTrailingSeparator();
                 
                 if ("components".equals(subDir.segment(0))
-                      || "pages".equals(subDir.segment(0)))
+                      || "pages".equals(subDir.segment(0))
+                     || "mixins".equals(subDir.segment(0))
+                       || "base".equals(subDir.segment(0)))
                 {
                     //  Component & Page assets share the same virtual folder
                     subDir = subDir.removeFirstSegments(1);

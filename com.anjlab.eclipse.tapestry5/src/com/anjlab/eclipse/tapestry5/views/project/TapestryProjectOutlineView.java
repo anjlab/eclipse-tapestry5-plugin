@@ -38,7 +38,7 @@ import com.anjlab.eclipse.tapestry5.SetEditorCaretPositionOffsetLength;
 import com.anjlab.eclipse.tapestry5.TapestryContext;
 import com.anjlab.eclipse.tapestry5.TapestryFile;
 import com.anjlab.eclipse.tapestry5.TapestryModule;
-import com.anjlab.eclipse.tapestry5.TapestryModule.ModuleReference;
+import com.anjlab.eclipse.tapestry5.TapestryModuleReference;
 import com.anjlab.eclipse.tapestry5.TapestryProject;
 import com.anjlab.eclipse.tapestry5.TapestryService;
 import com.anjlab.eclipse.tapestry5.TapestryService.ServiceInstrumenter;
@@ -215,7 +215,7 @@ public class TapestryProjectOutlineView extends ViewPart
                     {
                         getSite().getSelectionProvider().setSelection(new StructuredSelection(element));
                         
-                        for (ModuleReference reference : module.references())
+                        for (TapestryModuleReference reference : module.references())
                         {
                             updateSelectionInActiveEditor(reference.getReference());
                         }

@@ -19,10 +19,9 @@ import org.eclipse.jdt.core.IClassFile;
 import org.eclipse.jdt.core.ICompilationUnit;
 import org.eclipse.jdt.core.IJarEntryResource;
 import org.eclipse.jdt.core.IJavaProject;
-import org.eclipse.jdt.core.IMemberValuePair;
+import org.eclipse.jdt.core.IMethod;
 import org.eclipse.jdt.core.IPackageFragmentRoot;
 import org.eclipse.jdt.core.JavaModelException;
-import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.Annotation;
 import org.eclipse.jdt.internal.ui.javaeditor.IClassFileEditorInput;
 import org.eclipse.jface.viewers.ISelection;
@@ -37,8 +36,6 @@ import org.eclipse.ui.IWorkbenchWindow;
 import org.eclipse.ui.PlatformUI;
 import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
-
-import com.anjlab.eclipse.tapestry5.TapestryModule.ObjectCallback;
 
 @SuppressWarnings("restriction")
 public class TapestryUtils
@@ -746,44 +743,6 @@ public class TapestryUtils
             || namespace.startsWith("tapestry-library:");
     }
 
-    public static void readValueFromAnnotation(
-            IAnnotation annotation, String memberName, IProject project, AST ast,
-            ObjectCallback<String, JavaModelException> callback)
-                    throws JavaModelException
-    {
-        if (annotation == null)
-        {
-            return;
-        }
-        
-        IMemberValuePair[] pairs = annotation.getMemberValuePairs();
-        
-        for (IMemberValuePair pair : pairs)
-        {
-            if (memberName.equals(pair.getMemberName()))
-            {
-                if (pair.getValueKind() == IMemberValuePair.K_UNKNOWN)
-                {
-                    //  The value is unknown at this stage
-                    continue;
-                }
-                else
-                {
-                    Object[] values = pair.getValue().getClass().isArray()
-                            ? (Object[]) pair.getValue()
-                            : new Object[] { pair.getValue() };
-           
-                   for (Object value : values)
-                   {
-                       String eval = EclipseUtils.eval(value, pair.getValueKind(), ast, project);
-                       
-                       callback.callback(eval);
-                   }
-                }
-            }
-        }
-    }
-
     public static final String ORG_APACHE_TAPESTRY5_IOC_ANNOTATIONS_SUB_MODULE = "org.apache.tapestry5.ioc.annotations.SubModule";
     public static final String ORG_APACHE_TAPESTRY5_IOC_ANNOTATIONS_IMPORT_MODULE = "org.apache.tapestry5.ioc.annotations.ImportModule";
     public static final String ORG_APACHE_TAPESTRY5_IOC_ANNOTATIONS_ADVISE = "org.apache.tapestry5.ioc.annotations.Advise";
@@ -795,5 +754,42 @@ public class TapestryUtils
     public static final String ORG_APACHE_TAPESTRY5_IOC_ANNOTATIONS_MATCH = "org.apache.tapestry5.ioc.annotations.Match";
     public static final String ORG_APACHE_TAPESTRY5_IOC_ANNOTATIONS_OPTIONAL = "org.apache.tapestry5.ioc.annotations.Optional";
     public static final String ORG_APACHE_TAPESTRY5_IOC_ANNOTATIONS_MARKER = "org.apache.tapestry5.ioc.annotations.Marker";
+
+    public static final String BUILD_METHOD_NAME_PREFIX = "build";
+    public static final String CONTRIBUTE_METHOD_NAME_PREFIX = "contribute";
+    public static final String ADVISE_METHOD_NAME_PREFIX = "advise";
+    public static final String DECORATE_METHOD_NAME_PREFIX = "decorate";
+
+    public static boolean isStartupMethod(IMethod method) throws JavaModelException
+    {
+        return method.getElementName().equals("startup")
+                || findAnnotation(
+                        method.getAnnotations(),
+                        ORG_APACHE_TAPESTRY5_IOC_ANNOTATIONS_STARTUP) != null;
+    }
+
+    public static boolean isContributorMethod(IMethod method) throws JavaModelException
+    {
+        return method.getElementName().startsWith(CONTRIBUTE_METHOD_NAME_PREFIX)
+                || findAnnotation(
+                        method.getAnnotations(),
+                        ORG_APACHE_TAPESTRY5_IOC_ANNOTATIONS_CONTRIBUTE) != null;
+    }
+
+    public static boolean isAdvisorMethod(IMethod method) throws JavaModelException
+    {
+        return method.getElementName().startsWith(ADVISE_METHOD_NAME_PREFIX)
+                || findAnnotation(
+                        method.getAnnotations(),
+                        ORG_APACHE_TAPESTRY5_IOC_ANNOTATIONS_ADVISE) != null;
+    }
+
+    public static boolean isDecoratorMethod(IMethod method) throws JavaModelException
+    {
+        return method.getElementName().startsWith(DECORATE_METHOD_NAME_PREFIX)
+            || findAnnotation(
+                    method.getAnnotations(),
+                    ORG_APACHE_TAPESTRY5_IOC_ANNOTATIONS_DECORATE) != null;
+    }
 
 }

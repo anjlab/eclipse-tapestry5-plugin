@@ -4,7 +4,7 @@ import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.Path;
 import org.eclipse.jdt.core.ISourceRange;
 
-public class ModuleReference extends AbstractFileReference
+public class JavaScriptModuleReference extends AbstractFileReference
 {
 
     private static final String MARKER_NAME = "ModuleName";
@@ -12,7 +12,7 @@ public class ModuleReference extends AbstractFileReference
     private final String moduleName;
     private final String functionName;
     
-    public ModuleReference(TapestryFile javaFile, ISourceRange sourceRange, String reference)
+    public JavaScriptModuleReference(TapestryFile javaFile, ISourceRange sourceRange, String reference)
     {
         super(javaFile, sourceRange, reference, MARKER_NAME);
         

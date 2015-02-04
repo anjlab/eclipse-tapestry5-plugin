@@ -11,6 +11,7 @@ import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.IResourceDelta;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.Platform;
+import org.eclipse.jdt.core.IAnnotation;
 import org.eclipse.jdt.core.IField;
 import org.eclipse.jdt.core.IJavaElement;
 import org.eclipse.jdt.core.IMember;
@@ -53,6 +54,8 @@ import org.eclipse.ui.IWorkbenchWindow;
 import org.eclipse.ui.PartInitException;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.ide.IDE;
+
+import com.anjlab.eclipse.tapestry5.TapestryModule.ObjectCallback;
 
 @SuppressWarnings("restriction")
 public class EclipseUtils
@@ -635,6 +638,71 @@ public class EclipseUtils
             element = element.getParent();
         }
         return (IType) element;
+    }
+
+    public static void readValueFromAnnotation(
+            IAnnotation annotation, String memberName, IProject project, AST ast,
+            ObjectCallback<String, JavaModelException> callback)
+                    throws JavaModelException
+    {
+        if (annotation == null)
+        {
+            return;
+        }
+        
+        IMemberValuePair[] pairs = annotation.getMemberValuePairs();
+        
+        for (IMemberValuePair pair : pairs)
+        {
+            if (memberName.equals(pair.getMemberName()))
+            {
+                if (pair.getValueKind() == IMemberValuePair.K_UNKNOWN)
+                {
+                    //  The value is unknown at this stage
+                    continue;
+                }
+                else
+                {
+                    Object[] values = pair.getValue().getClass().isArray()
+                            ? (Object[]) pair.getValue()
+                            : new Object[] { pair.getValue() };
+           
+                   for (Object value : values)
+                   {
+                       String eval = eval(value, pair.getValueKind(), ast, project);
+                       
+                       callback.callback(eval);
+                   }
+                }
+            }
+        }
+    }
+
+    public static String[] readValuesFromAnnotation(IProject project, IAnnotation annotation, String name) throws JavaModelException
+    {
+        final List<String> values = new ArrayList<String>();
+        
+        readValueFromAnnotation(
+                annotation,
+                name,
+                project,
+                AST.newAST(getParserLevel()),
+                new TapestryModule.ObjectCallback<String, JavaModelException>()
+                {
+                    @Override
+                    public void callback(String value) throws JavaModelException
+                    {
+                        values.add(value);
+                    }
+                });
+        
+        return values.toArray(new String[values.size()]);
+    }
+
+    public static String readFirstValueFromAnnotation(IProject project, IAnnotation annotation, String name) throws JavaModelException
+    {
+        String[] values = readValuesFromAnnotation(project, annotation, name);
+        return values.length > 0 ? values[0] : null;
     }
 
 }
