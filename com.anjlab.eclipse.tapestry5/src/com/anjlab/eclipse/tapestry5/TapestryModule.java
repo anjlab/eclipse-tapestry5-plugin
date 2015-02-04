@@ -797,11 +797,6 @@ public abstract class TapestryModule
         return components;
     }
     
-    public interface ObjectCallback<T, E extends Throwable>
-    {
-        void callback(T obj) throws E;
-    }
-    
     private synchronized void findComponents(IProgressMonitor monitor)
     {
         if (components != null)

@@ -26,7 +26,6 @@ import org.eclipse.jdt.core.dom.ASTVisitor;
 import org.eclipse.jdt.core.dom.MethodInvocation;
 import org.eclipse.jdt.internal.ui.text.javadoc.JavadocContentAccess2;
 
-import com.anjlab.eclipse.tapestry5.TapestryModule.ObjectCallback;
 import com.anjlab.eclipse.tapestry5.internal.CompilationUnitContext;
 import com.anjlab.eclipse.tapestry5.internal.CompilationUnitContext.CompilationUnitLifecycle;
 import com.anjlab.eclipse.tapestry5.internal.CompilationUnitContext.ContextRunnable;

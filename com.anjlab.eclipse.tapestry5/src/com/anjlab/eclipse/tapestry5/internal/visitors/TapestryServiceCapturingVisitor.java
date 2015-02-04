@@ -13,8 +13,8 @@ import org.eclipse.jdt.core.dom.TypeLiteral;
 
 import com.anjlab.eclipse.tapestry5.DeclarationReference.ASTNodeReference;
 import com.anjlab.eclipse.tapestry5.EclipseUtils;
+import com.anjlab.eclipse.tapestry5.ObjectCallback;
 import com.anjlab.eclipse.tapestry5.TapestryModule;
-import com.anjlab.eclipse.tapestry5.TapestryModule.ObjectCallback;
 import com.anjlab.eclipse.tapestry5.TapestryService;
 import com.anjlab.eclipse.tapestry5.TapestryService.ServiceDefinition;
 import com.anjlab.eclipse.tapestry5.TapestryUtils;

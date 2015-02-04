@@ -55,8 +55,6 @@ import org.eclipse.ui.PartInitException;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.ide.IDE;
 
-import com.anjlab.eclipse.tapestry5.TapestryModule.ObjectCallback;
-
 @SuppressWarnings("restriction")
 public class EclipseUtils
 {
@@ -687,7 +685,7 @@ public class EclipseUtils
                 name,
                 project,
                 AST.newAST(getParserLevel()),
-                new TapestryModule.ObjectCallback<String, JavaModelException>()
+                new ObjectCallback<String, JavaModelException>()
                 {
                     @Override
                     public void callback(String value) throws JavaModelException

@@ -16,8 +16,8 @@ import com.anjlab.eclipse.tapestry5.Activator;
 import com.anjlab.eclipse.tapestry5.DeclarationReference.ASTNodeReference;
 import com.anjlab.eclipse.tapestry5.EclipseUtils;
 import com.anjlab.eclipse.tapestry5.LibraryMapping;
+import com.anjlab.eclipse.tapestry5.ObjectCallback;
 import com.anjlab.eclipse.tapestry5.TapestryModule;
-import com.anjlab.eclipse.tapestry5.TapestryModule.ObjectCallback;
 import com.anjlab.eclipse.tapestry5.TapestryUtils;
 
 public class LibraryMappingCapturingVisitor extends ASTVisitor
