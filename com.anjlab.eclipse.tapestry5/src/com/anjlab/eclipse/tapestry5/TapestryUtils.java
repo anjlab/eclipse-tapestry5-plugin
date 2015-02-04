@@ -177,7 +177,7 @@ public class TapestryUtils
                 || "org.apache.tapestry5.services.javascript.JavaScriptStack".equals(interfaceName);
     }
 
-    public static String simpleName(String className)
+    public static String getSimpleName(String className)
     {
         int lastDot = className.lastIndexOf('.');
         
@@ -195,7 +195,7 @@ public class TapestryUtils
         {
             String name = annotation.getElementName();
             
-            if (name.equals(typeName) || name.equals(simpleName(typeName)))
+            if (name.equals(typeName) || name.equals(getSimpleName(typeName)))
             {
                 return annotation;
             }

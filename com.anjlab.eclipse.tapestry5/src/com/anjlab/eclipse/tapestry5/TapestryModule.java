@@ -38,6 +38,7 @@ import org.eclipse.jdt.core.dom.TypeLiteral;
 
 import com.anjlab.eclipse.tapestry5.DeclarationReference.ASTNodeReference;
 import com.anjlab.eclipse.tapestry5.DeclarationReference.JavaElementReference;
+import com.anjlab.eclipse.tapestry5.DeclarationReference.NonJavaReference;
 import com.anjlab.eclipse.tapestry5.TapestryService.InstrumenterType;
 import com.anjlab.eclipse.tapestry5.TapestryService.Matcher;
 import com.anjlab.eclipse.tapestry5.TapestryService.ServiceDefinition;
@@ -71,6 +72,10 @@ public abstract class TapestryModule
         
         public ModuleReference(DeclarationReference reference)
         {
+            if (reference == null)
+            {
+                throw new NullPointerException("reference == null");
+            }
             this.reference = reference;
         }
 
@@ -85,6 +90,31 @@ public abstract class TapestryModule
         public String toString()
         {
             return getLabel();
+        }
+        
+        @Override
+        public boolean equals(Object obj)
+        {
+            if (obj == this)
+            {
+                return true;
+            }
+            
+            if (!(obj instanceof ModuleReference))
+            {
+                return false;
+            }
+            
+            ModuleReference other = (ModuleReference) obj;
+            
+            if (reference instanceof NonJavaReference
+                    && other.reference instanceof NonJavaReference)
+            {
+                //  Non-Java references can only be compared by label
+                return StringUtils.equals(getLabel(), other.getLabel());
+            }
+            
+            return reference.equals(other.reference);
         }
     }
     
@@ -104,24 +134,12 @@ public abstract class TapestryModule
         return moduleClass.getJavaProject().getProject();
     }
     
-    public ModuleReference getReference()
-    {
-        return references.get(0);
-    }
-    
-    public void setReference(ModuleReference reference)
-    {
-        if (references.size() > 0)
-        {
-            throw new IllegalStateException();
-        }
-        
-        addReference(reference);
-    }
-    
     public void addReference(ModuleReference reference)
     {
-        this.references.add(reference);
+        if (!references.contains(reference))
+        {
+            references.add(reference);
+        }
     }
     
     public List<ModuleReference> references()
@@ -280,12 +298,13 @@ public abstract class TapestryModule
                                             @Override
                                             public void callback(TapestryModule obj)
                                             {
-                                                obj.setReference(new ModuleReference(new JavaElementReference(annotation))
+                                                obj.addReference(new ModuleReference(new JavaElementReference(annotation))
                                                 {
                                                     @Override
                                                     public String getLabel()
                                                     {
-                                                        return "via @SubModule of " + getName();
+                                                        String annotationName = TapestryUtils.getSimpleName(annotation.getElementName());
+                                                        return "via @" + annotationName + " of " + getName();
                                                     }
                                                 });
                                             }
@@ -820,12 +839,12 @@ public abstract class TapestryModule
                         {
                             if (StringUtils.isNotEmpty(definition.getImplClass()))
                             {
-                                definition.setId(TapestryUtils.simpleName(definition.getImplClass()));
+                                definition.setId(TapestryUtils.getSimpleName(definition.getImplClass()));
                             }
                         }
                         else if (StringUtils.isEmpty(definition.getId()))
                         {
-                            definition.setId(TapestryUtils.simpleName(definition.getIntfClass()));
+                            definition.setId(TapestryUtils.getSimpleName(definition.getIntfClass()));
                         }
                         
                         copyMarkersFrom(definition.getIntfClass());
@@ -1083,7 +1102,7 @@ public abstract class TapestryModule
         return StringUtils.isNotEmpty(id)
              ? id
              : StringUtils.isNotEmpty(serviceInterface)
-                 ? TapestryUtils.simpleName(serviceInterface)
+                 ? TapestryUtils.getSimpleName(serviceInterface)
                  : null;
     }
 
@@ -1139,7 +1158,7 @@ public abstract class TapestryModule
             
             if (StringUtils.isEmpty(id))
             {
-                id = TapestryUtils.simpleName(typeName);
+                id = TapestryUtils.getSimpleName(typeName);
             }
             
             serviceId.set(id);

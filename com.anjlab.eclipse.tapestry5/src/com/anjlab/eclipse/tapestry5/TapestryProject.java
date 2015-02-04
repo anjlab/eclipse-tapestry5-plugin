@@ -206,7 +206,7 @@ public class TapestryProject
                         public void callback(TapestryModule module)
                         {
                             module.setAppModule(true);
-                            module.setReference(new ModuleReference(new NonJavaReference())
+                            module.addReference(new ModuleReference(new NonJavaReference())
                             {
                                 @Override
                                 public String getLabel()
@@ -238,7 +238,7 @@ public class TapestryProject
                         @Override
                         public void callback(TapestryModule obj)
                         {
-                            obj.setReference(new ModuleReference(new NonJavaReference())
+                            obj.addReference(new ModuleReference(new NonJavaReference())
                             {
                                 @Override
                                 public String getLabel()
@@ -259,7 +259,7 @@ public class TapestryProject
             public void callback(TapestryModule module)
             {
                 module.setTapestryCoreModule(true);
-                module.setReference(new ModuleReference(new NonJavaReference())
+                module.addReference(new ModuleReference(new NonJavaReference())
                 {
                     @Override
                     public String getLabel()
@@ -281,7 +281,7 @@ public class TapestryProject
             @Override
             public void callback(TapestryModule module)
             {
-                module.setReference(new ModuleReference(new NonJavaReference())
+                module.addReference(new ModuleReference(new NonJavaReference())
                 {
                     @Override
                     public String getLabel()
@@ -340,7 +340,7 @@ public class TapestryProject
                                                     @Override
                                                     public void callback(TapestryModule obj)
                                                     {
-                                                        obj.setReference(new ModuleReference(new NonJavaReference())
+                                                        obj.addReference(new ModuleReference(new NonJavaReference())
                                                         {
                                                             @Override
                                                             public String getLabel()
@@ -387,12 +387,12 @@ public class TapestryProject
                 .getTapestryModuleFactory()
                 .createTapestryModule(this, moduleClass, moduleCreated);
         
-        addModule(monitor, modules, module);
+        addModule(monitor, modules, module, moduleCreated);
         
         return module;
     }
 
-    private void addModule(IProgressMonitor monitor, List<TapestryModule> modules, TapestryModule module)
+    private void addModule(IProgressMonitor monitor, List<TapestryModule> modules, TapestryModule module, ObjectCallback<TapestryModule, RuntimeException> moduleCreated)
     {
         if (monitor.isCanceled())
         {
@@ -405,7 +405,17 @@ public class TapestryProject
         {
             TapestryModule existingModule = modules.get(index);
             
-            existingModule.addReference(module.getReference());
+            if (existingModule != module)
+            {
+                for (ModuleReference reference : module.references())
+                {
+                    existingModule.addReference(reference);
+                }
+            }
+            else
+            {
+                moduleCreated.callback(existingModule);
+            }
             
             return;
         }
@@ -416,7 +426,7 @@ public class TapestryProject
         
         for (TapestryModule subModule :  module.subModules())
         {
-            addModule(monitor, modules, subModule);
+            addModule(monitor, modules, subModule, moduleCreated);
         }
     }
 

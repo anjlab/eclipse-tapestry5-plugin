@@ -34,6 +34,27 @@ public interface DeclarationReference
                     new SetEditorCaretPositionOffsetLength(
                             node.getStartPosition(), node.getLength()));
         }
+        
+        @Override
+        public boolean equals(Object obj)
+        {
+            if (this == obj)
+            {
+                return true;
+            }
+            
+            if (!(obj instanceof ASTNodeReference))
+            {
+                return false;
+            }
+            
+            if (element == null || node == null)
+            {
+                return false;
+            }
+            
+            return element.equals(((JavaElementReference) obj).element);
+        }
     }
 
     public static class JavaElementReference implements DeclarationReference
@@ -55,6 +76,27 @@ public interface DeclarationReference
         public void openInEditor()
         {
             EclipseUtils.openDeclaration(element, null);
+        }
+        
+        @Override
+        public boolean equals(Object obj)
+        {
+            if (this == obj)
+            {
+                return true;
+            }
+            
+            if (!(obj instanceof JavaElementReference))
+            {
+                return false;
+            }
+            
+            if (element == null)
+            {
+                return false;
+            }
+            
+            return element.equals(((JavaElementReference) obj).element);
         }
     }
 
