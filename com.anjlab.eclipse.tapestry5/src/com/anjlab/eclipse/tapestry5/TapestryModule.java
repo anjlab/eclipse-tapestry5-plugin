@@ -1,14 +1,9 @@
 package com.anjlab.eclipse.tapestry5;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
-import java.util.concurrent.atomic.AtomicReference;
 
-import org.apache.commons.lang.StringUtils;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.runtime.IProgressMonitor;
@@ -29,19 +24,12 @@ import org.eclipse.jdt.core.dom.MethodDeclaration;
 
 import com.anjlab.eclipse.tapestry5.DeclarationReference.ASTNodeReference;
 import com.anjlab.eclipse.tapestry5.DeclarationReference.JavaElementReference;
-import com.anjlab.eclipse.tapestry5.TapestryService.InstrumenterType;
-import com.anjlab.eclipse.tapestry5.TapestryService.Matcher;
 import com.anjlab.eclipse.tapestry5.TapestryService.ServiceDefinition;
 import com.anjlab.eclipse.tapestry5.TapestryService.ServiceInstrumenter;
-import com.anjlab.eclipse.tapestry5.internal.AndMatcher;
-import com.anjlab.eclipse.tapestry5.internal.GlobPatternMatcher;
-import com.anjlab.eclipse.tapestry5.internal.IdentityIdMatcher;
-import com.anjlab.eclipse.tapestry5.internal.IdentityMatcher;
-import com.anjlab.eclipse.tapestry5.internal.MarkerMatcher;
-import com.anjlab.eclipse.tapestry5.internal.OrMatcher;
 import com.anjlab.eclipse.tapestry5.internal.visitors.JavaScriptStackCapturingVisitor;
 import com.anjlab.eclipse.tapestry5.internal.visitors.LibraryMappingCapturingVisitor;
 import com.anjlab.eclipse.tapestry5.internal.visitors.TapestryServiceCapturingVisitor;
+import com.anjlab.eclipse.tapestry5.internal.visitors.TapestryServiceDiscovery;
 
 public abstract class TapestryModule
 {
@@ -464,9 +452,53 @@ public abstract class TapestryModule
         advisors = new ArrayList<ServiceInstrumenter>();
         contributors = new ArrayList<ServiceInstrumenter>();
         
-        enumModuleMethods(monitor);
+        new TapestryServiceDiscovery(
+                monitor,
+                this,
+                createServiceFoundCallback(),
+                createAdvisorFoundCallback(),
+                createContributorFoundCallback(),
+                createDecoratorFoundCallback())
+            .run();
         
         visitBindInvocations(monitor);
+    }
+
+    private ObjectCallback<ServiceInstrumenter, RuntimeException> createDecoratorFoundCallback()
+    {
+        return new ObjectCallback<ServiceInstrumenter, RuntimeException>()
+        {
+            
+            @Override
+            public void callback(ServiceInstrumenter decorator)
+            {
+                decorators.add(decorator);
+            }
+        };
+    }
+
+    private ObjectCallback<ServiceInstrumenter, RuntimeException> createContributorFoundCallback()
+    {
+        return new ObjectCallback<ServiceInstrumenter, RuntimeException>()
+        {
+            @Override
+            public void callback(ServiceInstrumenter contributor)
+            {
+                contributors.add(contributor);
+            }
+        };
+    }
+
+    private ObjectCallback<ServiceInstrumenter, RuntimeException> createAdvisorFoundCallback()
+    {
+        return new ObjectCallback<ServiceInstrumenter, RuntimeException>()
+        {
+            @Override
+            public void callback(ServiceInstrumenter advisor)
+            {
+                advisors.add(advisor);
+            }
+        };
     }
 
     private void visitBindInvocations(final IProgressMonitor monitor)
@@ -479,277 +511,22 @@ public abstract class TapestryModule
         }
         
         compilationUnit.accept(
-                new TapestryServiceCapturingVisitor(monitor, this,
-                        new ObjectCallback<TapestryService, RuntimeException>()
-                        {
-                            @Override
-                            public void callback(TapestryService service)
-                            {
-                                services.add(service);
-                            }
-                        }));
+                new TapestryServiceCapturingVisitor(
+                        monitor, this, createServiceFoundCallback()));
     }
 
-    private void enumModuleMethods(IProgressMonitor monitor)
+    private ObjectCallback<TapestryService, RuntimeException> createServiceFoundCallback()
     {
-        try
+        return new ObjectCallback<TapestryService, RuntimeException>()
         {
-            for (IMethod method : getModuleClass().getMethods())
+            @Override
+            public void callback(TapestryService service)
             {
-                if (monitor.isCanceled())
-                {
-                    return;
-                }
-                
-                try
-                {
-                    if (isServiceBuilderMethod(method))
-                    {
-                        addServiceFromBuilderMethod(method);
-                    }
-                    else if (TapestryUtils.isDecoratorMethod(method))
-                    {
-                        addServiceDecorator(method);
-                    }
-                    else if (TapestryUtils.isAdvisorMethod(method))
-                    {
-                        addServiceAdvisor(method);
-                    }
-                    else if (TapestryUtils.isContributorMethod(method))
-                    {
-                        addContributionMethod(method);
-                    }
-                    else if (TapestryUtils.isStartupMethod(method))
-                    {
-                        addStartupContributor(method);
-                    }
-                }
-                catch (Exception e)
-                {
-                    Activator.getDefault().logError(
-                            "Error handling method " + method.getElementName()
-                            + " for " + getModuleClass().getFullyQualifiedName(), e);
-                }
+                services.add(service);
             }
-        }
-        catch (Exception e)
-        {
-            Activator.getDefault().logError(
-                    "Error enumerating methods for " + getModuleClass().getFullyQualifiedName(), e);
-        }
+        };
     }
 
-    private void addStartupContributor(IMethod method) throws JavaModelException
-    {
-        contributors.add(new ServiceInstrumenter()
-            .setType(InstrumenterType.CONTRIBUTOR)
-            .setId("RegistryStartup")
-            .setReference(new JavaElementReference(method))
-            .setServiceMatcher(new IdentityIdMatcher("RegistryStartup"))
-            .setConstraints(extractConstraints(method)));
-    }
-
-    private void addContributionMethod(IMethod method) throws JavaModelException
-    {
-        IAnnotation annotation = TapestryUtils.findAnnotation(method.getAnnotations(),
-                TapestryUtils.ORG_APACHE_TAPESTRY5_IOC_ANNOTATIONS_CONTRIBUTE);
-        
-        String serviceInterface = annotation == null ? null
-                : EclipseUtils.readFirstValueFromAnnotation(getEclipseProject(), annotation, "value");
-        
-        String id = annotation == null
-                ? stripMethodPrefix(method, TapestryUtils.CONTRIBUTE_METHOD_NAME_PREFIX)
-                : extractId(serviceInterface, null);
-        
-        List<String> markers = extractMarkers(method, new HashSet<String>(Arrays.asList(
-                TapestryUtils.ORG_APACHE_TAPESTRY5_IOC_ANNOTATIONS_CONTRIBUTE,
-                TapestryUtils.ORG_APACHE_TAPESTRY5_IOC_ANNOTATIONS_ORDER,
-                TapestryUtils.ORG_APACHE_TAPESTRY5_IOC_ANNOTATIONS_MATCH)));
-        
-        Matcher serviceMatcher = createMatcher(method, id, markers);
-        
-        contributors.add(new ServiceInstrumenter()
-            .setType(InstrumenterType.CONTRIBUTOR)
-            .setId(id)
-            .setReference(new JavaElementReference(method))
-            .setServiceMatcher(serviceMatcher)
-            .setConstraints(extractConstraints(method)));
-    }
-
-    private void addServiceAdvisor(IMethod method) throws JavaModelException
-    {
-        advisors.add(
-                createInstrumenter(method,
-                        TapestryUtils.ORG_APACHE_TAPESTRY5_IOC_ANNOTATIONS_ADVISE,
-                        TapestryUtils.ADVISE_METHOD_NAME_PREFIX,
-                        InstrumenterType.ADVISOR));
-    }
-
-    private void addServiceDecorator(IMethod method) throws JavaModelException
-    {
-        decorators.add(
-                createInstrumenter(method,
-                        TapestryUtils.ORG_APACHE_TAPESTRY5_IOC_ANNOTATIONS_DECORATE,
-                        TapestryUtils.DECORATE_METHOD_NAME_PREFIX,
-                        InstrumenterType.DECORATOR));
-    }
-
-    private ServiceInstrumenter createInstrumenter(
-            IMethod method, String instrumenterAnnotation, String methodNamePrefix, InstrumenterType instrumenterType)
-                    throws JavaModelException
-    {
-        IAnnotation annotation = TapestryUtils.findAnnotation(method.getAnnotations(),
-                instrumenterAnnotation);
-        
-        String serviceInterface = annotation == null ? null
-                : EclipseUtils.readFirstValueFromAnnotation(getEclipseProject(), annotation, "serviceInterface");
-        
-        String id = annotation == null
-                ? stripMethodPrefix(method, methodNamePrefix)
-                : extractId(serviceInterface, EclipseUtils.readFirstValueFromAnnotation(getEclipseProject(), annotation, "id"));
-        
-        List<String> markers = extractMarkers(method, new HashSet<String>(Arrays.asList(
-                instrumenterAnnotation,
-                TapestryUtils.ORG_APACHE_TAPESTRY5_IOC_ANNOTATIONS_ORDER,
-                TapestryUtils.ORG_APACHE_TAPESTRY5_IOC_ANNOTATIONS_MATCH)));
-        
-        Matcher serviceMatcher = createMatcher(method, id, markers);
-        
-        return new ServiceInstrumenter()
-                .setType(instrumenterType)
-                .setId(id)
-                .setReference(new JavaElementReference(method))
-                .setServiceMatcher(serviceMatcher)
-                .setConstraints(extractConstraints(method));
-    }
-
-    private String[] extractConstraints(IMethod method) throws JavaModelException
-    {
-        IAnnotation annotation = TapestryUtils.findAnnotation(method.getAnnotations(),
-                TapestryUtils.ORG_APACHE_TAPESTRY5_IOC_ANNOTATIONS_ORDER);
-        
-        return annotation == null ? null : EclipseUtils.readValuesFromAnnotation(getEclipseProject(), annotation, "value");
-    }
-
-    private Matcher createMatcher(IMethod method, String serviceId, List<String> markers) throws JavaModelException
-    {
-        IAnnotation match = TapestryUtils.findAnnotation(method.getAnnotations(),
-                TapestryUtils.ORG_APACHE_TAPESTRY5_IOC_ANNOTATIONS_MATCH);
-        
-        Matcher patternMatcher;
-        
-        if (match != null)
-        {
-            patternMatcher = new OrMatcher();
-            
-            String[] patterns = EclipseUtils.readValuesFromAnnotation(getEclipseProject(), match, "value");
-            
-            for (String pattern : patterns)
-            {
-                ((OrMatcher) patternMatcher).add(new GlobPatternMatcher(pattern));
-            }
-        }
-        else
-        {
-            patternMatcher = StringUtils.isNotEmpty(serviceId)
-                    ? new IdentityIdMatcher(serviceId)
-                    // Match everything, ambiguity would probably be resolved with markers
-                    : new IdentityMatcher(true);
-        }
-        
-        if (markers.size() > 0)
-        {
-            OrMatcher markerMatcher = new OrMatcher();
-            
-            for (String marker : markers)
-            {
-                markerMatcher.add(new MarkerMatcher(marker));
-            }
-            
-            AndMatcher andMatcher = new AndMatcher();
-            andMatcher.add(patternMatcher);
-            andMatcher.add(markerMatcher);
-            
-            return andMatcher;
-        }
-        
-        return patternMatcher;
-    }
-
-    private List<String> extractMarkers(IAnnotatable annotatable, Set<String> skipAnnotations) throws JavaModelException
-    {
-        List<String> markers = new ArrayList<String>();
-        
-        for (IAnnotation annotation : annotatable.getAnnotations())
-        {
-            String typeName = EclipseUtils.resolveTypeName(
-                    moduleClass, annotation.getElementName());
-            
-            if (skipAnnotations.contains(typeName))
-            {
-                continue;
-            }
-            
-            markers.add(typeName);
-        }
-        return markers;
-    }
-
-    private String extractId(String serviceInterface, String id)
-    {
-        return StringUtils.isNotEmpty(id)
-             ? id
-             : StringUtils.isNotEmpty(serviceInterface)
-                 ? TapestryUtils.getSimpleName(serviceInterface)
-                 : null;
-    }
-
-    private void addServiceFromBuilderMethod(IMethod method) throws JavaModelException
-    {
-        IAnnotation annotation = TapestryUtils.findAnnotation(
-                method.getAnnotations(),
-                TapestryUtils.ORG_APACHE_TAPESTRY5_IOC_ANNOTATIONS_SERVICE_ID);
-        
-        String typeName = EclipseUtils.resolveTypeNameForMember(moduleClass, method, method.getReturnType());
-        
-        final AtomicReference<String> serviceId = new AtomicReference<String>();
-        
-        if (annotation != null)
-        {
-            serviceId.set(EclipseUtils.readFirstValueFromAnnotation(getEclipseProject(), annotation, "value"));
-        }
-        else
-        {
-            String id = stripMethodPrefix(method, TapestryUtils.BUILD_METHOD_NAME_PREFIX);
-            
-            if (StringUtils.isEmpty(id))
-            {
-                id = TapestryUtils.getSimpleName(typeName);
-            }
-            
-            serviceId.set(id);
-        }
-        
-        services.add(new TapestryService(
-                TapestryModule.this,
-                new ServiceDefinition()
-                    .setIntfClass(typeName)
-                    .setId(serviceId.get())
-                    .addMarkers(markers())
-                    .addMarkers(readMarkerAnnotation(method)),
-                new JavaElementReference(method)));
-    }
-
-    private String stripMethodPrefix(IMethod method, String prefix)
-    {
-        return method.getElementName().substring(prefix.length());
-    }
-    
-    private boolean isServiceBuilderMethod(IMethod method)
-    {
-        return method.getElementName().startsWith(TapestryUtils.BUILD_METHOD_NAME_PREFIX);
-    }
-    
     private CompilationUnit compilationUnit;
     
     private CompilationUnit getModuleClassCompilationUnit()

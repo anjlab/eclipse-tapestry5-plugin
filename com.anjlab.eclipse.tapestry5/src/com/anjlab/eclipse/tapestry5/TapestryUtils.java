@@ -792,4 +792,9 @@ public class TapestryUtils
                     ORG_APACHE_TAPESTRY5_IOC_ANNOTATIONS_DECORATE) != null;
     }
 
+    public static boolean isServiceBuilderMethod(IMethod method)
+    {
+        return method.getElementName().startsWith(BUILD_METHOD_NAME_PREFIX);
+    }
+
 }
