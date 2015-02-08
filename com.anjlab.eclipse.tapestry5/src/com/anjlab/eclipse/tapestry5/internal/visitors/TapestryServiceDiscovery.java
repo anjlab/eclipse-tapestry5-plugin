@@ -30,6 +30,7 @@ import com.anjlab.eclipse.tapestry5.internal.GlobPatternMatcher;
 import com.anjlab.eclipse.tapestry5.internal.IdentityIdMatcher;
 import com.anjlab.eclipse.tapestry5.internal.MarkerMatcher;
 import com.anjlab.eclipse.tapestry5.internal.ServiceIntfMatcher;
+import com.anjlab.eclipse.tapestry5.internal.TapestryModuleMatcher;
 
 public class TapestryServiceDiscovery
 {
@@ -135,9 +136,11 @@ public class TapestryServiceDiscovery
                 new HashSet<String>(Arrays.asList(
                     TapestryUtils.ORG_APACHE_TAPESTRY5_IOC_ANNOTATIONS_CONTRIBUTE,
                     TapestryUtils.ORG_APACHE_TAPESTRY5_IOC_ANNOTATIONS_ORDER,
-                    TapestryUtils.ORG_APACHE_TAPESTRY5_IOC_ANNOTATIONS_MATCH)));
+                    TapestryUtils.ORG_APACHE_TAPESTRY5_IOC_ANNOTATIONS_MATCH,
+                    TapestryUtils.ORG_APACHE_TAPESTRY5_IOC_ANNOTATIONS_LOCAL)));
         
-        Matcher serviceMatcher = createServiceMatcherForConfigurationContribution(id, serviceInterface, markers);
+        Matcher serviceMatcher = createServiceMatcherForConfigurationContribution(
+                method, id, serviceInterface, markers);
         
         contributorFound.callback(
                 new ServiceInstrumenter()
@@ -209,9 +212,6 @@ public class TapestryServiceDiscovery
                         tapestryModule.getEclipseProject(), annotation, "value");
     }
 
-    //  TODO Contribution doesn't use @Match, contributeXXX uses service-id matcher,
-    //  with @Contribute annotation - only uses service interface & markers
-    //  TODO Contribution also works with @Local, in this case should only match module's own services
     private Matcher createMatcherForInstrumenter(IMethod method, String serviceId, List<String> markers) throws JavaModelException
     {
         AndMatcher matcher = new AndMatcher();
@@ -241,12 +241,20 @@ public class TapestryServiceDiscovery
         return matcher;
     }
     
-    //  TODO Contribution doesn't use @Match, contributeXXX uses service-id matcher,
-    //  with @Contribute annotation - only uses service interface & markers
-    //  TODO Contribution also works with @Local, in this case should only match module's own services
-    private Matcher createServiceMatcherForConfigurationContribution(String serviceId, String serviceIntf, List<String> markers) throws JavaModelException
+    private Matcher createServiceMatcherForConfigurationContribution(
+            IMethod method, String serviceId, String serviceIntf, List<String> markers)
+                    throws JavaModelException
     {
         AndMatcher matcher = new AndMatcher();
+        
+        IAnnotation annotation = TapestryUtils.findAnnotation(
+                method.getAnnotations(),
+                TapestryUtils.ORG_APACHE_TAPESTRY5_IOC_ANNOTATIONS_LOCAL);
+        
+        if (annotation != null)
+        {
+            matcher.add(new TapestryModuleMatcher(tapestryModule));
+        }
         
         if (StringUtils.isNotEmpty(serviceId))
         {
