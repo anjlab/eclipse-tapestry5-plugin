@@ -131,6 +131,7 @@ public class JarTapestryContext extends TapestryContext
                 else
                 {
                     Object[] resources = pkg.getNonJavaResources();
+                    
                     for (Object resource : resources)
                     {
                         if (resource instanceof IJarEntryResource)
@@ -155,6 +156,18 @@ public class JarTapestryContext extends TapestryContext
                                     return files;
                                 }
                             }
+                        }
+                    }
+                    
+                    TapestryFile file = createLookup().findClasspathFileCaseInsensitive(fileName);
+                    
+                    if (file != null)
+                    {
+                        files.add(file);
+                        
+                        if (findFirst)
+                        {
+                            return files;
                         }
                     }
                 }

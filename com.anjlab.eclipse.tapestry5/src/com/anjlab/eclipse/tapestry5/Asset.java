@@ -9,6 +9,8 @@ public class Asset
     {
         String path = assetPath;
         
+        assetPath = TapestryUtils.expandSymbols(assetPath);
+        
         String bindingPrefix = "classpath";
         
         int colonIndex = assetPath.indexOf(":");

@@ -805,4 +805,32 @@ public class TapestryUtils
         return method.getElementName().startsWith(BUILD_METHOD_NAME_PREFIX);
     }
 
+    public static TapestryProject getCurrentProject()
+    {
+        IWorkbenchWindow window = PlatformUI.getWorkbench().getActiveWorkbenchWindow();
+        
+        TapestryProject tapestryProject = Activator.getDefault().getTapestryProject(window);
+        
+        return tapestryProject;
+    }
+
+    public static String expandSymbols(String input)
+    {
+        TapestryProject project = getCurrentProject();
+        
+        if (project != null)
+        {
+            try
+            {
+                input = project.expandSymbols(input);
+            }
+            catch (RuntimeException e)
+            {
+                Activator.getDefault().logWarning(
+                        "Error expanding asset '" + input + "'", e);
+            }
+        }
+        return input;
+    }
+
 }

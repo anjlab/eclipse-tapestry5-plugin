@@ -29,6 +29,7 @@ import com.anjlab.eclipse.tapestry5.DeclarationReference.NonJavaReference;
 import com.anjlab.eclipse.tapestry5.TapestryService.ServiceDefinition;
 import com.anjlab.eclipse.tapestry5.internal.DeclarationCapturingScope.InjectedDeclaration;
 import com.anjlab.eclipse.tapestry5.internal.Orderer;
+import com.anjlab.eclipse.tapestry5.internal.SymbolExpansion;
 import com.anjlab.eclipse.tapestry5.internal.visitors.TapestryServiceConfigurationCapturingVisitor;
 import com.anjlab.eclipse.tapestry5.watchdog.WebXmlReader.WebXml;
 
@@ -130,6 +131,18 @@ public class TapestryProject
         findSymbols(monitor);
         
         markJavaScriptStackOverrides();
+    }
+
+    private SymbolExpansion expansion;
+
+    public String expandSymbols(String input) throws RuntimeException
+    {
+        if (expansion == null)
+        {
+            expansion = new SymbolExpansion(symbols());
+        }
+        
+        return expansion.expandSymbols(input);
     }
 
     private Map<String, List<TapestrySymbol>> symbols;

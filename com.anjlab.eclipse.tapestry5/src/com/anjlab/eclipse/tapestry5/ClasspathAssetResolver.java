@@ -9,8 +9,6 @@ import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.jdt.core.IJavaProject;
 import org.eclipse.jdt.core.JavaCore;
-import org.eclipse.ui.IWorkbenchWindow;
-import org.eclipse.ui.PlatformUI;
 
 import com.anjlab.eclipse.tapestry5.TapestryContext.FileNameBuilder;
 
@@ -19,10 +17,7 @@ public class ClasspathAssetResolver implements AssetResolver
     @Override
     public TapestryFile resolveInWorkspace(String path)
     {
-        //  Look in current tapestry project first
-        IWorkbenchWindow window = PlatformUI.getWorkbench().getActiveWorkbenchWindow();
-        
-        TapestryProject tapestryProject = Activator.getDefault().getTapestryProject(window);
+        TapestryProject tapestryProject = TapestryUtils.getCurrentProject();
         
         Set<IProject> visitedProjects = new HashSet<IProject>();
         
