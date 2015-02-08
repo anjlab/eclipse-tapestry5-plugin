@@ -72,10 +72,15 @@ public abstract class TapestryServiceConfigurationCapturingVisitor extends ASTVi
             {
                 SingleVariableDeclaration variableDeclaration = (SingleVariableDeclaration) arg;
                 
-                declarations.add(new Declaration(
-                        variableDeclaration,
-                        variableDeclaration.getName().getIdentifier(),
-                        EclipseUtils.toClassName(tapestryModule.getEclipseProject(), variableDeclaration.getType())));
+                String className = EclipseUtils.toClassName(tapestryModule.getEclipseProject(), variableDeclaration.getType());
+                
+                if (StringUtils.isNotEmpty(className))
+                {
+                    declarations.add(new Declaration(
+                            variableDeclaration,
+                            variableDeclaration.getName().getIdentifier(),
+                            className));
+                }
             }
         }
         return super.visit(node);

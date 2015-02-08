@@ -1,6 +1,7 @@
 package com.anjlab.eclipse.tapestry5.views.context;
 
 import org.eclipse.jface.viewers.DoubleClickEvent;
+import org.eclipse.jface.viewers.IContentProvider;
 import org.eclipse.jface.viewers.IDoubleClickListener;
 import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.jface.viewers.IStructuredSelection;
@@ -107,10 +108,30 @@ public class TapestryContextView extends ViewPart
             }
             
             @Override
-            public void projectChanged(IWorkbenchWindow window, TapestryProject newTapestryProject) { }
+            public void projectChanged(IWorkbenchWindow window, TapestryProject newTapestryProject)
+            {
+                IContentProvider provider = viewer.getContentProvider();
+                
+                if (provider instanceof TapestryContextContentProvider)
+                {
+                    TapestryContextContentProvider contextProvider = (TapestryContextContentProvider) provider;
+                    
+                    TapestryContext context = contextProvider.getContext();
+                    
+                    if (context != null)
+                    {
+                        TapestryContext.deleteMarkers(context.getProject());
+                        
+                        context.validate();
+                        
+                        viewer.setContentProvider(new TapestryContextContentProvider(context));
+                    }
+                }
+            }
         };
         
         Activator.getDefault().addTapestryContextListener(getViewSite().getWorkbenchWindow(), tapestryContextListener);
+        Activator.getDefault().addTapestryProjectListener(getViewSite().getWorkbenchWindow(), tapestryContextListener);
     }
     
     public TapestryContext getTapestryContext()
@@ -121,6 +142,7 @@ public class TapestryContextView extends ViewPart
     @Override
     public void dispose()
     {
+        Activator.getDefault().removeTapestryProjectListener(getViewSite().getWorkbenchWindow(), tapestryContextListener);
         Activator.getDefault().removeTapestryContextListener(getViewSite().getWorkbenchWindow(), tapestryContextListener);
         
         super.dispose();

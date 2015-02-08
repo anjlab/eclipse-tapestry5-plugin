@@ -608,6 +608,11 @@ public class EclipseUtils
         {
             return toClassName(project, ((ParameterizedType) type).getType());
         }
+        else
+        {
+            //  Unsupported type, i.e., primitive types are not supported at the moment
+            return null;
+        }
         
         return name.isQualifiedName()
                  ? name.getFullyQualifiedName()

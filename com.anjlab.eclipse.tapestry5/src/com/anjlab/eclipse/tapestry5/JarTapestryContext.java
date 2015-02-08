@@ -40,7 +40,7 @@ public class JarTapestryContext extends TapestryContext
             {
                 TapestryFile javaFile = getJavaFile();
                 
-                if (javaFile instanceof ClassFile)
+                if (javaFile instanceof ClassFile && javaFile.exists())
                 {
                     IClassFile classFile = ((ClassFile) javaFile).getClassFile();
                     
