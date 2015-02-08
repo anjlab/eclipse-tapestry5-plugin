@@ -4,6 +4,7 @@ package com.anjlab.eclipse.tapestry5;
 public class TapestrySymbol
 {
 
+    private final TapestryService symbolProvider;
     private final String name;
     private final String value;
     private final DeclarationReference reference;
@@ -14,12 +15,14 @@ public class TapestrySymbol
             String name,
             String value,
             boolean override,
-            DeclarationReference reference)
+            DeclarationReference reference,
+            TapestryService symbolProvider)
     {
         this.name = name;
         this.value = value;
         this.override = override;
         this.reference = reference;
+        this.symbolProvider = symbolProvider;
     }
 
     public String getName()
@@ -40,6 +43,11 @@ public class TapestrySymbol
     public DeclarationReference getReference()
     {
         return reference;
+    }
+
+    public TapestryService getSymbolProvider()
+    {
+        return symbolProvider;
     }
 
     public boolean isOverridden()

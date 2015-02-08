@@ -242,7 +242,8 @@ public class TapestryProject
                                             symbolName,
                                             (String) value,
                                             isOverride(node),
-                                            new ASTNodeReference(module, module.getModuleClass(), node)));
+                                            new ASTNodeReference(module, module.getModuleClass(), node),
+                                            symbolProvider));
                         }
                         else if (value instanceof InjectedDeclaration)
                         {
@@ -256,7 +257,8 @@ public class TapestryProject
                                             symbolName,
                                             null,
                                             isOverride(node),
-                                            new ASTNodeReference(module, module.getModuleClass(), node)));
+                                            new ASTNodeReference(module, module.getModuleClass(), node),
+                                            symbolProvider));
                         }
                     }
                 }.usesMappedConfiguration());
