@@ -2,7 +2,7 @@
 <feature
       id="com.anjlab.eclipse.tapestry5.webtools.feature"
       label="Tapestry5 WebTools Editors Extensions (experimental)"
-      version="2.8.0"
+      version="2.9.6"
       provider-name="AnjLab Team"
       plugin="com.anjlab.eclipse.tapestry5.webtools">
 
