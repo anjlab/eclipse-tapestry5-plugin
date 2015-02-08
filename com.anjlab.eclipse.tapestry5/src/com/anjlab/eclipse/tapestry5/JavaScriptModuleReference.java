@@ -1,14 +1,20 @@
 package com.anjlab.eclipse.tapestry5;
 
+import org.apache.commons.lang.StringUtils;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.Path;
 import org.eclipse.jdt.core.ISourceRange;
+
+import com.anjlab.eclipse.tapestry5.internal.TapestryBuiltinJavaScriptModuleConfiguration;
 
 public class JavaScriptModuleReference extends AbstractFileReference
 {
 
     private static final String MARKER_NAME = "ModuleName";
 
+    private static final TapestryBuiltinJavaScriptModuleConfiguration
+        builtinModules = new TapestryBuiltinJavaScriptModuleConfiguration();
+    
     private final String moduleName;
     private final String functionName;
     
@@ -43,11 +49,19 @@ public class JavaScriptModuleReference extends AbstractFileReference
     @Override
     public IPath getPath()
     {
-        //  TODO Try expanding symbols for moduleName first
+        String path = builtinModules.getPath(moduleName);
+        
+        if (StringUtils.isEmpty(path))
+        {
+            path = "META-INF/modules/" + moduleName + ".js";
+        }
         
         //  TODO First segment of moduleName holds the name of the library,
         //  also extension name may be different
-        return new Path("META-INF/modules/" + moduleName + ".js");
+        
+        path = TapestryUtils.expandSymbols(path);
+        
+        return new Path(path);
     }
 
     @Override
@@ -59,21 +73,15 @@ public class JavaScriptModuleReference extends AbstractFileReference
     @Override
     protected TapestryFile resolveFile() throws UnresolvableReferenceException
     {
-        String path = getPath().toPortableString();
+        String path = getPath().toOSString();
         
-        TapestryFile tapestryFile =
-                javaFile
-                    .getContext()
-                    .createLookup()
-                    .findClasspathFileCaseInsensitive(path);
+        Asset asset = new Asset(path);
         
-        if (tapestryFile == null)
-        {
-            throw new UnresolvableReferenceException(
-                    "Couldn't resolve classpath asset from path '" + path + "'");
-        }
+        AssetResolver assetResolver = TapestryUtils.createAssetResolver(asset.bindingPrefix);
         
-        return tapestryFile;
+        TapestryFile resolvedFile = assetResolver.resolve(asset.path, javaFile);
+        
+        return resolvedFile;
     }
 
 }
