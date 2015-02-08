@@ -79,7 +79,8 @@ public class LibraryMappingCapturingVisitor extends ASTVisitor
                     if (prefix != null && !StringUtils.isEmpty(pkg))
                     {
                         libraryMappingFound.callback(
-                                new LibraryMapping(prefix, pkg, new ASTNodeReference(tapestryModule.getModuleClass(), node)));
+                                new LibraryMapping(prefix, pkg,
+                                        new ASTNodeReference(tapestryModule, tapestryModule.getModuleClass(), node)));
                     }
                     else
                     {

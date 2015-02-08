@@ -169,7 +169,7 @@ public class TapestryServiceCapturingVisitor extends ASTVisitor
                 serviceFound.callback(new TapestryService(
                         tapestryModule,
                         definition,
-                        new ASTNodeReference(tapestryModule.getModuleClass(), node)));
+                        new ASTNodeReference(tapestryModule, tapestryModule.getModuleClass(), node)));
             }
             
             serviceDefinition = null;

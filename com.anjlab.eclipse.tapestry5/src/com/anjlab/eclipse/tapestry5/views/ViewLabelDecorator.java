@@ -9,6 +9,7 @@ import com.anjlab.eclipse.tapestry5.JavaScriptStack;
 import com.anjlab.eclipse.tapestry5.LibraryMapping;
 import com.anjlab.eclipse.tapestry5.TapestryModule;
 import com.anjlab.eclipse.tapestry5.TapestryService;
+import com.anjlab.eclipse.tapestry5.TapestrySymbol;
 
 public class ViewLabelDecorator extends LabelProvider implements ILightweightLabelDecorator
 {
@@ -31,6 +32,10 @@ public class ViewLabelDecorator extends LabelProvider implements ILightweightLab
             else if (data instanceof JavaScriptStack)
             {
                 decoration.addSuffix(" " + ((JavaScriptStack) data).getType().getFullyQualifiedName());
+            }
+            else if (data instanceof TapestrySymbol)
+            {
+                decoration.addSuffix(" " + ((TapestrySymbol) data).getValue());
             }
             else if (data instanceof TapestryService)
             {

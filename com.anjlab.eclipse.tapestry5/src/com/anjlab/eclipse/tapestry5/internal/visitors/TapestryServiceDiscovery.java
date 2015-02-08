@@ -15,22 +15,21 @@ import org.eclipse.jdt.core.IMethod;
 import org.eclipse.jdt.core.JavaModelException;
 
 import com.anjlab.eclipse.tapestry5.Activator;
+import com.anjlab.eclipse.tapestry5.DeclarationReference.JavaElementReference;
 import com.anjlab.eclipse.tapestry5.EclipseUtils;
 import com.anjlab.eclipse.tapestry5.ObjectCallback;
 import com.anjlab.eclipse.tapestry5.TapestryModule;
 import com.anjlab.eclipse.tapestry5.TapestryService;
-import com.anjlab.eclipse.tapestry5.TapestryUtils;
-import com.anjlab.eclipse.tapestry5.DeclarationReference.JavaElementReference;
 import com.anjlab.eclipse.tapestry5.TapestryService.InstrumenterType;
 import com.anjlab.eclipse.tapestry5.TapestryService.Matcher;
 import com.anjlab.eclipse.tapestry5.TapestryService.ServiceDefinition;
 import com.anjlab.eclipse.tapestry5.TapestryService.ServiceInstrumenter;
+import com.anjlab.eclipse.tapestry5.TapestryUtils;
 import com.anjlab.eclipse.tapestry5.internal.AndMatcher;
 import com.anjlab.eclipse.tapestry5.internal.GlobPatternMatcher;
 import com.anjlab.eclipse.tapestry5.internal.IdentityIdMatcher;
-import com.anjlab.eclipse.tapestry5.internal.IdentityMatcher;
 import com.anjlab.eclipse.tapestry5.internal.MarkerMatcher;
-import com.anjlab.eclipse.tapestry5.internal.OrMatcher;
+import com.anjlab.eclipse.tapestry5.internal.ServiceIntfMatcher;
 
 public class TapestryServiceDiscovery
 {
@@ -113,7 +112,7 @@ public class TapestryServiceDiscovery
                 new ServiceInstrumenter()
                         .setType(InstrumenterType.CONTRIBUTOR)
                         .setId("RegistryStartup")
-                        .setReference(new JavaElementReference(method))
+                        .setReference(new JavaElementReference(tapestryModule, method))
                         .setServiceMatcher(new IdentityIdMatcher("RegistryStartup"))
                         .setConstraints(extractConstraints(method)));
     }
@@ -123,25 +122,28 @@ public class TapestryServiceDiscovery
         IAnnotation annotation = TapestryUtils.findAnnotation(method.getAnnotations(),
                 TapestryUtils.ORG_APACHE_TAPESTRY5_IOC_ANNOTATIONS_CONTRIBUTE);
         
-        String serviceInterface = annotation == null ? null
-                : EclipseUtils.readFirstValueFromAnnotation(tapestryModule.getEclipseProject(), annotation, "value");
+        String serviceInterface = annotation != null
+                ? EclipseUtils.readFirstValueFromAnnotation(tapestryModule.getEclipseProject(), annotation, "value")
+                : null;
         
         String id = annotation == null
                 ? stripMethodPrefix(method, TapestryUtils.CONTRIBUTE_METHOD_NAME_PREFIX)
-                : extractId(serviceInterface, null);
+                : null;
         
-        List<String> markers = extractMarkers(method, new HashSet<String>(Arrays.asList(
-                TapestryUtils.ORG_APACHE_TAPESTRY5_IOC_ANNOTATIONS_CONTRIBUTE,
-                TapestryUtils.ORG_APACHE_TAPESTRY5_IOC_ANNOTATIONS_ORDER,
-                TapestryUtils.ORG_APACHE_TAPESTRY5_IOC_ANNOTATIONS_MATCH)));
+        List<String> markers = extractMarkers(
+                method,
+                new HashSet<String>(Arrays.asList(
+                    TapestryUtils.ORG_APACHE_TAPESTRY5_IOC_ANNOTATIONS_CONTRIBUTE,
+                    TapestryUtils.ORG_APACHE_TAPESTRY5_IOC_ANNOTATIONS_ORDER,
+                    TapestryUtils.ORG_APACHE_TAPESTRY5_IOC_ANNOTATIONS_MATCH)));
         
-        Matcher serviceMatcher = createMatcher(method, id, markers);
+        Matcher serviceMatcher = createServiceMatcherForConfigurationContribution(id, serviceInterface, markers);
         
         contributorFound.callback(
                 new ServiceInstrumenter()
                         .setType(InstrumenterType.CONTRIBUTOR)
                         .setId(id)
-                        .setReference(new JavaElementReference(method))
+                        .setReference(new JavaElementReference(tapestryModule, method))
                         .setServiceMatcher(serviceMatcher)
                         .setConstraints(extractConstraints(method)));
     }
@@ -179,17 +181,19 @@ public class TapestryServiceDiscovery
                 : extractId(serviceInterface, EclipseUtils.readFirstValueFromAnnotation
                         (tapestryModule.getEclipseProject(), annotation, "id"));
         
-        List<String> markers = extractMarkers(method, new HashSet<String>(Arrays.asList(
-                instrumenterAnnotation,
-                TapestryUtils.ORG_APACHE_TAPESTRY5_IOC_ANNOTATIONS_ORDER,
-                TapestryUtils.ORG_APACHE_TAPESTRY5_IOC_ANNOTATIONS_MATCH)));
+        List<String> markers = extractMarkers(
+                method,
+                new HashSet<String>(Arrays.asList(
+                    instrumenterAnnotation,
+                    TapestryUtils.ORG_APACHE_TAPESTRY5_IOC_ANNOTATIONS_ORDER,
+                    TapestryUtils.ORG_APACHE_TAPESTRY5_IOC_ANNOTATIONS_MATCH)));
         
-        Matcher serviceMatcher = createMatcher(method, id, markers);
+        Matcher serviceMatcher = createMatcherForInstrumenter(method, id, markers);
         
         return new ServiceInstrumenter()
                 .setType(instrumenterType)
                 .setId(id)
-                .setReference(new JavaElementReference(method))
+                .setReference(new JavaElementReference(tapestryModule, method))
                 .setServiceMatcher(serviceMatcher)
                 .setConstraints(extractConstraints(method));
     }
@@ -205,69 +209,64 @@ public class TapestryServiceDiscovery
                         tapestryModule.getEclipseProject(), annotation, "value");
     }
 
-    private Matcher createMatcher(IMethod method, String serviceId, List<String> markers) throws JavaModelException
+    //  TODO Contribution doesn't use @Match, contributeXXX uses service-id matcher,
+    //  with @Contribute annotation - only uses service interface & markers
+    //  TODO Contribution also works with @Local, in this case should only match module's own services
+    private Matcher createMatcherForInstrumenter(IMethod method, String serviceId, List<String> markers) throws JavaModelException
     {
+        AndMatcher matcher = new AndMatcher();
+        
         IAnnotation match = TapestryUtils.findAnnotation(method.getAnnotations(),
                 TapestryUtils.ORG_APACHE_TAPESTRY5_IOC_ANNOTATIONS_MATCH);
         
-        Matcher patternMatcher;
-        
         if (match != null)
         {
-            patternMatcher = new OrMatcher();
-            
             String[] patterns = EclipseUtils.readValuesFromAnnotation(
                     tapestryModule.getEclipseProject(), match, "value");
             
             for (String pattern : patterns)
             {
-                ((OrMatcher) patternMatcher).add(new GlobPatternMatcher(pattern));
+                matcher.add(new GlobPatternMatcher(pattern));
             }
-        }
-        else
-        {
-            patternMatcher = StringUtils.isNotEmpty(serviceId)
-                    ? new IdentityIdMatcher(serviceId)
-                    // Match everything, ambiguity would probably be resolved with markers
-                    : new IdentityMatcher(true);
         }
         
         if (markers.size() > 0)
         {
-            OrMatcher markerMatcher = new OrMatcher();
-            
             for (String marker : markers)
             {
-                markerMatcher.add(new MarkerMatcher(marker));
+                matcher.add(new MarkerMatcher(marker));
             }
-            
-            AndMatcher andMatcher = new AndMatcher();
-            andMatcher.add(patternMatcher);
-            andMatcher.add(markerMatcher);
-            
-            return andMatcher;
         }
         
-        return patternMatcher;
+        return matcher;
     }
-
-    private List<String> extractMarkers(IAnnotatable annotatable, Set<String> skipAnnotations) throws JavaModelException
+    
+    //  TODO Contribution doesn't use @Match, contributeXXX uses service-id matcher,
+    //  with @Contribute annotation - only uses service interface & markers
+    //  TODO Contribution also works with @Local, in this case should only match module's own services
+    private Matcher createServiceMatcherForConfigurationContribution(String serviceId, String serviceIntf, List<String> markers) throws JavaModelException
     {
-        List<String> markers = new ArrayList<String>();
+        AndMatcher matcher = new AndMatcher();
         
-        for (IAnnotation annotation : annotatable.getAnnotations())
+        if (StringUtils.isNotEmpty(serviceId))
         {
-            String typeName = EclipseUtils.resolveTypeName(
-                    tapestryModule.getModuleClass(), annotation.getElementName());
-            
-            if (skipAnnotations.contains(typeName))
-            {
-                continue;
-            }
-            
-            markers.add(typeName);
+            matcher.add(new IdentityIdMatcher(serviceId));
         }
-        return markers;
+        
+        if (StringUtils.isNotEmpty(serviceIntf))
+        {
+            matcher.add(new ServiceIntfMatcher(serviceIntf));
+        }
+        
+        if (markers.size() > 0)
+        {
+            for (String marker : markers)
+            {
+                matcher.add(new MarkerMatcher(marker));
+            }
+        }
+        
+        return matcher;
     }
 
     private String extractId(String serviceInterface, String id)
@@ -315,12 +314,32 @@ public class TapestryServiceDiscovery
                             .setId(serviceId.get())
                             .addMarkers(tapestryModule.markers())
                             .addMarkers(tapestryModule.readMarkerAnnotation(method)),
-                        new JavaElementReference(method)));
+                        new JavaElementReference(tapestryModule, method)));
     }
 
     private String stripMethodPrefix(IMethod method, String prefix)
     {
         return method.getElementName().substring(prefix.length());
+    }
+
+    private List<String> extractMarkers(IAnnotatable annotatable, Set<String> skipAnnotations)
+                    throws JavaModelException
+    {
+        List<String> markers = new ArrayList<String>();
+        
+        for (IAnnotation annotation : annotatable.getAnnotations())
+        {
+            String typeName = EclipseUtils.resolveTypeName(
+                    tapestryModule.getModuleClass(), annotation.getElementName());
+            
+            if (skipAnnotations.contains(typeName))
+            {
+                continue;
+            }
+            
+            markers.add(typeName);
+        }
+        return markers;
     }
 
 }

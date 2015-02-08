@@ -7,14 +7,21 @@ import com.anjlab.eclipse.tapestry5.DeclarationReference.NonJavaReference;
 public abstract class TapestryModuleReference
 {
     private final DeclarationReference reference;
+    private final boolean conditional;
     
-    public TapestryModuleReference(DeclarationReference reference)
+    public TapestryModuleReference(DeclarationReference reference, boolean conditional)
     {
         if (reference == null)
         {
             throw new NullPointerException("reference == null");
         }
         this.reference = reference;
+        this.conditional = conditional;
+    }
+
+    public boolean isConditional()
+    {
+        return conditional;
     }
 
     public DeclarationReference getReference()

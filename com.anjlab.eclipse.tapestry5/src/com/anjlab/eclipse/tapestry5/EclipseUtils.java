@@ -25,9 +25,13 @@ import org.eclipse.jdt.core.Signature;
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.ASTParser;
+import org.eclipse.jdt.core.dom.BooleanLiteral;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.ImportDeclaration;
 import org.eclipse.jdt.core.dom.Name;
+import org.eclipse.jdt.core.dom.NullLiteral;
+import org.eclipse.jdt.core.dom.NumberLiteral;
+import org.eclipse.jdt.core.dom.ParameterizedType;
 import org.eclipse.jdt.core.dom.QualifiedType;
 import org.eclipse.jdt.core.dom.SimpleType;
 import org.eclipse.jdt.core.dom.StringLiteral;
@@ -414,7 +418,7 @@ public class EclipseUtils
             Name name = ast.newName((String) value);
             return evalExpression(project, name);
         }
-        return (String) value;
+        return String.valueOf(value);
     }
 
     public static String evalExpression(IProject project, Object expr)
@@ -427,6 +431,21 @@ public class EclipseUtils
         if (expr instanceof StringLiteral)
         {
             return ((StringLiteral) expr).getLiteralValue();
+        }
+        
+        if (expr instanceof BooleanLiteral)
+        {
+            return String.valueOf(((BooleanLiteral) expr).booleanValue());
+        }
+        
+        if (expr instanceof NumberLiteral)
+        {
+            return String.valueOf(((NumberLiteral) expr).getToken());
+        }
+        
+        if (expr instanceof NullLiteral)
+        {
+            return null;
         }
         
         if (expr instanceof Name)
@@ -442,7 +461,7 @@ public class EclipseUtils
                     //      String foo = "bar";
                     //  may be returned as "bar" (in quotes) instead of just bar (without quotes).
                     
-                    return (String) field.getConstant();
+                    return String.valueOf(field.getConstant());
                 }
                 catch (JavaModelException e)
                 {
@@ -585,9 +604,9 @@ public class EclipseUtils
         {
             name = ((QualifiedType) type).getName();
         }
-        else
+        else if (type instanceof ParameterizedType)
         {
-            return null;
+            return toClassName(project, ((ParameterizedType) type).getType());
         }
         
         return name.isQualifiedName()

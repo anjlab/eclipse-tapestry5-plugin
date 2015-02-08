@@ -22,8 +22,14 @@ import org.eclipse.jdt.core.IPackageFragmentRoot;
 import org.eclipse.jdt.core.IType;
 import org.eclipse.jdt.core.JavaCore;
 import org.eclipse.jdt.core.JavaModelException;
+import org.eclipse.jdt.core.dom.MethodInvocation;
 
+import com.anjlab.eclipse.tapestry5.DeclarationReference.ASTNodeReference;
 import com.anjlab.eclipse.tapestry5.DeclarationReference.NonJavaReference;
+import com.anjlab.eclipse.tapestry5.TapestryService.ServiceDefinition;
+import com.anjlab.eclipse.tapestry5.internal.DeclarationCapturingScope.InjectedDeclaration;
+import com.anjlab.eclipse.tapestry5.internal.Orderer;
+import com.anjlab.eclipse.tapestry5.internal.visitors.TapestryServiceConfigurationCapturingVisitor;
 import com.anjlab.eclipse.tapestry5.watchdog.WebXmlReader.WebXml;
 
 public class TapestryProject
@@ -119,10 +125,229 @@ public class TapestryProject
     {
         findModules(monitor);
         
-        markOverrides();
+        monitor.subTask("Resolving symbols...");
+        
+        findSymbols(monitor);
+        
+        markJavaScriptStackOverrides();
     }
 
-    private void markOverrides()
+    private Map<String, List<TapestrySymbol>> symbols;
+    
+    public Map<String, List<TapestrySymbol>> symbols()
+    {
+        if (symbols == null)
+        {
+            findSymbols(new NullProgressMonitor());
+        }
+        
+        return symbols;
+    }
+    
+    private synchronized void findSymbols(IProgressMonitor monitor)
+    {
+        if (symbols != null)
+        {
+            return;
+        }
+        
+        //  Tapestry symbols are contributions to SymbolProviders.
+        //  First we need to grab all contributions to SymbolSource,
+        //  this way we will get all SymbolProviders.
+        
+        final TapestryService symbolSource = new TapestryService(
+                null,
+                new ServiceDefinition()
+                    .setId("SymbolSource")
+                    .setIntfClass("org.apache.tapestry5.ioc.services.SymbolSource"),
+                null);
+        
+        final Orderer<TapestryService> orderer = new Orderer<TapestryService>();
+        
+        for (TapestryModule module : modules())
+        {
+            module.visitContributions(symbolSource, new TapestryServiceConfigurationCapturingVisitor(monitor, module)
+            {
+                @Override
+                protected void orderedConfigurationAddOverride(MethodInvocation node, String id, Object value, String[] constraints)
+                {
+                    if (value instanceof IType)
+                    {
+                        ServiceDefinition definition = new ServiceDefinition()
+                            .setId("SymbolProvider")
+                            .setIntfClass("org.apache.tapestry5.ioc.services.SymbolProvider")
+                            .setImplClass(((IType) value).getFullyQualifiedName());
+                        
+                        TapestryService symbolProvider = new TapestryService(
+                                module, definition,
+                                new ASTNodeReference(module, module.getModuleClass(), node));
+                        
+                        orderer.add(id, symbolProvider, constraints);
+                    }
+                    else if (value instanceof InjectedDeclaration)
+                    {
+                        InjectedDeclaration injectedValue = (InjectedDeclaration) value;
+                        
+                        if (injectedValue.isServiceInjection())
+                        {
+                            com.anjlab.eclipse.tapestry5.TapestryService.Matcher matcher = injectedValue.createMatcher(module);
+                            
+                            TapestryService symbolProvider = findService(matcher);
+                            
+                            if (symbolProvider != null)
+                            {
+                                orderer.add(id, symbolProvider, constraints);
+                            }
+                        }
+                    }
+                }
+            }
+            .usesOrderedConfiguration());
+        }
+        
+        final List<TapestryService> symbolProviders = orderer.getOrdered();
+        
+        final Map<TapestryService, List<TapestrySymbol>> providersToSymbols =
+                new HashMap<TapestryService, List<TapestrySymbol>>();
+        
+        for (TapestryModule module : modules())
+        {
+            for (TapestryService symbolProvider : symbolProviders)
+            {
+                module.visitContributions(symbolProvider, new TapestryServiceConfigurationCapturingVisitor(monitor, module)
+                {
+                    @Override
+                    protected void mappedConfigurationAddOverride(MethodInvocation node, Object key, Object value)
+                    {
+                        if (!(key instanceof String))
+                        {
+                            return;
+                        }
+                        
+                        String symbolName = (String) key;
+                        
+                        List<TapestrySymbol> providerSymbols = providersToSymbols.get(symbolProvider);
+                        
+                        if (providerSymbols == null)
+                        {
+                            providerSymbols = new ArrayList<TapestrySymbol>();
+                            
+                            providersToSymbols.put(symbolProvider, providerSymbols);
+                        }
+                        
+                        if (value instanceof String)
+                        {
+                            providerSymbols.add(
+                                    new TapestrySymbol(
+                                            symbolName,
+                                            (String) value,
+                                            isOverride(node),
+                                            new ASTNodeReference(module, module.getModuleClass(), node)));
+                        }
+                        else if (value instanceof InjectedDeclaration)
+                        {
+                            //  @Symbol?
+                            System.out.println(value);
+                        }
+                        else if (value == null)
+                        {
+                            providerSymbols.add(
+                                    new TapestrySymbol(
+                                            symbolName,
+                                            null,
+                                            isOverride(node),
+                                            new ASTNodeReference(module, module.getModuleClass(), node)));
+                        }
+                    }
+                }.usesMappedConfiguration());
+                
+                //  Values from the same provider may override each other
+                
+                List<TapestrySymbol> providerSymbols = providersToSymbols.get(symbolProvider);
+                
+                if (providerSymbols != null)
+                {
+                    for (int i = 0; i < providerSymbols.size(); i++)
+                    {
+                        TapestrySymbol symbol = providerSymbols.get(i);
+                        
+                        for (int j = i + 1; j < providerSymbols.size(); j++)
+                        {
+                            TapestrySymbol other = providerSymbols.get(j);
+                            
+                            if (StringUtils.equals(symbol.getName(), other.getName()))
+                            {
+                                if (other.isOverride())
+                                {
+                                    symbol.setOverridden(true);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        
+        symbols = new HashMap<String, List<TapestrySymbol>>();
+        
+        //  Symbol providers ordered by override rule,
+        //  symbols in the first provider override values of the second,
+        //  second overrides third, etc.
+        
+        for (TapestryService symbolProvider : symbolProviders)
+        {
+            List<TapestrySymbol> providerSymbols = providersToSymbols.get(symbolProvider);
+            
+            if (providerSymbols != null)
+            {
+                for (TapestrySymbol symbol : providerSymbols)
+                {
+                    List<TapestrySymbol> values = symbols.get(symbol.getName());
+                    
+                    if (values == null)
+                    {
+                        values = new ArrayList<TapestrySymbol>();
+                        symbols.put(symbol.getName(), values);
+                    }
+                    else
+                    {
+                        for (TapestrySymbol existing : values)
+                        {
+                            if (!existing.isOverridden()
+                                    //  Some modules may be added conditionally, like QA/DEV/Production
+                                    //  we should treat them all as equal, they souldn't override each other,
+                                    //  because usually only one of them enabled at run-time
+                                    && !existing.getReference().getTapestryModule().isConditional())
+                            {
+                                symbol.setOverridden(true);
+                                break;
+                            }
+                        }
+                    }
+                    
+                    values.add(symbol);
+                }
+            }
+        }
+    }
+
+    private TapestryService findService(
+            com.anjlab.eclipse.tapestry5.TapestryService.Matcher matcher)
+    {
+        for (TapestryModule module : modules())
+        {
+            for (TapestryService service : module.services())
+            {
+                if (matcher.matches(service))
+                {
+                    return service;
+                }
+            }
+        }
+        return null;
+    }
+
+    private void markJavaScriptStackOverrides()
     {
         Map<String, List<JavaScriptStack>> stacks = new HashMap<String, List<JavaScriptStack>>();
         
@@ -150,7 +375,7 @@ public class TapestryProject
             
             for (JavaScriptStack stack : configs)
             {
-                if (stack.isOverrides())
+                if (stack.isOverride())
                 {
                     hasOverride = true;
                 }
@@ -160,7 +385,7 @@ public class TapestryProject
             {
                 for (JavaScriptStack stack : configs)
                 {
-                    if (!stack.isOverrides())
+                    if (!stack.isOverride())
                     {
                         stack.setOverridden(true);
                     }
@@ -204,7 +429,7 @@ public class TapestryProject
                         public void callback(TapestryModule module)
                         {
                             module.setAppModule(true);
-                            module.addReference(new TapestryModuleReference(new NonJavaReference())
+                            module.addReference(new TapestryModuleReference(new NonJavaReference(module), false)
                             {
                                 @Override
                                 public String getLabel()
@@ -236,7 +461,7 @@ public class TapestryProject
                         @Override
                         public void callback(TapestryModule obj)
                         {
-                            obj.addReference(new TapestryModuleReference(new NonJavaReference())
+                            obj.addReference(new TapestryModuleReference(new NonJavaReference(obj), true)
                             {
                                 @Override
                                 public String getLabel()
@@ -257,7 +482,7 @@ public class TapestryProject
             public void callback(TapestryModule module)
             {
                 module.setTapestryCoreModule(true);
-                module.addReference(new TapestryModuleReference(new NonJavaReference())
+                module.addReference(new TapestryModuleReference(new NonJavaReference(module), false)
                 {
                     @Override
                     public String getLabel()
@@ -269,17 +494,17 @@ public class TapestryProject
                 });
             }
         };
-        // t5.3
+        // T5.3
         addModule(monitor, modules, project, "org.apache.tapestry5.services.TapestryModule", coreObjectCallback);
-        // t5.4
+        // T5.4
         addModule(monitor, modules, project, "org.apache.tapestry5.modules.TapestryModule", coreObjectCallback);
         
-        addModule(monitor, modules, project, "org.apache.tapestry5.ioc.services.TapestryIOCModule", new ObjectCallback<TapestryModule, RuntimeException>()
+        final ObjectCallback<TapestryModule, RuntimeException> iocModuleCallback = new ObjectCallback<TapestryModule, RuntimeException>()
         {
             @Override
             public void callback(TapestryModule module)
             {
-                module.addReference(new TapestryModuleReference(new NonJavaReference())
+                module.addReference(new TapestryModuleReference(new NonJavaReference(module), false)
                 {
                     @Override
                     public String getLabel()
@@ -288,7 +513,12 @@ public class TapestryProject
                     }
                 });
             }
-        });
+        };
+        
+        //  T5.3
+        addModule(monitor, modules, project, "org.apache.tapestry5.ioc.services.TapestryIOCModule", iocModuleCallback);
+        //  T5.4
+        addModule(monitor, modules, project, "org.apache.tapestry5.ioc.modules.TapestryIOCModule", iocModuleCallback);
         
         try
         {
@@ -338,7 +568,7 @@ public class TapestryProject
                                                     @Override
                                                     public void callback(TapestryModule obj)
                                                     {
-                                                        obj.addReference(new TapestryModuleReference(new NonJavaReference())
+                                                        obj.addReference(new TapestryModuleReference(new NonJavaReference(obj), false)
                                                         {
                                                             @Override
                                                             public String getLabel()
@@ -390,7 +620,8 @@ public class TapestryProject
         return module;
     }
 
-    private void addModule(IProgressMonitor monitor, List<TapestryModule> modules, TapestryModule module, ObjectCallback<TapestryModule, RuntimeException> moduleCreated)
+    private void addModule(IProgressMonitor monitor, List<TapestryModule> modules,
+            TapestryModule module, ObjectCallback<TapestryModule, RuntimeException> moduleCreated)
     {
         if (monitor.isCanceled())
         {
@@ -562,7 +793,7 @@ public class TapestryProject
         //  Find first overridden stack (if any)
         for (JavaScriptStack stack : stacks)
         {
-            if (stack.isOverrides())
+            if (stack.isOverride())
             {
                 return stack;
             }

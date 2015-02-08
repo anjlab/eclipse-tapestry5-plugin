@@ -42,6 +42,7 @@ import com.anjlab.eclipse.tapestry5.TapestryModuleReference;
 import com.anjlab.eclipse.tapestry5.TapestryProject;
 import com.anjlab.eclipse.tapestry5.TapestryService;
 import com.anjlab.eclipse.tapestry5.TapestryService.ServiceInstrumenter;
+import com.anjlab.eclipse.tapestry5.TapestrySymbol;
 import com.anjlab.eclipse.tapestry5.views.NameSorter;
 import com.anjlab.eclipse.tapestry5.views.TapestryDecoratingLabelProvider;
 import com.anjlab.eclipse.tapestry5.views.TreeObject;
@@ -205,6 +206,22 @@ public class TapestryProjectOutlineView extends ViewPart
                     }
                 }
                 
+                if (selectedObject instanceof TapestrySymbol)
+                {
+                    TapestrySymbol symbol = (TapestrySymbol) selectedObject;
+                    
+                    DeclarationReference element = symbol.getReference();
+                    
+                    if (element != null)
+                    {
+                        getSite().getSelectionProvider().setSelection(new StructuredSelection(element));
+                        
+                        updateSelectionInActiveEditor(element);
+                        
+                        return;
+                    }
+                }
+                
                 if (selectedObject instanceof TapestryModule)
                 {
                     TapestryModule module = (TapestryModule) selectedObject;
@@ -346,6 +363,10 @@ public class TapestryProjectOutlineView extends ViewPart
                     {
                         EclipseUtils.openDeclaration(
                                 ((JavaScriptStack) data).getType(), null);
+                    }
+                    else if (data instanceof TapestrySymbol)
+                    {
+                        ((TapestrySymbol) data).getReference().openInEditor();
                     }
                     else if (data instanceof LibraryMapping)
                     {

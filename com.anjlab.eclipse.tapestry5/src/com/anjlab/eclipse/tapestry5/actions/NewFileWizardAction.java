@@ -261,7 +261,7 @@ public class NewFileWizardAction extends Action
                 
                 CompilationUnit unit = (CompilationUnit) EclipseUtils.parse(compilationUnit, ASTParser.K_COMPILATION_UNIT);
                 
-                TapestryImportAnnotationContext rewriteContext = new TapestryImportAnnotationContext();
+                AnnotationLookupContext rewriteContext = new AnnotationLookupContext();
                 
                 findTapestryImportAnnotation(unit, rewriteContext);
                 
@@ -484,13 +484,13 @@ public class NewFileWizardAction extends Action
                 return false;
             }
             
-            class TapestryImportAnnotationContext
+            class AnnotationLookupContext
             {
                 private ASTNode typeNode;
                 private Annotation annotation;
             }
             
-            private void findTapestryImportAnnotation(CompilationUnit unit, final TapestryImportAnnotationContext annotationContext)
+            private void findTapestryImportAnnotation(CompilationUnit unit, final AnnotationLookupContext annotationContext)
             {
                 unit.accept(new ASTVisitor()
                 {

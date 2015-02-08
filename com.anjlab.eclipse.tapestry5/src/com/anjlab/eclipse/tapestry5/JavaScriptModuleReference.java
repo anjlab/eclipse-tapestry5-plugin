@@ -43,6 +43,8 @@ public class JavaScriptModuleReference extends AbstractFileReference
     @Override
     public IPath getPath()
     {
+        //  TODO First segment of moduleName holds the name of the library,
+        //  also extension name may be different
         return new Path("META-INF/modules/" + moduleName + ".js");
     }
 

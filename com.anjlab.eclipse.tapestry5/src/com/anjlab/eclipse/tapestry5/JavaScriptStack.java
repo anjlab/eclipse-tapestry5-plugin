@@ -8,14 +8,14 @@ public class JavaScriptStack
     private final String name;
     private final DeclarationReference reference;
     private IType type;
-    private final boolean overrides;
+    private final boolean override;
     private boolean overridden;
     
-    public JavaScriptStack(String stackName, IType type, boolean overrides, DeclarationReference reference)
+    public JavaScriptStack(String stackName, IType type, boolean override, DeclarationReference reference)
     {
         this.name = stackName;
         this.type = type;
-        this.overrides = overrides;
+        this.override = override;
         this.reference = reference;
     }
 
@@ -39,8 +39,8 @@ public class JavaScriptStack
     {
         return reference;
     }
-    public boolean isOverrides()
+    public boolean isOverride()
     {
-        return overrides;
+        return override;
     }
 }

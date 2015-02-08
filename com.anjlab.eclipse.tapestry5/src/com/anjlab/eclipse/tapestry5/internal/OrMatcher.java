@@ -15,6 +15,12 @@ public final class OrMatcher implements Matcher
         matchers = new ArrayList<Matcher>();
     }
 
+    public OrMatcher(List<Matcher> matchers)
+    {
+        this();
+        this.matchers.addAll(matchers);
+    }
+
     public void add(Matcher matcher)
     {
         matchers.add(matcher);

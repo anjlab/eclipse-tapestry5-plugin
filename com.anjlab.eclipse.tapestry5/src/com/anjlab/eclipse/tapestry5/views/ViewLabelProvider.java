@@ -13,6 +13,7 @@ import com.anjlab.eclipse.tapestry5.JavaScriptStack;
 import com.anjlab.eclipse.tapestry5.TapestryFile;
 import com.anjlab.eclipse.tapestry5.TapestryFileReference;
 import com.anjlab.eclipse.tapestry5.TapestryModule;
+import com.anjlab.eclipse.tapestry5.TapestrySymbol;
 import com.anjlab.eclipse.tapestry5.UnresolvableReferenceException;
 
 public class ViewLabelProvider extends LabelProvider
@@ -63,7 +64,28 @@ public class ViewLabelProvider extends LabelProvider
                                 imageDescriptor,
                                 org.eclipse.jdt.internal.ui.JavaPluginImages.DESC_OVR_DEPRECATED);
                 }
-                else if (stack.isOverrides())
+                else if (stack.isOverride())
+                {
+                    return getImageDescriptor(
+                            imageDescriptor,
+                            org.eclipse.jdt.internal.ui.JavaPluginImages.DESC_OVR_OVERRIDES);
+                }
+            }
+            else if (data instanceof TapestrySymbol)
+            {
+                //  TODO Introduce new interface for override/overridden objects, TapestrySymbol & JavaScriptStack will implement it
+                
+                TapestrySymbol symbol = (TapestrySymbol) data;
+                        
+                ImageDescriptor imageDescriptor = PlatformUI.getWorkbench().getSharedImages().getImageDescriptor(ISharedImages.IMG_OBJ_FILE);
+                
+                if (symbol.isOverridden())
+                {
+                    return getImageDescriptor(
+                                imageDescriptor,
+                                org.eclipse.jdt.internal.ui.JavaPluginImages.DESC_OVR_DEPRECATED);
+                }
+                else if (symbol.isOverride())
                 {
                     return getImageDescriptor(
                             imageDescriptor,

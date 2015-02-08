@@ -185,14 +185,22 @@ public class TapestryUtils
         
         return className;
     }
-    
+
+    public static boolean isAnnotationEquals(Annotation annotation, String typeName)
+    {
+        return isTypeNameEquals(annotation.getTypeName().getFullyQualifiedName(), typeName);
+    }
+
+    private static boolean isTypeNameEquals(String name, String fqName)
+    {
+        return name.equals(fqName) || name.equals(getSimpleName(fqName));
+    }
+
     public static IAnnotation findAnnotation(IAnnotation[] annotations, String typeName)
     {
         for (IAnnotation annotation : annotations)
         {
-            String name = annotation.getElementName();
-            
-            if (name.equals(typeName) || name.equals(getSimpleName(typeName)))
+            if (isTypeNameEquals(annotation.getElementName(), typeName))
             {
                 return annotation;
             }
@@ -201,14 +209,10 @@ public class TapestryUtils
         return null;
     }
 
-    private static boolean isTapestryImportAnnotationName(String name)
-    {
-        return "org.apache.tapestry5.annotations.Import".equals(name) || "Import".equals(name);
-    }
-
     public static boolean isTapestryImportAnnotation(Annotation annotation)
     {
-        return isTapestryImportAnnotationName(annotation.getTypeName().getFullyQualifiedName());
+        String name = annotation.getTypeName().getFullyQualifiedName();
+        return "org.apache.tapestry5.annotations.Import".equals(name) || "Import".equals(name);
     }
 
     public static TapestryContext createTapestryContext(IWorkbenchWindow window)
@@ -754,6 +758,9 @@ public class TapestryUtils
     public static final String ORG_APACHE_TAPESTRY5_IOC_ANNOTATIONS_MATCH = "org.apache.tapestry5.ioc.annotations.Match";
     public static final String ORG_APACHE_TAPESTRY5_IOC_ANNOTATIONS_OPTIONAL = "org.apache.tapestry5.ioc.annotations.Optional";
     public static final String ORG_APACHE_TAPESTRY5_IOC_ANNOTATIONS_MARKER = "org.apache.tapestry5.ioc.annotations.Marker";
+    public static final String ORG_APACHE_TAPESTRY5_IOC_ANNOTATIONS_SYMBOL = "org.apache.tapestry5.ioc.annotations.Symbol";
+    public static final String ORG_APACHE_TAPESTRY5_IOC_ANNOTATIONS_INJECT = "org.apache.tapestry5.ioc.annotations.Inject";
+    public static final String ORG_APACHE_TAPESTRY5_IOC_ANNOTATIONS_INJECT_SERVICE = "org.apache.tapestry5.ioc.annotations.InjectService";
 
     public static final String BUILD_METHOD_NAME_PREFIX = "build";
     public static final String CONTRIBUTE_METHOD_NAME_PREFIX = "contribute";

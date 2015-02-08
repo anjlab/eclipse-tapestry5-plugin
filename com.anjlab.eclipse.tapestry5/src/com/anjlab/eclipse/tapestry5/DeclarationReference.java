@@ -7,11 +7,13 @@ public interface DeclarationReference
 {
     public static class ASTNodeReference implements DeclarationReference
     {
+        private final TapestryModule tapestryModule;
         private final IJavaElement element;
         private final ASTNode node;
         
-        public ASTNodeReference(IJavaElement element, ASTNode node)
+        public ASTNodeReference(TapestryModule tapestryModule, IJavaElement element, ASTNode node)
         {
+            this.tapestryModule = tapestryModule;
             this.element = element;
             this.node = node;
         }
@@ -36,6 +38,12 @@ public interface DeclarationReference
         }
         
         @Override
+        public TapestryModule getTapestryModule()
+        {
+            return tapestryModule;
+        }
+        
+        @Override
         public boolean equals(Object obj)
         {
             if (this == obj)
@@ -53,16 +61,18 @@ public interface DeclarationReference
                 return false;
             }
             
-            return element.equals(((JavaElementReference) obj).element);
+            return element.equals(((ASTNodeReference) obj).element);
         }
     }
 
     public static class JavaElementReference implements DeclarationReference
     {
+        private final TapestryModule tapestryModule;
         private final IJavaElement element;
-    
-        public JavaElementReference(IJavaElement element)
+
+        public JavaElementReference(TapestryModule tapestryModule, IJavaElement element)
         {
+            this.tapestryModule = tapestryModule;
             this.element = element;
         }
         
@@ -76,6 +86,12 @@ public interface DeclarationReference
         public void openInEditor()
         {
             EclipseUtils.openDeclaration(element, null);
+        }
+        
+        @Override
+        public TapestryModule getTapestryModule()
+        {
+            return tapestryModule;
         }
         
         @Override
@@ -102,6 +118,13 @@ public interface DeclarationReference
 
     public static class NonJavaReference implements DeclarationReference
     {
+        private final TapestryModule tapestryModule;
+
+        public NonJavaReference(TapestryModule tapestryModule)
+        {
+            this.tapestryModule = tapestryModule;
+        }
+
         @Override
         public IJavaElement getElement()
         {
@@ -114,8 +137,16 @@ public interface DeclarationReference
             //  TODO In some cases we do know the file name and location,
             //  so we should implement this method for these cases
         }
+
+        @Override
+        public TapestryModule getTapestryModule()
+        {
+            return tapestryModule;
+        }
     }
-    
+
+    TapestryModule getTapestryModule();
+
     IJavaElement getElement();
 
     void openInEditor();

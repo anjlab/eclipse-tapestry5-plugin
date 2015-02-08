@@ -1,5 +1,8 @@
 package com.anjlab.eclipse.tapestry5.views.project;
 
+import java.util.List;
+import java.util.Map.Entry;
+
 import org.eclipse.jface.viewers.ITreeContentProvider;
 import org.eclipse.jface.viewers.Viewer;
 import org.eclipse.ui.IViewSite;
@@ -12,6 +15,7 @@ import com.anjlab.eclipse.tapestry5.TapestryProject;
 import com.anjlab.eclipse.tapestry5.TapestryService;
 import com.anjlab.eclipse.tapestry5.TapestryService.ServiceDefinition;
 import com.anjlab.eclipse.tapestry5.TapestryService.ServiceInstrumenter;
+import com.anjlab.eclipse.tapestry5.TapestrySymbol;
 import com.anjlab.eclipse.tapestry5.views.TreeObject;
 import com.anjlab.eclipse.tapestry5.views.TreeParent;
 import com.anjlab.eclipse.tapestry5.views.TreeParent.DataObject;
@@ -50,100 +54,121 @@ public class TapestryProjectOutlineContentProvider implements ITreeContentProvid
         
         if (project != null)
         {
-            this.modulesRoot = new TreeParent("Modules", new DataObject("ModulesRoot"));
-            
-            invisibleRoot.addChild(modulesRoot);
-            
-            for (TapestryModule module : project.modules())
+            addModules();
+            addSymbols();
+        }
+    }
+
+    private void addSymbols()
+    {
+        TreeParent symbolsRoot = new TreeParent("Symbols", new DataObject("SymbolsRoot"));
+        
+        invisibleRoot.addChild(symbolsRoot);
+        
+        for (Entry<String, List<TapestrySymbol>> symbolValues : project.symbols().entrySet())
+        {
+            for (TapestrySymbol symbol : symbolValues.getValue())
             {
-                TreeParent moduleRoot = new TreeParent(module.getName(), module);
+                symbolsRoot.addChild(new TreeObject(symbol.getName(), symbol));
+            }
+        }
+    }
+
+    private void addModules()
+    {
+        this.modulesRoot = new TreeParent("Modules", new DataObject("ModulesRoot"));
+        
+        invisibleRoot.addChild(modulesRoot);
+        
+        for (TapestryModule module : project.modules())
+        {
+            TreeParent moduleRoot = new TreeParent(module.getName(), module);
+            
+            modulesRoot.addChild(moduleRoot);
+            
+            if (module.isSourceAvailable())
+            {
+                TreeParent mappingsRoot = newChildNode(moduleRoot, LIBRARY_MAPPINGS_NODE_LABEL, new DataObject("LibraryMappingsNode"));
                 
-                modulesRoot.addChild(moduleRoot);
+                for (LibraryMapping libraryMapping : module.libraryMappings())
+                {
+                    String pathPrefix = libraryMapping.getPathPrefix();
+                    mappingsRoot.addChild(new TreeObject("".equals(pathPrefix) ? "(default)" : pathPrefix, libraryMapping));
+                }
                 
-                if (module.isSourceAvailable())
+                TreeParent stacksRoot = newChildNode(moduleRoot, JAVA_SCRIPT_STACKS_NODE_LABEL, new DataObject("JavaScriptStacksNode"));
+                
+                for (JavaScriptStack javaScriptStack : module.javaScriptStacks())
                 {
-                    TreeParent mappingsRoot = newChildNode(moduleRoot, LIBRARY_MAPPINGS_NODE_LABEL, new DataObject("LibraryMappingsNode"));
-                    
-                    for (LibraryMapping libraryMapping : module.libraryMappings())
-                    {
-                        String pathPrefix = libraryMapping.getPathPrefix();
-                        mappingsRoot.addChild(new TreeObject("".equals(pathPrefix) ? "(default)" : pathPrefix, libraryMapping));
-                    }
-                    
-                    TreeParent stacksRoot = newChildNode(moduleRoot, JAVA_SCRIPT_STACKS_NODE_LABEL, new DataObject("JavaScriptStacksNode"));
-                    
-                    for (JavaScriptStack javaScriptStack : module.javaScriptStacks())
-                    {
-                        stacksRoot.addChild(new TreeObject(javaScriptStack.getName(), javaScriptStack));
-                    }
-                    
-                    TreeParent servicesRoot = newChildNode(moduleRoot, SERVICES_NODE_LABEL, new DataObject("ServicesNode"));
-                    
-                    for (TapestryService service : module.services())
-                    {
-                        ServiceDefinition definition = service.getDefinition();
-                        
-                        String serviceId = definition.getId();
-                        
-                        if (serviceId == null)
-                        {
-                            serviceId = "<Unknown>";
-                        }
-                        
-                        servicesRoot.addChild(new TreeObject(serviceId, service));
-                    }
-                    
-                    TreeParent decoratorsRoot = newChildNode(moduleRoot, DECORATORS_NODE_LABEL, new DataObject("DecoratorsNode"));
-                    
-                    for (ServiceInstrumenter decorator : module.decorators())
-                    {
-                        String id = decorator.getId();
-                        
-                        if (id == null)
-                        {
-                            id = "<No-Id>";
-                        }
-                        
-                        decoratorsRoot.addChild(new TreeObject(id, decorator));
-                    }
-                    
-                    TreeParent advisorsRoot = newChildNode(moduleRoot, ADVISORS_NODE_LABEL, new DataObject("AdvisorsNode"));
-                    
-                    for (ServiceInstrumenter advisor : module.advisors())
-                    {
-                        String id = advisor.getId();
-                        
-                        if (id == null)
-                        {
-                            id = "<No-Id>";
-                        }
-                        
-                        advisorsRoot.addChild(new TreeObject(id, advisor));
-                    }
-                    
-                    TreeParent contributorsRoot = newChildNode(moduleRoot, CONTRIBUTORS_NODE_LABEL, new DataObject("ContributorsNode"));
-                    
-                    for (ServiceInstrumenter contributor : module.contributors())
-                    {
-                        String id = contributor.getId();
-                        
-                        if (id == null)
-                        {
-                            id = "<Unknown>";
-                        }
-                        
-                        contributorsRoot.addChild(new TreeObject(id, contributor));
-                    }
+                    stacksRoot.addChild(new TreeObject(javaScriptStack.getName(), javaScriptStack));
                 }
-                else
+                
+                TreeParent servicesRoot = newChildNode(moduleRoot, SERVICES_NODE_LABEL, new DataObject("ServicesNode"));
+                
+                for (TapestryService service : module.services())
                 {
-                    newChildNode(moduleRoot, LIBRARY_MAPPINGS_NODE_LABEL, EclipseUtils.SOURCE_NOT_FOUND);
-                    newChildNode(moduleRoot, JAVA_SCRIPT_STACKS_NODE_LABEL, EclipseUtils.SOURCE_NOT_FOUND);
-                    newChildNode(moduleRoot, SERVICES_NODE_LABEL, EclipseUtils.SOURCE_NOT_FOUND);
-                    newChildNode(moduleRoot, DECORATORS_NODE_LABEL, EclipseUtils.SOURCE_NOT_FOUND);
-                    newChildNode(moduleRoot, ADVISORS_NODE_LABEL, EclipseUtils.SOURCE_NOT_FOUND);
-                    newChildNode(moduleRoot, CONTRIBUTORS_NODE_LABEL, EclipseUtils.SOURCE_NOT_FOUND);
+                    ServiceDefinition definition = service.getDefinition();
+                    
+                    String serviceId = definition.getId();
+                    
+                    if (serviceId == null)
+                    {
+                        serviceId = "<Unknown>";
+                    }
+                    
+                    servicesRoot.addChild(new TreeObject(serviceId, service));
                 }
+                
+                TreeParent decoratorsRoot = newChildNode(moduleRoot, DECORATORS_NODE_LABEL, new DataObject("DecoratorsNode"));
+                
+                for (ServiceInstrumenter decorator : module.decorators())
+                {
+                    String id = decorator.getId();
+                    
+                    if (id == null)
+                    {
+                        id = "<No-Id>";
+                    }
+                    
+                    decoratorsRoot.addChild(new TreeObject(id, decorator));
+                }
+                
+                TreeParent advisorsRoot = newChildNode(moduleRoot, ADVISORS_NODE_LABEL, new DataObject("AdvisorsNode"));
+                
+                for (ServiceInstrumenter advisor : module.advisors())
+                {
+                    String id = advisor.getId();
+                    
+                    if (id == null)
+                    {
+                        id = "<No-Id>";
+                    }
+                    
+                    advisorsRoot.addChild(new TreeObject(id, advisor));
+                }
+                
+                TreeParent contributorsRoot = newChildNode(moduleRoot, CONTRIBUTORS_NODE_LABEL, new DataObject("ContributorsNode"));
+                
+                for (ServiceInstrumenter contributor : module.contributors())
+                {
+                    String id = contributor.getId();
+                    
+                    if (id == null)
+                    {
+                        id = "<Unknown>";
+                    }
+                    
+                    contributorsRoot.addChild(new TreeObject(id, contributor));
+                }
+            }
+            else
+            {
+                newChildNode(moduleRoot, LIBRARY_MAPPINGS_NODE_LABEL, EclipseUtils.SOURCE_NOT_FOUND);
+                newChildNode(moduleRoot, JAVA_SCRIPT_STACKS_NODE_LABEL, EclipseUtils.SOURCE_NOT_FOUND);
+                newChildNode(moduleRoot, SERVICES_NODE_LABEL, EclipseUtils.SOURCE_NOT_FOUND);
+                newChildNode(moduleRoot, DECORATORS_NODE_LABEL, EclipseUtils.SOURCE_NOT_FOUND);
+                newChildNode(moduleRoot, ADVISORS_NODE_LABEL, EclipseUtils.SOURCE_NOT_FOUND);
+                newChildNode(moduleRoot, CONTRIBUTORS_NODE_LABEL, EclipseUtils.SOURCE_NOT_FOUND);
             }
         }
     }

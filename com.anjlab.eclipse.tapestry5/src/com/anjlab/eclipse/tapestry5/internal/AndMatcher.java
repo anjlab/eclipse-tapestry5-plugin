@@ -15,6 +15,12 @@ public class AndMatcher implements Matcher
         matchers = new ArrayList<Matcher>();
     }
 
+    public AndMatcher(List<Matcher> matchers)
+    {
+        this();
+        this.matchers.addAll(matchers);
+    }
+    
     public void add(Matcher matcher)
     {
         matchers.add(matcher);

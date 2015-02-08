@@ -221,7 +221,7 @@ public abstract class TapestryModule
                                             @Override
                                             public void callback(TapestryModule obj)
                                             {
-                                                obj.addReference(new TapestryModuleReference(new JavaElementReference(annotation))
+                                                obj.addReference(new TapestryModuleReference(new JavaElementReference(obj, annotation), false)
                                                 {
                                                     @Override
                                                     public String getLabel()
@@ -302,7 +302,7 @@ public abstract class TapestryModule
         visitContributions(javaScriptStackSource, javaScriptStackCapturingVisitor);
     }
 
-    private void visitContributions(final TapestryService targetService, final ASTVisitor visitor)
+    void visitContributions(final TapestryService targetService, final ASTVisitor visitor)
     {
         for (ServiceInstrumenter contributor : contributors())
         {
@@ -370,6 +370,7 @@ public abstract class TapestryModule
     public static final String[] ADD_OVERRIDE = { "add", "override" };
     public static final String[] ADD_OVERRIDE_INSTANCE = { "addInstance", "overrideInstance" };
     public static final String[] OVERRIDES = { "override", "overrideInstance" };
+    public static final String[] CONFIGURATION_METHODS = { "add", "addInstance", "override", "overrideInstance" };
     
     private synchronized void findLibraryMappings(final IProgressMonitor monitor)
     {
@@ -772,5 +773,17 @@ public abstract class TapestryModule
     private String getComponentName(String componentFullName, String componentsPackage)
     {
         return componentFullName.substring((componentsPackage + ".").length());
+    }
+
+    public boolean isConditional()
+    {
+        for (TapestryModuleReference reference : references())
+        {
+            if (reference.isConditional())
+            {
+                return true;
+            }
+        }
+        return false;
     }
 }
