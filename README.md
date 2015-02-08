@@ -13,7 +13,9 @@ Tapestry Context View will appear (top right on this screenshot):
   - Provides context for opened Tapestry file
   - Includes code/template files of selected page/component, as well as list of properties files, @Import'ed and @Path @Inject'ed assets
   - Click on the file in a view to open this file
-  - Simple validation implemented to highlight assets, JavaScript stacks & T5.4 modules that couldn't be resolved (supports default/`classpath:` or `context:` binding prefixes for assets)
+  - Simple validation implemented to highlight assets, JavaScript stacks & T5.4 modules that couldn't be resolved
+    * supports default/`classpath:` or `context:` binding prefixes for assets
+    * supports <a href="#tapestry-symbols">Tapestry symbols</a> expansion in asset path
 
 ![Screenshot](https://f.cloud.github.com/assets/76579/1105085/c106e906-1918-11e3-9525-68839dcc89b2.png)
 
@@ -62,8 +64,9 @@ This view displays structure of your Tapestry5 project:
   - Select your main Tapestry5 project (i.e. the project with `web.xml`) in the "Project Explorer" to see its outline
   - View all Tapestry5 modules available in classpath of the main Tapestry5 project
   - View [library mappings](http://tapestry.apache.org/component-libraries.html#ComponentLibraries-Step4%3AConfigurethevirtualfolder), [JavaScript stacks](https://tapestry.apache.org/javascript.html#JavaScript-JavaScriptStacks), [Tapestry services](http://tapestry.apache.org/defining-tapestry-ioc-services.html), [decorators](http://tapestry.apache.org/tapestry-ioc-decorators.html), [advisors](http://tapestry.apache.org/service-advisors.html), and [configuration contributions](http://tapestry.apache.org/tapestry-ioc-configuration.html) declared in each module (only available if source code attached to the module class)
+  - View [symbols](http://tapestry.apache.org/symbols.html) declared in the project
   - Double click on Module name or JavaScript stack to open its source code
-  - Double click on Library mapping, Service, Decorator, Advisor, or Contribution opens their declaration
+  - Double click on Library mapping, Service, Decorator, Advisor, Contribution, or Symbol opens their declaration
   - Selecting a item in Tapestry Project Outline view makes it appear in the Javadoc View and also highlights definition source range in a Java editor if the editor for this file is open & active
   - Content of this view will be updated automatically in background when you're adding new or updating existing modules, changing `web.xml`, or editing your pages/components files
   - More to come...
@@ -80,6 +83,18 @@ It is possible in Tapestry5 to override stack definitions, for example, this is 
 <img alt="stacks-overrides" src="https://cloud.githubusercontent.com/assets/76579/2624897/5fbc69c6-bd6b-11e3-923c-3c8609ba42af.png" width="640">
 
 <img alt="stacks-overridden" src="https://cloud.githubusercontent.com/assets/76579/2624898/5fc00158-bd6b-11e3-9ee5-e4130ba5a23b.png" width="640">
+
+<div id="tapestry-symbols" />
+
+#### Support for Tapestry Symbols
+
+All symbols declared in a project collected & presented in one place.
+
+  - For every symbol you can find provider name (i.e. `ApplicationDefauls` or `FactoryDefaults`), tapestry module where this symbol declared, and even value of the symbol.
+  - Markers for new, override, and overridden symbols.
+  - Double-click on symbol to open source code of the declaration.
+
+<img alt="tapestry-symbols" src="https://cloud.githubusercontent.com/assets/76579/6098386/931c3506-afed-11e4-87bb-0cf3f93b5407.png" width="640">
 
 ### Quickly Create Files for Tapestry5
 
