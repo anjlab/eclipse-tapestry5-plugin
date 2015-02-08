@@ -177,7 +177,7 @@ public class TapestryProject
         
         final Orderer<TapestryService> orderer = new Orderer<TapestryService>();
         
-        for (TapestryModule module : modules())
+        for (final TapestryModule module : modules())
         {
             module.visitContributions(symbolSource, new TapestryServiceConfigurationCapturingVisitor(monitor, module)
             {
@@ -223,9 +223,9 @@ public class TapestryProject
         final Map<TapestryService, List<TapestrySymbol>> providersToSymbols =
                 new HashMap<TapestryService, List<TapestrySymbol>>();
         
-        for (TapestryModule module : modules())
+        for (final TapestryModule module : modules())
         {
-            for (TapestryService symbolProvider : symbolProviders)
+            for (final TapestryService symbolProvider : symbolProviders)
             {
                 module.visitContributions(symbolProvider, new TapestryServiceConfigurationCapturingVisitor(monitor, module)
                 {

@@ -53,7 +53,7 @@ public class DeclarationCapturingScope
             this(declaration.node, declaration.name, declaration.className, type);
         }
 
-        public Matcher createMatcher(TapestryModule module)
+        public Matcher createMatcher(final TapestryModule module)
         {
             final AtomicReference<String> serviceId = new AtomicReference<String>();
             
