@@ -211,7 +211,7 @@ public abstract class TapestryContext
                         IAnnotation[] annotations = field.getAnnotations();
                         
                         IAnnotation inject = TapestryUtils.findAnnotation(
-                                annotations, "org.apache.tapestry5.ioc.annotations.Inject");
+                                annotations, TapestryUtils.ORG_APACHE_TAPESTRY5_IOC_ANNOTATIONS_INJECT);
                         
                         if (inject == null)
                         {
@@ -219,7 +219,7 @@ public abstract class TapestryContext
                         }
                         
                         final IAnnotation path = TapestryUtils.findAnnotation(
-                                annotations, "org.apache.tapestry5.annotations.Path");
+                                annotations, TapestryUtils.ORG_APACHE_TAPESTRY5_ANNOTATIONS_PATH);
                         
                         if (path == null)
                         {

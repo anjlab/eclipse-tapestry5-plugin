@@ -747,6 +747,8 @@ public class TapestryUtils
             || namespace.startsWith("tapestry-library:");
     }
 
+    public static final String ORG_APACHE_TAPESTRY5_ANNOTATIONS_PATH = "org.apache.tapestry5.annotations.Path";
+
     public static final String ORG_APACHE_TAPESTRY5_IOC_ANNOTATIONS_SUB_MODULE = "org.apache.tapestry5.ioc.annotations.SubModule";
     public static final String ORG_APACHE_TAPESTRY5_IOC_ANNOTATIONS_IMPORT_MODULE = "org.apache.tapestry5.ioc.annotations.ImportModule";
     public static final String ORG_APACHE_TAPESTRY5_IOC_ANNOTATIONS_ADVISE = "org.apache.tapestry5.ioc.annotations.Advise";

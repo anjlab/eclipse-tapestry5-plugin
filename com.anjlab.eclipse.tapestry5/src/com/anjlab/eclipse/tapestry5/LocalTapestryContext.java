@@ -19,6 +19,7 @@ import org.eclipse.jdt.core.IJavaProject;
 import org.eclipse.jdt.core.IPackageFragmentRoot;
 import org.eclipse.jdt.core.IType;
 import org.eclipse.jdt.core.JavaCore;
+import org.eclipse.jdt.core.JavaModelException;
 
 import com.anjlab.eclipse.tapestry5.internal.CompilationUnitContext.CompilationUnitLifecycle;
 
@@ -191,6 +192,16 @@ public class LocalTapestryContext extends TapestryContext
                 
                 if (container != null)
                 {
+                    if (StringUtils.isNotEmpty(complementFileName) && complementFileName.startsWith("/"))
+                    {
+                        findInSourceFolders(findFirst, complementFileName, resources, javaProject, container);
+                        
+                        if (findFirst && !resources.isEmpty())
+                        {
+                            return resources;
+                        }
+                    }
+                    
                     //  Get the file name relative to source folder
                     String relativeFileName = TapestryUtils.getRelativeFileName(forFile, container);
                     
@@ -203,28 +214,11 @@ public class LocalTapestryContext extends TapestryContext
                 return Collections.emptyList();
             }
             
-            for (IPackageFragmentRoot root : javaProject.getAllPackageFragmentRoots())
+            findInSourceFolders(findFirst, complementFileName, resources, javaProject, container);
+            
+            if (findFirst && !resources.isEmpty())
             {
-                if (!EclipseUtils.isSourceFolder(root))
-                {
-                    continue;
-                }
-                
-                IContainer resourceContainer = (IContainer) root.getCorrespondingResource().getAdapter(IContainer.class);
-                
-                if (container != null && resourceContainer.getFullPath().equals(container.getFullPath()))
-                {
-                    continue;
-                }
-                
-                List<IFile> resources2 = findMembers(resourceContainer, complementFileName);
-                
-                if (findFirst && !resources2.isEmpty())
-                {
-                    return resources2;
-                }
-                
-                resources.addAll(resources2);
+                return resources;
             }
             
             //  Look for TML files in web application context
@@ -255,6 +249,36 @@ public class LocalTapestryContext extends TapestryContext
             Activator.getDefault().logError("Error finding complement file", e);
             
             return Collections.emptyList();
+        }
+    }
+
+    private void findInSourceFolders(boolean findFirst,
+            String complementFileName, List<IFile> resources,
+            IJavaProject javaProject, IContainer container)
+            throws JavaModelException
+    {
+        for (IPackageFragmentRoot root : javaProject.getAllPackageFragmentRoots())
+        {
+            if (!EclipseUtils.isSourceFolder(root))
+            {
+                continue;
+            }
+            
+            IContainer resourceContainer = (IContainer) root.getCorrespondingResource().getAdapter(IContainer.class);
+            
+            if (container != null && resourceContainer.getFullPath().equals(container.getFullPath()))
+            {
+                continue;
+            }
+            
+            List<IFile> resources2 = findMembers(resourceContainer, complementFileName);
+            
+            resources.addAll(resources2);
+            
+            if (findFirst && !resources.isEmpty())
+            {
+                break;
+            }
         }
     }
 
