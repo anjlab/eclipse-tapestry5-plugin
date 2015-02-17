@@ -647,7 +647,8 @@ public abstract class TapestryContext
             {
                 //  TODO Support other markers too
                 if (marker.getAttribute(AssetReference.MARKER_NAME) != null
-                        || marker.getAttribute(JavaScriptStackReference.MARKER_NAME) != null)
+                        || marker.getAttribute(JavaScriptStackReference.MARKER_NAME) != null
+                        || marker.getAttribute(JavaScriptModuleReference.MARKER_NAME) != null)
                 {
                     marker.delete();
                 }

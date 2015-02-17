@@ -10,7 +10,7 @@ import com.anjlab.eclipse.tapestry5.internal.TapestryBuiltinJavaScriptModuleConf
 public class JavaScriptModuleReference extends AbstractFileReference
 {
 
-    private static final String MARKER_NAME = "ModuleName";
+    public static final String MARKER_NAME = "ModuleName";
 
     private static final TapestryBuiltinJavaScriptModuleConfiguration
         builtinModules = new TapestryBuiltinJavaScriptModuleConfiguration();
