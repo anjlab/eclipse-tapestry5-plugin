@@ -398,7 +398,7 @@ public class TapestryProjectOutlineView extends ViewPart
                 
                 //  TODO Check if this is the same project with updates or simply a new project was selected
                 
-                window.getShell().getDisplay().syncExec(new Runnable()
+                EclipseUtils.syncExec(window.getShell(), new Runnable()
                 {
                     @Override
                     public void run()

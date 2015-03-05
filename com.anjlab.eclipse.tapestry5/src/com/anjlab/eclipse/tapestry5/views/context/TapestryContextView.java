@@ -83,7 +83,7 @@ public class TapestryContextView extends ViewPart
                     return;
                 }
                 
-                window.getShell().getDisplay().syncExec(new Runnable()
+                EclipseUtils.syncExec(window.getShell(), new Runnable()
                 {
                     @Override
                     public void run()

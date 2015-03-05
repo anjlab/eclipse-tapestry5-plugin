@@ -49,6 +49,7 @@ import org.eclipse.jdt.ui.JavaUI;
 import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.jface.viewers.ITreeSelection;
+import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.ui.IEditorInput;
 import org.eclipse.ui.IEditorPart;
@@ -138,7 +139,7 @@ public class EclipseUtils
     
     public static void openFile(final IWorkbenchWindow window, final IFile file, final EditorCallback editorCallback)
     {
-        window.getShell().getDisplay().asyncExec(new Runnable()
+        asyncExec(window.getShell(), new Runnable()
         {
             public void run()
             {
@@ -725,6 +726,30 @@ public class EclipseUtils
     {
         String[] values = readValuesFromAnnotation(project, annotation, name);
         return values.length > 0 ? values[0] : null;
+    }
+
+    public static void syncExec(Shell shell, Runnable runnable)
+    {
+        Display display;
+        
+        if (shell == null || (display = shell.getDisplay()) == null)
+        {
+            return;
+        }
+        
+        display.syncExec(runnable);
+    }
+
+    public static void asyncExec(Shell shell, Runnable runnable)
+    {
+        Display display;
+        
+        if (shell == null || (display = shell.getDisplay()) == null)
+        {
+            return;
+        }
+        
+        display.asyncExec(runnable);
     }
 
 }

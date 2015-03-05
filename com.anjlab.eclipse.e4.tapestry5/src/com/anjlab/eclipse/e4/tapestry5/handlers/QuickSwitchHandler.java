@@ -33,6 +33,7 @@ import org.eclipse.ui.internal.EditorReference;
 import org.eclipse.ui.internal.PartPane;
 
 import com.anjlab.eclipse.tapestry5.Activator;
+import com.anjlab.eclipse.tapestry5.EclipseUtils;
 import com.anjlab.eclipse.tapestry5.TapestryContext;
 import com.anjlab.eclipse.tapestry5.TapestryFile;
 import com.anjlab.eclipse.tapestry5.views.ViewLabelProvider;
@@ -96,7 +97,7 @@ public class QuickSwitchHandler extends AbstractHandler
         editorList.setFocus();
         editorList.getShell().addListener(SWT.Deactivate, new Listener() {
             public void handleEvent(org.eclipse.swt.widgets.Event event) {
-                editorList.getShell().getDisplay().asyncExec(new Runnable() {
+                EclipseUtils.asyncExec(editorList.getShell(), new Runnable() {
                     public void run() {
                         editorList.dispose();
                     }

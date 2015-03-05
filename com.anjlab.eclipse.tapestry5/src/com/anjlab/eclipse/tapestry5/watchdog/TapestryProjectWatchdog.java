@@ -91,7 +91,7 @@ public class TapestryProjectWatchdog extends AbstractWatchdog
                 return Status.CANCEL_STATUS;
             }
             
-            window.getShell().getDisplay().asyncExec(new Runnable()
+            EclipseUtils.asyncExec(window.getShell(), new Runnable()
             {
                 @Override
                 public void run()
