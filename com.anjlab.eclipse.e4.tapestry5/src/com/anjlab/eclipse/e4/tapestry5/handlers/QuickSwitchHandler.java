@@ -1,6 +1,7 @@
 package com.anjlab.eclipse.e4.tapestry5.handlers;
 
 import java.lang.reflect.Constructor;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -120,41 +121,44 @@ public class QuickSwitchHandler extends AbstractHandler
             }
         };
         
-        List<Object> initArgs = Arrays.asList(window.getShell(),
-                SWT.ON_TOP, SWT.V_SCROLL | SWT.H_SCROLL,
-                new EPartServiceImpl(window),
-                mElementContainerImpl,
-                stackRenderer,
-                new ISWTResourceUtilities()
-                {
-                    @Override
-                    public ImageDescriptor imageDescriptorFromURI(URI uri)
-                    {
-                        TapestryFile file = mElementContainerImpl.lookupFile(uri.toString());
-                        
-                        return labelProvider.getImageDescriptor(file);
-                    }
-
-//                    @Override -- Since Luna
-                    public Image adornImage(Image arg0, Image arg1)
-                    {
-                        // TODO Auto-generated method stub
-                        return null;
-                    }
-                },
-                false);
+        List<Object> initArgs = new ArrayList<Object>(
+                Arrays.<Object>asList(
+                        window.getShell(),
+                        SWT.ON_TOP, SWT.V_SCROLL | SWT.H_SCROLL,
+                        new EPartServiceImpl(window),
+                        mElementContainerImpl,
+                        stackRenderer,
+                        new ISWTResourceUtilities()
+                        {
+                            @Override
+                            public ImageDescriptor imageDescriptorFromURI(URI uri)
+                            {
+                                TapestryFile file = mElementContainerImpl.lookupFile(uri.toString());
+                                
+                                return labelProvider.getImageDescriptor(file);
+                            }
+                            
+                            // @Override -- Since Luna
+                            public Image adornImage(Image arg0, Image arg1)
+                            {
+                                // TODO Auto-generated method stub
+                                return null;
+                            }
+                        },
+                        false));
         
         for (Constructor<?> constructor : BasicPartList.class.getConstructors())
         {
-            List<Class<?>> paramTypes = Arrays.asList(
-                    Shell.class,
-                    int.class,
-                    int.class,
-                    EPartService.class,
-                    MElementContainer.class,
-                    StackRenderer.class,
-                    ISWTResourceUtilities.class,
-                    boolean.class);
+            List<Class<?>> paramTypes = new ArrayList<Class<?>>(
+                    Arrays.<Class<?>>asList(
+                        Shell.class,
+                        int.class,
+                        int.class,
+                        EPartService.class,
+                        MElementContainer.class,
+                        StackRenderer.class,
+                        ISWTResourceUtilities.class,
+                        boolean.class));
             
             if (Arrays.equals(constructor.getParameterTypes(), paramTypes.toArray()))
             {
