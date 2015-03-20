@@ -8,9 +8,11 @@ import java.util.List;
 import org.eclipse.core.commands.AbstractHandler;
 import org.eclipse.core.commands.ExecutionEvent;
 import org.eclipse.core.commands.ExecutionException;
+import org.eclipse.e4.core.internal.contexts.EclipseContext;
 import org.eclipse.e4.ui.internal.workbench.renderers.swt.BasicPartList;
 import org.eclipse.e4.ui.model.application.ui.MElementContainer;
 import org.eclipse.e4.ui.model.application.ui.basic.MPart;
+import org.eclipse.e4.ui.workbench.IResourceUtilities;
 import org.eclipse.e4.ui.workbench.modeling.EPartService;
 import org.eclipse.e4.ui.workbench.renderers.swt.StackRenderer;
 import org.eclipse.e4.ui.workbench.swt.util.ISWTResourceUtilities;
@@ -28,6 +30,7 @@ import org.eclipse.swt.widgets.Monitor;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.ui.IWorkbenchPartReference;
 import org.eclipse.ui.IWorkbenchWindow;
+import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.handlers.HandlerUtil;
 import org.eclipse.ui.internal.EditorReference;
 import org.eclipse.ui.internal.PartPane;
@@ -122,6 +125,29 @@ public class QuickSwitchHandler extends AbstractHandler
             }
         };
         
+        ISWTResourceUtilities resUtils = new ISWTResourceUtilities()
+        {
+            @Override
+            public ImageDescriptor imageDescriptorFromURI(URI uri)
+            {
+                TapestryFile file = mElementContainerImpl.lookupFile(uri.toString());
+                
+                if (file == null)
+                {
+                    return PlatformUI.getWorkbench().getEditorRegistry().getImageDescriptor(uri.toString());
+                }
+                
+                return labelProvider.getImageDescriptor(file);
+            }
+            
+            // @Override -- Since Luna
+            public Image adornImage(Image arg0, Image arg1)
+            {
+                // TODO Auto-generated method stub
+                return null;
+            }
+        };
+        
         List<Object> initArgs = new ArrayList<Object>(
                 Arrays.<Object>asList(
                         window.getShell(),
@@ -129,23 +155,7 @@ public class QuickSwitchHandler extends AbstractHandler
                         new EPartServiceImpl(window),
                         mElementContainerImpl,
                         stackRenderer,
-                        new ISWTResourceUtilities()
-                        {
-                            @Override
-                            public ImageDescriptor imageDescriptorFromURI(URI uri)
-                            {
-                                TapestryFile file = mElementContainerImpl.lookupFile(uri.toString());
-                                
-                                return labelProvider.getImageDescriptor(file);
-                            }
-                            
-                            // @Override -- Since Luna
-                            public Image adornImage(Image arg0, Image arg1)
-                            {
-                                // TODO Auto-generated method stub
-                                return null;
-                            }
-                        },
+                        resUtils,
                         false));
         
         for (Constructor<?> constructor : BasicPartList.class.getConstructors())
@@ -166,10 +176,29 @@ public class QuickSwitchHandler extends AbstractHandler
                 return newInstance(initArgs, constructor);
             }
             
-            int paramIndex = paramTypes.indexOf(StackRenderer.class);
+            int stackRendererIndex = paramTypes.indexOf(StackRenderer.class);
             
-            paramTypes.remove(paramIndex);
-            initArgs.remove(paramIndex);
+            Class<?> stackRendererType = paramTypes.remove(stackRendererIndex);
+            initArgs.remove(stackRendererIndex);
+            
+            if (Arrays.equals(constructor.getParameterTypes(), paramTypes.toArray()))
+            {
+                return newInstance(initArgs, constructor);
+            }
+            
+            //  Eclipse Luna 4.4.2
+            
+            paramTypes.add(stackRendererIndex, stackRendererType);
+            initArgs.add(stackRendererIndex, stackRenderer);
+            
+            EclipseContext eclipseContext = new EclipseContext(null);
+            eclipseContext.set(IResourceUtilities.class.getName(), resUtils);
+            stackRenderer.init(eclipseContext);
+            
+            int resourceUtilitiesIndex = paramTypes.indexOf(ISWTResourceUtilities.class);
+            
+            paramTypes.remove(resourceUtilitiesIndex);
+            initArgs.remove(resourceUtilitiesIndex);
             
             if (Arrays.equals(constructor.getParameterTypes(), paramTypes.toArray()))
             {

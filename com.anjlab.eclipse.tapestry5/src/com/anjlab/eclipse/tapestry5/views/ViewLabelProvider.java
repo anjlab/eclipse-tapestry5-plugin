@@ -33,6 +33,11 @@ public class ViewLabelProvider extends LabelProvider
     @SuppressWarnings("restriction")
     public ImageDescriptor getImageDescriptor(Object obj)
     {
+        if (obj instanceof TapestryFile)
+        {
+            return getImageDescriptor((TapestryFile) obj);
+        }
+        
         if (obj instanceof TreeObject)
         {
             Object data = ((TreeObject) obj).getData();

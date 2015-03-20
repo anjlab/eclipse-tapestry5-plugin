@@ -1,5 +1,6 @@
 package com.anjlab.eclipse.e4.tapestry5.handlers;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -247,15 +248,13 @@ public class MStackElementImpl implements MStackElement, MPart
     @Override
     public List<String> getTags()
     {
-        // TODO Auto-generated method stub
-        return null;
+        return Collections.emptyList();
     }
 
     @Override
     public Map<String, Object> getTransientData()
     {
-        // TODO Auto-generated method stub
-        return null;
+        return Collections.emptyMap();
     }
 
     @Override
