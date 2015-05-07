@@ -888,7 +888,7 @@ public abstract class TapestryModule
         
         providersToSymbols = new HashMap<TapestryService, List<TapestrySymbol>>();
         
-        for (TapestryService symbolProvider : symbolProviders)
+        for (final TapestryService symbolProvider : symbolProviders)
         {
             visitContributions(symbolProvider, new TapestryServiceConfigurationCapturingVisitor(monitor, TapestryModule.this)
             {
