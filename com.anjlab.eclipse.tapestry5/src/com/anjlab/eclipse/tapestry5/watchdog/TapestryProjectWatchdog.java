@@ -60,6 +60,8 @@ public class TapestryProjectWatchdog extends AbstractWatchdog
             
             //  Don't show progress pop-up to the user's face
             setUser(false);
+            //  Low priority
+            setPriority(DECORATE);
         }
 
         @Override
