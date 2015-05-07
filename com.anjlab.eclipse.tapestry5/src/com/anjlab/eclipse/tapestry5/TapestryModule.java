@@ -2,7 +2,9 @@ package com.anjlab.eclipse.tapestry5;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
@@ -21,14 +23,19 @@ import org.eclipse.jdt.core.dom.ASTParser;
 import org.eclipse.jdt.core.dom.ASTVisitor;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.MethodDeclaration;
+import org.eclipse.jdt.core.dom.MethodInvocation;
 
 import com.anjlab.eclipse.tapestry5.DeclarationReference.ASTNodeReference;
 import com.anjlab.eclipse.tapestry5.DeclarationReference.JavaElementReference;
+import com.anjlab.eclipse.tapestry5.TapestryService.Matcher;
 import com.anjlab.eclipse.tapestry5.TapestryService.ServiceDefinition;
 import com.anjlab.eclipse.tapestry5.TapestryService.ServiceInstrumenter;
+import com.anjlab.eclipse.tapestry5.internal.DeclarationCapturingScope.InjectedDeclaration;
+import com.anjlab.eclipse.tapestry5.internal.Orderable;
 import com.anjlab.eclipse.tapestry5.internal.visitors.JavaScriptStackCapturingVisitor;
 import com.anjlab.eclipse.tapestry5.internal.visitors.LibraryMappingCapturingVisitor;
 import com.anjlab.eclipse.tapestry5.internal.visitors.TapestryServiceCapturingVisitor;
+import com.anjlab.eclipse.tapestry5.internal.visitors.TapestryServiceConfigurationCapturingVisitor;
 import com.anjlab.eclipse.tapestry5.internal.visitors.TapestryServiceDiscovery;
 
 public abstract class TapestryModule
@@ -302,7 +309,7 @@ public abstract class TapestryModule
         visitContributions(javaScriptStackSource, javaScriptStackCapturingVisitor);
     }
 
-    void visitContributions(final TapestryService targetService, final ASTVisitor visitor)
+    /* default */ void visitContributions(final TapestryService targetService, final ASTVisitor visitor)
     {
         for (ServiceInstrumenter contributor : contributors())
         {
@@ -785,5 +792,152 @@ public abstract class TapestryModule
             }
         }
         return false;
+    }
+
+    private List<Orderable<TapestryService>> symbolProviders;
+    
+    /* default */ List<Orderable<TapestryService>> symbolProviders(IProgressMonitor monitor)
+    {
+        if (symbolProviders == null)
+        {
+            findSymbolProviders(monitor);
+        }
+        
+        return symbolProviders;
+    }
+    
+    private synchronized void findSymbolProviders(IProgressMonitor monitor)
+    {
+        if (symbolProviders != null)
+        {
+            return;
+        }
+        
+        symbolProviders = new ArrayList<Orderable<TapestryService>>();
+        
+        //  Tapestry symbols are contributions to SymbolProviders.
+        //  First we need to grab all contributions to SymbolSource,
+        //  this way we will get all SymbolProviders.
+        
+        final TapestryService symbolSource = new TapestryService(
+                null,
+                new ServiceDefinition()
+                    .setId("SymbolSource")
+                    .setIntfClass("org.apache.tapestry5.ioc.services.SymbolSource"),
+                null);
+        
+        visitContributions(symbolSource, new TapestryServiceConfigurationCapturingVisitor(monitor, this)
+        {
+            @Override
+            protected void orderedConfigurationAddOverride(MethodInvocation node, String id, Object value, String[] constraints)
+            {
+                if (value instanceof IType)
+                {
+                    ServiceDefinition definition = new ServiceDefinition()
+                        .setId("SymbolProvider")
+                        .setIntfClass("org.apache.tapestry5.ioc.services.SymbolProvider")
+                        .setImplClass(((IType) value).getFullyQualifiedName());
+                    
+                    TapestryService symbolProvider = new TapestryService(
+                            TapestryModule.this, definition,
+                            new ASTNodeReference(TapestryModule.this, TapestryModule.this.getModuleClass(), node));
+                    
+                    symbolProviders.add(new Orderable<TapestryService>(id, symbolProvider, constraints));
+                }
+                else if (value instanceof InjectedDeclaration)
+                {
+                    InjectedDeclaration injectedValue = (InjectedDeclaration) value;
+                    
+                    if (injectedValue.isServiceInjection())
+                    {
+                        Matcher matcher = injectedValue.createMatcher(TapestryModule.this);
+                        
+                        TapestryService symbolProvider = getProject().findService(matcher);
+                        
+                        if (symbolProvider != null)
+                        {
+                            symbolProviders.add(new Orderable<TapestryService>(id, symbolProvider, constraints));
+                        }
+                    }
+                }
+            }
+        }
+        .usesOrderedConfiguration());
+    }
+
+    private Map<TapestryService, List<TapestrySymbol>> providersToSymbols;
+
+    /* default */ List<TapestrySymbol> symbolsFrom(TapestryService symbolProvider, IProgressMonitor monitor)
+    {
+        if (providersToSymbols == null)
+        {
+            throw new IllegalStateException();
+        }
+        
+        List<TapestrySymbol> symbols = providersToSymbols.get(symbolProvider);
+        
+        return symbols == null ? null : new ArrayList<TapestrySymbol>(symbols);
+    }
+
+    /* default */ synchronized void buildProvidersToSymbolsMap(List<TapestryService> symbolProviders, IProgressMonitor monitor)
+    {
+        if (providersToSymbols != null)
+        {
+            return;
+        }
+        
+        providersToSymbols = new HashMap<TapestryService, List<TapestrySymbol>>();
+        
+        for (TapestryService symbolProvider : symbolProviders)
+        {
+            visitContributions(symbolProvider, new TapestryServiceConfigurationCapturingVisitor(monitor, TapestryModule.this)
+            {
+                @Override
+                protected void mappedConfigurationAddOverride(MethodInvocation node, Object key, Object value)
+                {
+                    if (!(key instanceof String))
+                    {
+                        return;
+                    }
+                    
+                    String symbolName = (String) key;
+                    
+                    List<TapestrySymbol> providerSymbols = providersToSymbols.get(symbolProvider);
+                    
+                    if (providerSymbols == null)
+                    {
+                        providerSymbols = new ArrayList<TapestrySymbol>();
+                        
+                        providersToSymbols.put(symbolProvider, providerSymbols);
+                    }
+                    
+                    if (value instanceof String)
+                    {
+                        providerSymbols.add(
+                                new TapestrySymbol(
+                                        symbolName,
+                                        (String) value,
+                                        isOverride(node),
+                                        new ASTNodeReference(TapestryModule.this, TapestryModule.this.getModuleClass(), node),
+                                        symbolProvider));
+                    }
+                    else if (value instanceof InjectedDeclaration)
+                    {
+                        //  @Symbol?
+                        System.out.println(value);
+                    }
+                    else if (value == null)
+                    {
+                        providerSymbols.add(
+                                new TapestrySymbol(
+                                        symbolName,
+                                        null,
+                                        isOverride(node),
+                                        new ASTNodeReference(TapestryModule.this, TapestryModule.this.getModuleClass(), node),
+                                        symbolProvider));
+                    }
+                }
+            }.usesMappedConfiguration());
+        }
     }
 }

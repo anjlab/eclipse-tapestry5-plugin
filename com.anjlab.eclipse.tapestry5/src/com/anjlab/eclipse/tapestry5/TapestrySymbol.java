@@ -1,7 +1,7 @@
 package com.anjlab.eclipse.tapestry5;
 
 
-public class TapestrySymbol
+public class TapestrySymbol implements Cloneable
 {
 
     private final TapestryService symbolProvider;
@@ -58,5 +58,11 @@ public class TapestrySymbol
     public void setOverridden(boolean overridden)
     {
         this.overridden = overridden;
+    }
+    
+    @Override
+    public TapestrySymbol clone()
+    {
+        return new TapestrySymbol(name, value, override, reference, symbolProvider);
     }
 }
