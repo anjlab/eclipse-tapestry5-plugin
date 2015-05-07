@@ -59,6 +59,8 @@ public class TapestryModuleFactory implements IEclipseClasspathListener
         {
             module = new LocalTapestryModule(project, moduleClass);
             
+            //  TODO Cache local modules too, abandon modules whose resources was changed
+            
             notifyModuleCreated(moduleCreated, module);
         }
         else
