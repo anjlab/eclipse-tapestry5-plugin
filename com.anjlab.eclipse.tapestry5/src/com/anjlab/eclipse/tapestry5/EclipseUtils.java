@@ -2,6 +2,7 @@ package com.anjlab.eclipse.tapestry5;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.commons.lang.ObjectUtils;
 import org.eclipse.core.resources.IContainer;
@@ -25,8 +26,11 @@ import org.eclipse.jdt.core.Signature;
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.ASTParser;
+import org.eclipse.jdt.core.dom.ASTVisitor;
 import org.eclipse.jdt.core.dom.BooleanLiteral;
 import org.eclipse.jdt.core.dom.CompilationUnit;
+import org.eclipse.jdt.core.dom.Expression;
+import org.eclipse.jdt.core.dom.FieldDeclaration;
 import org.eclipse.jdt.core.dom.ImportDeclaration;
 import org.eclipse.jdt.core.dom.Name;
 import org.eclipse.jdt.core.dom.NullLiteral;
@@ -37,6 +41,7 @@ import org.eclipse.jdt.core.dom.SimpleType;
 import org.eclipse.jdt.core.dom.StringLiteral;
 import org.eclipse.jdt.core.dom.Type;
 import org.eclipse.jdt.core.dom.TypeLiteral;
+import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
 import org.eclipse.jdt.core.search.IJavaSearchConstants;
 import org.eclipse.jdt.core.search.IJavaSearchScope;
 import org.eclipse.jdt.core.search.SearchEngine;
@@ -462,7 +467,46 @@ public class EclipseUtils
                     //      String foo = "bar";
                     //  may be returned as "bar" (in quotes) instead of just bar (without quotes).
                     
-                    return String.valueOf(field.getConstant());
+                    if (field.isBinary() && field.isResolved() && field.getConstant() == null)
+                    {
+                        String source = field.getSource();
+                        
+                        if (source != null)
+                        {
+                            ASTNode node = parse(source, ASTParser.K_CLASS_BODY_DECLARATIONS);
+                            
+                            final AtomicReference<Expression> initializer = new AtomicReference<Expression>();
+                            
+                            if (node != null)
+                            {
+                                node.accept(new ASTVisitor()
+                                {
+                                    @Override
+                                    public boolean visit(FieldDeclaration node)
+                                    {
+                                        for (Object fragment : node.fragments())
+                                        {
+                                            if (fragment instanceof VariableDeclarationFragment)
+                                            {
+                                                initializer.set(((VariableDeclarationFragment) fragment).getInitializer());
+                                                break;
+                                            }
+                                        }
+                                        return false;
+                                    }
+                                });
+                            }
+                            
+                            if (initializer.get() != null)
+                            {
+                                return evalExpression(project, initializer.get());
+                            }
+                        }
+                    }
+                    else
+                    {
+                        return evalExpression(project, field.getConstant());
+                    }
                 }
                 catch (JavaModelException e)
                 {
