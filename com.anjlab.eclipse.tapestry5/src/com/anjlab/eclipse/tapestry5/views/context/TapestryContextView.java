@@ -1,6 +1,7 @@
 package com.anjlab.eclipse.tapestry5.views.context;
 
 import org.eclipse.jface.viewers.IContentProvider;
+import org.eclipse.jface.viewers.ISelectionProvider;
 import org.eclipse.jface.viewers.TreePath;
 import org.eclipse.jface.viewers.TreeSelection;
 import org.eclipse.jface.viewers.TreeViewer;
@@ -14,8 +15,12 @@ import com.anjlab.eclipse.tapestry5.EclipseUtils;
 import com.anjlab.eclipse.tapestry5.TapestryContext;
 import com.anjlab.eclipse.tapestry5.TapestryFile;
 import com.anjlab.eclipse.tapestry5.TapestryProject;
+import com.anjlab.eclipse.tapestry5.views.NameSorter;
+import com.anjlab.eclipse.tapestry5.views.SimpleSelectionProvider;
+import com.anjlab.eclipse.tapestry5.views.TapestryDecoratingLabelProvider;
 import com.anjlab.eclipse.tapestry5.views.TreeObject;
 import com.anjlab.eclipse.tapestry5.views.TreeObjectDoubleClickListener;
+import com.anjlab.eclipse.tapestry5.views.TreeObjectSelectionListener;
 import com.anjlab.eclipse.tapestry5.views.ViewLabelProvider;
 import com.anjlab.eclipse.tapestry5.watchdog.ITapestryContextListener;
 
@@ -49,16 +54,30 @@ public class TapestryContextView extends ViewPart
      */
     public void createPartControl(Composite parent)
     {
+        final ISelectionProvider selectionProvider = new SimpleSelectionProvider();
+        
+        getSite().setSelectionProvider(selectionProvider);
+
         viewer = new TreeViewer(parent, SWT.MULTI | SWT.H_SCROLL | SWT.V_SCROLL);
-        viewer.setContentProvider(new TapestryContextContentProvider(Activator.getDefault().getTapestryContext(getSite().getWorkbenchWindow())));
-        viewer.setLabelProvider(new ViewLabelProvider());
+        setContentProvider(
+                new TapestryContextContentProvider(
+                        getSite().getWorkbenchWindow(),
+                        Activator.getDefault().getTapestryContext(
+                                getSite().getWorkbenchWindow())));
+        viewer.setLabelProvider(new TapestryDecoratingLabelProvider(new ViewLabelProvider()));
+        viewer.setSorter(new NameSorter());
         viewer.setInput(getViewSite());
+        viewer.addSelectionChangedListener(
+                new TreeObjectSelectionListener(
+                        getSite().getWorkbenchWindow(),
+                        selectionProvider,
+                        viewer));
         viewer.addDoubleClickListener(new TreeObjectDoubleClickListener());
         
         tapestryContextListener = new ITapestryContextListener()
         {
             @Override
-            public void contextChanged(IWorkbenchWindow window, final TapestryContext newContext)
+            public void contextChanged(final IWorkbenchWindow window, final TapestryContext newContext)
             {
                 if (!getSite().getWorkbenchWindow().equals(window))
                 {
@@ -70,7 +89,7 @@ public class TapestryContextView extends ViewPart
                     @Override
                     public void run()
                     {
-                        viewer.setContentProvider(new TapestryContextContentProvider(newContext));
+                        setContentProvider(new TapestryContextContentProvider(window, newContext));
                     }
                 });
             }
@@ -106,7 +125,7 @@ public class TapestryContextView extends ViewPart
                         
                         context.validate();
                         
-                        viewer.setContentProvider(new TapestryContextContentProvider(context));
+                        setContentProvider(new TapestryContextContentProvider(window, context));
                     }
                 }
             }
@@ -114,6 +133,12 @@ public class TapestryContextView extends ViewPart
         
         Activator.getDefault().addTapestryContextListener(getViewSite().getWorkbenchWindow(), tapestryContextListener);
         Activator.getDefault().addTapestryProjectListener(getViewSite().getWorkbenchWindow(), tapestryContextListener);
+    }
+
+    private void setContentProvider(TapestryContextContentProvider contentProvider)
+    {
+        viewer.setContentProvider(contentProvider);
+        viewer.expandToLevel(2);
     }
     
     public TapestryContext getTapestryContext()

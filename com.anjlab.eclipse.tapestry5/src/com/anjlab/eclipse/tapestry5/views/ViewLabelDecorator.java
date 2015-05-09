@@ -10,6 +10,7 @@ import com.anjlab.eclipse.tapestry5.LibraryMapping;
 import com.anjlab.eclipse.tapestry5.TapestryModule;
 import com.anjlab.eclipse.tapestry5.TapestryService;
 import com.anjlab.eclipse.tapestry5.TapestrySymbol;
+import com.anjlab.eclipse.tapestry5.views.TreeParent.DataObject;
 
 public class ViewLabelDecorator extends LabelProvider implements ILightweightLabelDecorator
 {
@@ -56,10 +57,21 @@ public class ViewLabelDecorator extends LabelProvider implements ILightweightLab
             }
             else if (element instanceof TreeParent)
             {
-                int childCount = ((TreeParent) element).getChildCount();
-                if (childCount > 0)
+                Object parentData = ((TreeObject) element).getData();
+                
+                if (parentData instanceof DataObject)
                 {
-                    decoration.addSuffix(" " + childCount);
+                    int childCount = ((TreeParent) element).getChildCount();
+                    if (childCount > 0)
+                    {
+                        decoration.addSuffix(" " + childCount);
+                    }
+                }
+                else
+                {
+                    //  This could be, for example, TapestryModule root
+                    //  from TapestryContextView
+                    decorate(new TreeObject(null, parentData), decoration);
                 }
             }
         }
