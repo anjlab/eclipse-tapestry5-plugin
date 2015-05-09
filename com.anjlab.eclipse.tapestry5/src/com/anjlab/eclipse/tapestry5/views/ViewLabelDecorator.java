@@ -38,9 +38,9 @@ public class ViewLabelDecorator extends LabelProvider implements ILightweightLab
                 TapestrySymbol symbol = (TapestrySymbol) data;
                 
                 decoration.addSuffix(
-                        " from " + symbol.getSymbolProvider().getDefinition().getId()
-                        + " in " + symbol.getReference().getTapestryModule().getName()
-                        + ", =" + symbol.getValue());
+                        " =" + symbol.getValue()
+                        + ", from " + symbol.getSymbolProvider().getDefinition().getId()
+                        + " in " + symbol.getReference().getTapestryModule().getName());
             }
             else if (data instanceof TapestryService)
             {

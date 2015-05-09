@@ -1,10 +1,6 @@
 package com.anjlab.eclipse.tapestry5.views.context;
 
-import org.eclipse.jface.viewers.DoubleClickEvent;
 import org.eclipse.jface.viewers.IContentProvider;
-import org.eclipse.jface.viewers.IDoubleClickListener;
-import org.eclipse.jface.viewers.ISelection;
-import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.jface.viewers.TreePath;
 import org.eclipse.jface.viewers.TreeSelection;
 import org.eclipse.jface.viewers.TreeViewer;
@@ -19,6 +15,7 @@ import com.anjlab.eclipse.tapestry5.TapestryContext;
 import com.anjlab.eclipse.tapestry5.TapestryFile;
 import com.anjlab.eclipse.tapestry5.TapestryProject;
 import com.anjlab.eclipse.tapestry5.views.TreeObject;
+import com.anjlab.eclipse.tapestry5.views.TreeObjectDoubleClickListener;
 import com.anjlab.eclipse.tapestry5.views.ViewLabelProvider;
 import com.anjlab.eclipse.tapestry5.watchdog.ITapestryContextListener;
 
@@ -56,22 +53,7 @@ public class TapestryContextView extends ViewPart
         viewer.setContentProvider(new TapestryContextContentProvider(Activator.getDefault().getTapestryContext(getSite().getWorkbenchWindow())));
         viewer.setLabelProvider(new ViewLabelProvider());
         viewer.setInput(getViewSite());
-        viewer.addDoubleClickListener(new IDoubleClickListener()
-        {
-            public void doubleClick(DoubleClickEvent event)
-            {
-                ISelection selection = viewer.getSelection();
-                
-                Object obj = ((IStructuredSelection) selection).getFirstElement();
-                
-                if (obj instanceof TreeObject)
-                {
-                    TapestryFile file = (TapestryFile) ((TreeObject) obj).getData();
-                    
-                    EclipseUtils.openFile(getViewSite().getWorkbenchWindow(), file);
-                }
-            }
-        });
+        viewer.addDoubleClickListener(new TreeObjectDoubleClickListener());
         
         tapestryContextListener = new ITapestryContextListener()
         {

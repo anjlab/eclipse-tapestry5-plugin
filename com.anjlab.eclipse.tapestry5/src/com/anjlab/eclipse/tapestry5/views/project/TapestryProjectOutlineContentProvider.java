@@ -28,6 +28,7 @@ public class TapestryProjectOutlineContentProvider implements ITreeContentProvid
     private static final String SERVICES_NODE_LABEL = "Services";
     private static final String LIBRARY_MAPPINGS_NODE_LABEL = "Library Mappings";
     private static final String JAVA_SCRIPT_STACKS_NODE_LABEL = "JavaScript Stacks";
+    private static final String IMPORTED_MODULES_NODE_LABEL = "Imported Modules";
     
     private TreeParent invisibleRoot;
     private TapestryProject project;
@@ -146,7 +147,7 @@ public class TapestryProjectOutlineContentProvider implements ITreeContentProvid
                     
                     advisorsRoot.addChild(new TreeObject(id, advisor));
                 }
-                
+
                 TreeParent contributorsRoot = newChildNode(moduleRoot, CONTRIBUTORS_NODE_LABEL, new DataObject("ContributorsNode"));
                 
                 for (ServiceInstrumenter contributor : module.contributors())
@@ -160,6 +161,13 @@ public class TapestryProjectOutlineContentProvider implements ITreeContentProvid
                     
                     contributorsRoot.addChild(new TreeObject(id, contributor));
                 }
+                
+                TreeParent importedModulesRoot = newChildNode(moduleRoot, IMPORTED_MODULES_NODE_LABEL, new DataObject("ImportedModulesNode"));
+                
+                for (TapestryModule subModule : module.subModules())
+                {
+                    importedModulesRoot.addChild(new TreeObject(subModule.getName(), subModule));
+                }
             }
             else
             {
@@ -169,6 +177,7 @@ public class TapestryProjectOutlineContentProvider implements ITreeContentProvid
                 newChildNode(moduleRoot, DECORATORS_NODE_LABEL, EclipseUtils.SOURCE_NOT_FOUND);
                 newChildNode(moduleRoot, ADVISORS_NODE_LABEL, EclipseUtils.SOURCE_NOT_FOUND);
                 newChildNode(moduleRoot, CONTRIBUTORS_NODE_LABEL, EclipseUtils.SOURCE_NOT_FOUND);
+                newChildNode(moduleRoot, IMPORTED_MODULES_NODE_LABEL, EclipseUtils.SOURCE_NOT_FOUND);
             }
         }
     }

@@ -9,12 +9,9 @@ import org.eclipse.jdt.core.ISourceReference;
 import org.eclipse.jdt.core.IType;
 import org.eclipse.jdt.core.JavaModelException;
 import org.eclipse.jdt.internal.ui.javaeditor.IClassFileEditorInput;
-import org.eclipse.jface.viewers.DoubleClickEvent;
-import org.eclipse.jface.viewers.IDoubleClickListener;
 import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.jface.viewers.ISelectionChangedListener;
 import org.eclipse.jface.viewers.ISelectionProvider;
-import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.jface.viewers.SelectionChangedEvent;
 import org.eclipse.jface.viewers.StructuredSelection;
 import org.eclipse.jface.viewers.TreeSelection;
@@ -46,6 +43,7 @@ import com.anjlab.eclipse.tapestry5.TapestrySymbol;
 import com.anjlab.eclipse.tapestry5.views.NameSorter;
 import com.anjlab.eclipse.tapestry5.views.TapestryDecoratingLabelProvider;
 import com.anjlab.eclipse.tapestry5.views.TreeObject;
+import com.anjlab.eclipse.tapestry5.views.TreeObjectDoubleClickListener;
 import com.anjlab.eclipse.tapestry5.views.ViewLabelProvider;
 import com.anjlab.eclipse.tapestry5.watchdog.ITapestryContextListener;
 
@@ -342,47 +340,7 @@ public class TapestryProjectOutlineView extends ViewPart
                 return null;
             }
         });
-        viewer.addDoubleClickListener(new IDoubleClickListener()
-        {
-            public void doubleClick(DoubleClickEvent event)
-            {
-                ISelection selection = viewer.getSelection();
-                
-                Object obj = ((IStructuredSelection) selection).getFirstElement();
-                
-                if (obj instanceof TreeObject)
-                {
-                    Object data = ((TreeObject) obj).getData();
-                    
-                    if (data instanceof TapestryModule)
-                    {
-                        EclipseUtils.openDeclaration(
-                                ((TapestryModule) data).getModuleClass(), null);
-                    }
-                    else if (data instanceof JavaScriptStack)
-                    {
-                        EclipseUtils.openDeclaration(
-                                ((JavaScriptStack) data).getType(), null);
-                    }
-                    else if (data instanceof TapestrySymbol)
-                    {
-                        ((TapestrySymbol) data).getReference().openInEditor();
-                    }
-                    else if (data instanceof LibraryMapping)
-                    {
-                        ((LibraryMapping) data).getReference().openInEditor();
-                    }
-                    else if (data instanceof TapestryService)
-                    {
-                        ((TapestryService) data).getReference().openInEditor();
-                    }
-                    else if (data instanceof ServiceInstrumenter)
-                    {
-                        ((ServiceInstrumenter) data).getReference().openInEditor();
-                    }
-                }
-            }
-        });
+        viewer.addDoubleClickListener(new TreeObjectDoubleClickListener());
         
         tapestryContextListener = new ITapestryContextListener()
         {
