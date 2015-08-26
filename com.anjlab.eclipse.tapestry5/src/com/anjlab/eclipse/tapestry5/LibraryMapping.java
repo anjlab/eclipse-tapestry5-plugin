@@ -1,6 +1,6 @@
 package com.anjlab.eclipse.tapestry5;
 
-public class LibraryMapping
+public class LibraryMapping implements Openable
 {
     private String pathPrefix;
     private String rootPackage;
@@ -32,5 +32,11 @@ public class LibraryMapping
     public DeclarationReference getReference()
     {
         return reference;
+    }
+    
+    @Override
+    public void openInEditor()
+    {
+        getReference().openInEditor();
     }
 }

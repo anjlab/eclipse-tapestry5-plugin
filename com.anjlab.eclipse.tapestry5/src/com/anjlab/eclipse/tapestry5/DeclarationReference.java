@@ -3,7 +3,7 @@ package com.anjlab.eclipse.tapestry5;
 import org.eclipse.jdt.core.IJavaElement;
 import org.eclipse.jdt.core.dom.ASTNode;
 
-public interface DeclarationReference
+public interface DeclarationReference extends Openable
 {
     public static class ASTNodeReference implements DeclarationReference
     {
@@ -148,6 +148,4 @@ public interface DeclarationReference
     TapestryModule getTapestryModule();
 
     IJavaElement getElement();
-
-    void openInEditor();
 }

@@ -2,7 +2,7 @@
 
 REPO_NAME=eclipse-tapestry5-plugin
 PACKAGE_NAME=update-site
-VERSION_NAME=2.10.3
+VERSION_NAME=2.12.0
 
 curl -vT content.jar \
     -udmitrygusev:$bintray_api_key \

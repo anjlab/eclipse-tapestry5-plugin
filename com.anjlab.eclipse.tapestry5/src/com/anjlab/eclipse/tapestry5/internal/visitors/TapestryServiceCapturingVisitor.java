@@ -2,15 +2,17 @@ package com.anjlab.eclipse.tapestry5.internal.visitors;
 
 import java.util.List;
 
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.jdt.core.IAnnotation;
 import org.eclipse.jdt.core.IType;
 import org.eclipse.jdt.core.JavaModelException;
-import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.ASTVisitor;
 import org.eclipse.jdt.core.dom.MethodInvocation;
 import org.eclipse.jdt.core.dom.TypeLiteral;
+import org.eclipse.jdt.core.search.IJavaSearchConstants;
 
+import com.anjlab.eclipse.tapestry5.Activator;
 import com.anjlab.eclipse.tapestry5.DeclarationReference.ASTNodeReference;
 import com.anjlab.eclipse.tapestry5.EclipseUtils;
 import com.anjlab.eclipse.tapestry5.ObjectCallback;
@@ -125,52 +127,7 @@ public class TapestryServiceCapturingVisitor extends ASTVisitor
         }
         else if ("bind".equals(identifier))
         {
-            ASTNode intf = null;
-            ASTNode impl = null;
-            
-            switch (node.arguments().size()) {
-            case 2:
-                //  Interface, Implementation
-                intf = (ASTNode) node.arguments().get(0);
-                impl = (ASTNode) node.arguments().get(1);
-                break;
-            case 1:
-                //  Interface
-                intf = (ASTNode) node.arguments().get(0);
-                break;
-            }
-            
-            if (intf instanceof TypeLiteral)
-            {
-                ServiceDefinition definition = serviceDefinition();
-                
-                definition.setIntfClass(EclipseUtils.toClassName(tapestryModule.getEclipseProject(), (TypeLiteral) intf));
-                
-                if (impl instanceof TypeLiteral)
-                {
-                    definition.setImplClass(EclipseUtils.toClassName(tapestryModule.getEclipseProject(), (TypeLiteral) impl));
-                }
-                
-                if (definition.isSimpleId())
-                {
-                    if (StringUtils.isNotEmpty(definition.getImplClass()))
-                    {
-                        definition.setId(TapestryUtils.getSimpleName(definition.getImplClass()));
-                    }
-                }
-                else if (StringUtils.isEmpty(definition.getId()))
-                {
-                    definition.setId(TapestryUtils.getSimpleName(definition.getIntfClass()));
-                }
-                
-                copyMarkersFrom(definition.getIntfClass());
-                copyMarkersFrom(definition.getImplClass());
-
-                serviceFound.callback(new TapestryService(
-                        tapestryModule,
-                        definition,
-                        new ASTNodeReference(tapestryModule, tapestryModule.getModuleClass(), node)));
-            }
+            bind(node);
             
             serviceDefinition = null;
             
@@ -180,20 +137,192 @@ public class TapestryServiceCapturingVisitor extends ASTVisitor
         return super.visit(node);
     }
 
-    private void copyMarkersFrom(String className)
+    private void bind(MethodInvocation node)
     {
-        if (StringUtils.isEmpty(className))
+        String intfClass = null;
+        String implClass = null;
+        
+        switch (node.arguments().size()) {
+        case 2:
+            //  Interface, Implementation
+            intfClass = typeLiteralToClassName(node.arguments().get(0));
+            implClass = typeLiteralToClassName(node.arguments().get(1));
+            break;
+        case 1:
+            //  Check if it's actually an interface, or a non-interface class
+            //  It it's an interface, then name of implementation class can be computed
+            String className = typeLiteralToClassName(node.arguments().get(0));
+            
+            //  TODO Implement caching for type lookups
+            IType type = EclipseUtils.findTypeDeclaration(
+                    tapestryModule.getEclipseProject(), IJavaSearchConstants.CLASS_AND_INTERFACE, className);
+            
+            if (type == null)
+            {
+                //  Something is wrong with this service binding
+                Activator.getDefault().logError("Unable to find java type: " + className);
+                return;
+            }
+            
+            try
+            {
+                if (type.isInterface())
+                {
+                    intfClass = type.getFullyQualifiedName();
+                    implClass = intfClass + "Impl";
+                }
+                else
+                {
+                    implClass = type.getFullyQualifiedName();
+                }
+                
+                break;
+            }
+            catch (JavaModelException e)
+            {
+                Activator.getDefault().logError("Unable to read java model", e);
+                return;
+            }
+            default:
+                Activator.getDefault().logWarning("Unexpected method signature: " + node);
+                return;
+        }
+        
+        ServiceDefinition definition = serviceDefinition();
+        
+        definition.setIntfClass(intfClass);
+        definition.setImplClass(implClass);
+        
+        if (definition.isSimpleId())
         {
+            if (StringUtils.isNotEmpty(definition.getImplClass()))
+            {
+                definition.setId(TapestryUtils.getSimpleName(definition.getImplClass()));
+            }
+        }
+        else if (StringUtils.isEmpty(definition.getId()))
+        {
+            //  Try getting serviceId from @ServiceId & @Named annotations on implementation class
+            //  see tapestry's ServiceBinderImpl#bind() for details
+            
+            String serviceId = readServiceIdFromAnnotations(definition.getImplClass());
+            
+            String classNameForServiceId = StringUtils.defaultIfEmpty(
+                    //  In tapestry it's not possible to have null interface,
+                    //  it's plugin's implementation detail --
+                    //  should fallback to implClass in this case
+                    definition.getIntfClass(),
+                    definition.getImplClass());
+            
+            definition.setId(
+                    StringUtils.defaultIfEmpty(
+                            serviceId,
+                            StringUtils.isNotEmpty(classNameForServiceId)
+                                    ? TapestryUtils.getSimpleName(classNameForServiceId)
+                                    : null));
+        }
+        
+        if (StringUtils.isEmpty(definition.getId()))
+        {
+            //  Something is wrong with this service definition
+            //  Maybe that was not ServiceBinder#bind(), but some other `bind` method?
             return;
         }
+        
+        copyMarkersFromInterface(definition.getIntfClass());
+        copyMarkersFromClass(definition.getImplClass());
+        
+        serviceFound.callback(new TapestryService(
+                tapestryModule,
+                definition,
+                new ASTNodeReference(tapestryModule, tapestryModule.getModuleClass(), node)));
+    }
 
-        IType type = EclipseUtils.findTypeDeclaration(tapestryModule.getEclipseProject(), className);
+    private String readServiceIdFromAnnotations(String implClass)
+    {
+        try
+        {
+            IType implType = EclipseUtils.findTypeDeclaration(
+                    tapestryModule.getEclipseProject(),
+                    IJavaSearchConstants.CLASS,
+                    implClass);
+            
+            if (implType == null)
+            {
+                return null;
+            }
+            
+            IAnnotation serviceIdAnnotation =
+                    TapestryUtils.findAnnotation(
+                            implType.getAnnotations(),
+                            TapestryUtils.ORG_APACHE_TAPESTRY5_IOC_ANNOTATIONS_SERVICE_ID);
+            
+            if (serviceIdAnnotation != null)
+            {
+                return EclipseUtils.readFirstValueFromAnnotation(
+                        tapestryModule.getEclipseProject(),
+                        serviceIdAnnotation,
+                        "value");
+            }
+            
+            IAnnotation namedAnnotation =
+                    TapestryUtils.findAnnotation(
+                            implType.getAnnotations(),
+                            TapestryUtils.JAVAX_INJECT_NAMED);
+            
+            if (namedAnnotation != null)
+            {
+                return StringUtils.trimToNull(
+                        EclipseUtils.readFirstValueFromAnnotation(
+                            tapestryModule.getEclipseProject(),
+                            namedAnnotation,
+                            "value"));
+            }
+        }
+        catch (JavaModelException e)
+        {
+            Activator.getDefault().logError("Error determining ServiceId from implementation class", e);
+        }
+        
+        return null;
+    }
 
+    private String typeLiteralToClassName(Object node)
+    {
+        if (node instanceof TypeLiteral)
+        {
+            return EclipseUtils.toClassName(tapestryModule.getEclipseProject(), (TypeLiteral) node);
+        }
+        return null;
+    }
+
+    private void copyMarkersFromInterface(String intfName)
+    {
+        IType type = EclipseUtils.findTypeDeclaration(
+                tapestryModule.getEclipseProject(),
+                IJavaSearchConstants.INTERFACE,
+                intfName);
+
+        copyMarkersFrom(type);
+    }
+    
+    private void copyMarkersFromClass(String className)
+    {
+        IType type = EclipseUtils.findTypeDeclaration(
+                tapestryModule.getEclipseProject(),
+                IJavaSearchConstants.CLASS,
+                className);
+
+        copyMarkersFrom(type);
+    }
+
+    private void copyMarkersFrom(IType type)
+    {
         if (type == null)
         {
             return;
         }
-
+        
         try
         {
             List<String> markers = tapestryModule.readMarkerAnnotation(type);

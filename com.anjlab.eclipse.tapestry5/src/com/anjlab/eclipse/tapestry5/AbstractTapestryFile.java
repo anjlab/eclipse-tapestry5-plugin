@@ -1,5 +1,7 @@
 package com.anjlab.eclipse.tapestry5;
 
+import org.eclipse.ui.PlatformUI;
+
 public abstract class AbstractTapestryFile implements TapestryFile
 {
     @Override
@@ -38,4 +40,11 @@ public abstract class AbstractTapestryFile implements TapestryFile
         return getPath().getFileExtension();
     }
 
+    @Override
+    public void openInEditor()
+    {
+        EclipseUtils.openFile(
+                PlatformUI.getWorkbench().getActiveWorkbenchWindow(),
+                this);
+    }
 }

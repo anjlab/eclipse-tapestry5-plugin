@@ -68,17 +68,21 @@ public class Activator extends AbstractUIPlugin implements IWebXmlListener
         webXmlWatchdog.addListener(null, this);
         webXmlWatchdog.start();
         
-        tapestryContextWatchdog = new TapestryContextWatchdog();
-        tapestryContextWatchdog.start();
-        
+        // Tapestry project watchdog should start before tapestry context one,
+        // this is in order to receive resource change notifications first,
+        // because tapestry context references to tapestry modules that could be
+        // outdated
         tapestryProjectWatchdog = new TapestryProjectWatchdog();
         tapestryProjectWatchdog.start();
-        
-        tapestryModuleFactory = new TapestryModuleFactory();
-        
+
         eclipseClasspathWatchdog = new EclipseClasspathWatchdog();
         eclipseClasspathWatchdog.addListener(null, tapestryModuleFactory);
         eclipseClasspathWatchdog.start();
+
+        tapestryContextWatchdog = new TapestryContextWatchdog();
+        tapestryContextWatchdog.start();
+
+        tapestryModuleFactory = new TapestryModuleFactory();
         
         tapestryContextFactory = new TapestryContextFactory();
     }
@@ -238,6 +242,11 @@ public class Activator extends AbstractUIPlugin implements IWebXmlListener
         tapestryProjectWatchdog.removeListener(window, listener);
     }
 
+    public void forceProjectRefresh(IWorkbenchWindow window)
+    {
+        tapestryProjectWatchdog.forceProjectRefresh(window);
+    }
+    
     public TapestryModuleFactory getTapestryModuleFactory()
     {
         return tapestryModuleFactory;

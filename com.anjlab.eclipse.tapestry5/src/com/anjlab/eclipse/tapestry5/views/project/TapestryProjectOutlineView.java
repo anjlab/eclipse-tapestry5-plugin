@@ -17,7 +17,6 @@ import com.anjlab.eclipse.tapestry5.views.SimpleSelectionProvider;
 import com.anjlab.eclipse.tapestry5.views.TapestryDecoratingLabelProvider;
 import com.anjlab.eclipse.tapestry5.views.TreeObjectDoubleClickListener;
 import com.anjlab.eclipse.tapestry5.views.TreeObjectSelectionListener;
-import com.anjlab.eclipse.tapestry5.views.ViewLabelProvider;
 import com.anjlab.eclipse.tapestry5.watchdog.ITapestryContextListener;
 
 /**
@@ -59,9 +58,9 @@ public class TapestryProjectOutlineView extends ViewPart
                 new TapestryProjectOutlineContentProvider(
                         Activator.getDefault().getTapestryProject(
                                 getSite().getWorkbenchWindow())));
-        viewer.setLabelProvider(new TapestryDecoratingLabelProvider(new ViewLabelProvider()));
+        viewer.setLabelProvider(new TapestryDecoratingLabelProvider());
         viewer.setSorter(new NameSorter());
-        viewer.setInput(getViewSite());
+        viewer.setInput(this);
         viewer.addSelectionChangedListener(
                 new TreeObjectSelectionListener(
                         getSite().getWorkbenchWindow(),

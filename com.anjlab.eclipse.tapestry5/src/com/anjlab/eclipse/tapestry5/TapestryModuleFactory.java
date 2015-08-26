@@ -22,74 +22,109 @@ public class TapestryModuleFactory implements IEclipseClasspathListener
 
     private Map<IType, Map<IProject, TapestryModule>> jarModules =
             new HashMap<IType, Map<IProject, TapestryModule>>();
-    
+
+    private Map<IType, Map<IProject, TapestryModule>> localModules = new HashMap<IType, Map<IProject, TapestryModule>>();
+
     @Override
     public void classpathChanged(IFile classpath)
     {
-        //  Reset cache when classpath updated
-        
+        // Reset cache when classpath updated
+
+        // TODO Be more intelligent and check if some dependencies with tapestry
+        // modules remain the same
+
+        clearCache(classpath.getProject());
+    }
+
+    public void clearCache(IProject project)
+    {
+        clearProjectCache(project, localModules);
+        clearProjectCache(project, jarModules);
+    }
+
+    private void clearProjectCache(IProject project, Map<IType, Map<IProject, TapestryModule>> modulesCache)
+    {
         Set<IType> emptyKeys = new HashSet<IType>();
-        
-        for (Entry<IType, Map<IProject, TapestryModule>> entry : jarModules.entrySet())
+
+        for (Entry<IType, Map<IProject, TapestryModule>> entry : modulesCache.entrySet())
         {
             Map<IProject, TapestryModule> value = entry.getValue();
-            
-            value.remove(classpath.getProject());
-            
+
+            value.remove(project);
+
             if (value.isEmpty())
             {
                 emptyKeys.add(entry.getKey());
             }
         }
-        
+
         for (IType key : emptyKeys)
         {
-            jarModules.remove(key);
+            modulesCache.remove(key);
         }
     }
-    
+
+    private interface ModuleCreator
+    {
+        TapestryModule createModule(TapestryProject project, IType moduleClass);
+    }
+
     public TapestryModule createTapestryModule(
             TapestryProject project,
             IType moduleClass,
             ObjectCallback<TapestryModule, RuntimeException> moduleCreated)
     {
-        final TapestryModule module;
-        
         if (moduleClass.getResource() != null)
         {
-            module = new LocalTapestryModule(project, moduleClass);
-            
-            //  TODO Cache local modules too, abandon modules whose resources was changed
-            
-            notifyModuleCreated(moduleCreated, module);
+            return getOrCreateModule(localModules, project, moduleClass, moduleCreated, new ModuleCreator()
+            {
+                @Override
+                public TapestryModule createModule(TapestryProject project, IType moduleClass)
+                {
+                    return new LocalTapestryModule(project, moduleClass);
+                }
+            });
         }
-        else
+
+        return getOrCreateModule(jarModules, project, moduleClass, moduleCreated, new ModuleCreator()
         {
-            Map<IProject, TapestryModule> projectModules = jarModules.get(moduleClass);
-            
-            if (projectModules == null)
+            @Override
+            public TapestryModule createModule(TapestryProject project, IType moduleClass)
             {
-                projectModules = new HashMap<IProject, TapestryModule>();
-                
-                jarModules.put(moduleClass, projectModules);
+                return new JarTapestryModule(project, moduleClass);
             }
-            
-            TapestryModule cachedModule = projectModules.get(project.getProject());
-            
-            if (cachedModule != null)
-            {
-                module = cachedModule;
-            }
-            else
-            {
-                module = new JarTapestryModule(project, moduleClass);
-                
-                projectModules.put(project.getProject(), module);
-                
-                notifyModuleCreated(moduleCreated, module);
-            }
+        });
+    }
+
+    private TapestryModule getOrCreateModule(
+            Map<IType, Map<IProject, TapestryModule>> modulesCache,
+            TapestryProject project,
+            IType moduleClass,
+            ObjectCallback<TapestryModule, RuntimeException> moduleCreated,
+            ModuleCreator moduleCreator)
+    {
+        Map<IProject, TapestryModule> projectModules = modulesCache.get(moduleClass);
+
+        if (projectModules == null)
+        {
+            projectModules = new HashMap<IProject, TapestryModule>();
+
+            modulesCache.put(moduleClass, projectModules);
         }
-        
+
+        TapestryModule cachedModule = projectModules.get(project.getProject());
+
+        if (cachedModule != null)
+        {
+            return cachedModule;
+        }
+
+        final TapestryModule module = moduleCreator.createModule(project, moduleClass);
+
+        projectModules.put(project.getProject(), module);
+
+        notifyModuleCreated(moduleCreated, module);
+
         return module;
     }
 
@@ -102,5 +137,40 @@ public class TapestryModuleFactory implements IEclipseClasspathListener
             moduleCreated.callback(module);
         }
     }
-    
+
+    public void localModuleChanged(IFile moduleClass)
+    {
+        Set<IType> emptyKeys = new HashSet<IType>();
+
+        for (Entry<IType, Map<IProject, TapestryModule>> entry : localModules.entrySet())
+        {
+            Map<IProject, TapestryModule> value = entry.getValue();
+
+            // Check if IType is from the same resource as moduleClass
+            boolean found = false;
+            for (TapestryModule module : value.values())
+            {
+                if (TapestryUtils.isModuleFile(moduleClass, module))
+                {
+                    found = true;
+                    break;
+                }
+            }
+
+            if (found)
+            {
+                emptyKeys.add(entry.getKey());
+            }
+        }
+
+        for (IType key : emptyKeys)
+        {
+            localModules.remove(key);
+        }
+    }
+
+    public void clearLocalCache(IProject project)
+    {
+        clearProjectCache(project, localModules);
+    }
 }

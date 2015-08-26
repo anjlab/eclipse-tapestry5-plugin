@@ -201,4 +201,10 @@ public abstract class AbstractFileReference extends AbstractTapestryFile impleme
     {
         return getJavaFile().getContext();
     }
+    
+    @Override
+    public String getClassName()
+    {
+        return null;
+    }
 }

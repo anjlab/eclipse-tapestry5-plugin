@@ -5,7 +5,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.ObjectUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.eclipse.core.resources.IContainer;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
@@ -765,6 +766,8 @@ public class TapestryUtils
     public static final String ORG_APACHE_TAPESTRY5_IOC_ANNOTATIONS_INJECT_SERVICE = "org.apache.tapestry5.ioc.annotations.InjectService";
     public static final String ORG_APACHE_TAPESTRY5_IOC_ANNOTATIONS_LOCAL = "org.apache.tapestry5.ioc.annotations.Local";
 
+    public static final String JAVAX_INJECT_NAMED = "javax.inject.Named";
+
     public static final String BUILD_METHOD_NAME_PREFIX = "build";
     public static final String CONTRIBUTE_METHOD_NAME_PREFIX = "contribute";
     public static final String ADVISE_METHOD_NAME_PREFIX = "advise";
@@ -833,6 +836,12 @@ public class TapestryUtils
             }
         }
         return input;
+    }
+
+    public static boolean isModuleFile(IFile affectedFile, TapestryModule module)
+    {
+        return ObjectUtils.equals(module.getModuleFile().getPath(), affectedFile.getProjectRelativePath())
+                && ObjectUtils.equals(module.getModuleFile().getProject(), affectedFile.getProject());
     }
 
 }

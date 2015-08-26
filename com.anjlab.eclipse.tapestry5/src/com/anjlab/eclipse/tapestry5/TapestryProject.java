@@ -12,7 +12,7 @@ import java.util.jar.Manifest;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
@@ -22,6 +22,7 @@ import org.eclipse.jdt.core.IPackageFragmentRoot;
 import org.eclipse.jdt.core.IType;
 import org.eclipse.jdt.core.JavaCore;
 import org.eclipse.jdt.core.JavaModelException;
+import org.eclipse.jdt.core.search.IJavaSearchConstants;
 
 import com.anjlab.eclipse.tapestry5.DeclarationReference.NonJavaReference;
 import com.anjlab.eclipse.tapestry5.internal.Orderable;
@@ -556,7 +557,8 @@ public class TapestryProject
         
         monitor.subTask("Locating " + moduleClassName + "...");
         
-        IType moduleClass = EclipseUtils.findTypeDeclaration(project, moduleClassName);
+        IType moduleClass = EclipseUtils.findTypeDeclaration(
+                project, IJavaSearchConstants.CLASS, moduleClassName);
         
         if (moduleClass == null)
         {

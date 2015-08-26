@@ -1,7 +1,7 @@
 package com.anjlab.eclipse.tapestry5;
 
 
-public class TapestrySymbol implements Cloneable
+public class TapestrySymbol implements Cloneable, Openable
 {
 
     private final TapestryService symbolProvider;
@@ -64,5 +64,11 @@ public class TapestrySymbol implements Cloneable
     public TapestrySymbol clone()
     {
         return new TapestrySymbol(name, value, override, reference, symbolProvider);
+    }
+    
+    @Override
+    public void openInEditor()
+    {
+        getReference().openInEditor();
     }
 }

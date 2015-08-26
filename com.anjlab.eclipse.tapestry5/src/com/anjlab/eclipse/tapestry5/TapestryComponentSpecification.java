@@ -6,7 +6,8 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
+import org.eclipse.core.runtime.CoreException;
 import org.eclipse.jdt.core.IAnnotation;
 import org.eclipse.jdt.core.ICompilationUnit;
 import org.eclipse.jdt.core.IField;
@@ -16,6 +17,7 @@ import org.eclipse.jdt.core.IMemberValuePair;
 import org.eclipse.jdt.core.IMethod;
 import org.eclipse.jdt.core.IType;
 import org.eclipse.jdt.core.JavaModelException;
+import org.eclipse.jdt.core.search.IJavaSearchConstants;
 import org.eclipse.jdt.internal.ui.text.javadoc.JavadocContentAccess2;
 
 @SuppressWarnings("restriction")
@@ -95,32 +97,16 @@ public class TapestryComponentSpecification
             return null;
         }
         
-        if (!superclassName.contains("."))
-        {
-            ICompilationUnit compilationUnit = type.getCompilationUnit();
-            if (compilationUnit != null)
-            {
-                IImportDeclaration[] imports = compilationUnit.getImports();
-                if (imports.length > 0)
-                {
-                    for (IImportDeclaration importDecl : imports)
-                    {
-                        if (importDecl.getElementName().endsWith("." + superclassName))
-                        {
-                            superclassName = importDecl.getElementName();
-                            break;
-                        }
-                    }
-                }
-                else
-                {
-                    //  Superclass is from the same package
-                    superclassName = type.getPackageFragment().getElementName() + "." + superclassName;
-                }
-            }
-        }
+        String className = EclipseUtils.toClassNameFromImports(
+                type.getJavaProject().getProject(),
+                type,
+                superclassName);
         
-        IType superclass = EclipseUtils.findTypeDeclaration(type.getJavaProject().getProject(), superclassName);
+        IType superclass = EclipseUtils.findTypeDeclaration(
+                type.getJavaProject().getProject(),
+                IJavaSearchConstants.CLASS,
+                className);
+        
         return superclass;
     }
 
@@ -163,13 +149,20 @@ public class TapestryComponentSpecification
         });
     }
 
-    private Component createComponentFromInjection(IType type, IField field, IAnnotation annotation) throws JavaModelException
+    private Component createComponentFromInjection(IType type, final IField field, IAnnotation annotation) throws JavaModelException
     {
         Component component = new Component();
         component.setSpecification(this);
         component.setName(field.getElementName());
         component.setNameRange(field.getNameRange());
-        component.setJavadoc(JavadocContentAccess2.getHTMLContent(field, true));
+        component.setJavadocValue(new LazyValue<String>()
+        {
+            @Override
+            protected String eval() throws CoreException
+            {
+                return JavadocContentAccess2.getHTMLContent(field, true);
+            }
+        });
         
         for (IMemberValuePair pair : annotation.getMemberValuePairs())
         {
@@ -181,13 +174,20 @@ public class TapestryComponentSpecification
         return component;
     }
 
-    protected Component createComponent(IType type, IField field, IAnnotation annotation) throws JavaModelException
+    protected Component createComponent(IType type, final IField field, IAnnotation annotation) throws JavaModelException
     {
         Component component = new Component();
         component.setSpecification(this);
         component.setName(field.getElementName());
         component.setNameRange(field.getNameRange());
-        component.setJavadoc(JavadocContentAccess2.getHTMLContent(field, true));
+        component.setJavadocValue(new LazyValue<String>()
+        {
+            @Override
+            protected String eval() throws CoreException
+            {
+                return JavadocContentAccess2.getHTMLContent(field, true);
+            }
+        });
         
         for (IMemberValuePair pair : annotation.getMemberValuePairs())
         {
@@ -296,13 +296,20 @@ public class TapestryComponentSpecification
         }
     }
 
-    protected Parameter createParameter(IType type, IField field, IAnnotation annotation) throws JavaModelException
+    protected Parameter createParameter(IType type, final IField field, IAnnotation annotation) throws JavaModelException
     {
         Parameter parameter = new Parameter();
         parameter.setSpecification(this);
         parameter.setName(field.getElementName());
         parameter.setNameRange(field.getNameRange());
-        parameter.setJavadoc(JavadocContentAccess2.getHTMLContent(field, true));
+        parameter.setJavadocValue(new LazyValue<String>()
+        {
+            @Override
+            protected String eval() throws CoreException
+            {
+                return JavadocContentAccess2.getHTMLContent(field, true);
+            }
+        });
         
         for (IMemberValuePair pair : annotation.getMemberValuePairs())
         {
@@ -440,13 +447,20 @@ public class TapestryComponentSpecification
         return property;
     }
 
-    private Property createProperty(IMember member, String name) throws JavaModelException
+    private Property createProperty(final IMember member, String name) throws JavaModelException
     {
         Property property = new Property();
         property.setSpecification(this);
         property.setName(name);
         property.setNameRange(member.getNameRange());
-        property.setJavadoc(JavadocContentAccess2.getHTMLContent(member, true));
+        property.setJavadocValue(new LazyValue<String>()
+        {
+            @Override
+            protected String eval() throws CoreException
+            {
+                return JavadocContentAccess2.getHTMLContent(member, true);
+            }
+        });
         return property;
     }
     

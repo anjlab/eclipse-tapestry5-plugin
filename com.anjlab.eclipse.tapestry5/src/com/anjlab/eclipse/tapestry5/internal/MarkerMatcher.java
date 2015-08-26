@@ -2,7 +2,7 @@ package com.anjlab.eclipse.tapestry5.internal;
 
 import static com.anjlab.eclipse.tapestry5.TapestryUtils.getSimpleName;
 
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 
 import com.anjlab.eclipse.tapestry5.TapestryService;
 import com.anjlab.eclipse.tapestry5.TapestryService.Matcher;

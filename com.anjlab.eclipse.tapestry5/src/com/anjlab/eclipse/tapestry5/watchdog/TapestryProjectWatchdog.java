@@ -8,10 +8,12 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 
-import org.apache.commons.lang.ObjectUtils;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.ObjectUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.eclipse.core.resources.IFile;
+import org.eclipse.core.resources.IMarker;
 import org.eclipse.core.resources.IProject;
+import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.IResourceChangeEvent;
 import org.eclipse.core.resources.IResourceChangeListener;
 import org.eclipse.core.resources.ResourcesPlugin;
@@ -24,6 +26,7 @@ import org.eclipse.core.runtime.OperationCanceledException;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.jdt.core.IClasspathEntry;
+import org.eclipse.jdt.core.IJavaModelMarker;
 import org.eclipse.jdt.core.IJavaProject;
 import org.eclipse.jdt.core.IPackageFragmentRoot;
 import org.eclipse.jdt.core.JavaCore;
@@ -79,6 +82,9 @@ public class TapestryProjectWatchdog extends AbstractWatchdog
             {
                 return Status.CANCEL_STATUS;
             }
+            
+            //  TODO Check if there's any build errors in this project
+            //  Analyzing broken project is extremely slow
             
             monitor.beginTask("Analyzing " + project.getName(), IProgressMonitor.UNKNOWN);
             monitor.worked(1);
@@ -209,7 +215,7 @@ public class TapestryProjectWatchdog extends AbstractWatchdog
                 {
                     return;
                 }
-                
+
                 if (affectedFiles.size() > 25)
                 {
                     //  Probably build is going on. It's faster to re-analyze entire project,
@@ -263,10 +269,11 @@ public class TapestryProjectWatchdog extends AbstractWatchdog
                                 continue;
                             }
                             
-                            if (isModuleFile(affectedFile, module))
+                            if (TapestryUtils.isModuleFile(affectedFile, module))
                             {
+                                Activator.getDefault().getTapestryModuleFactory().localModuleChanged(affectedFile);
                                 affectedProjects.add(affectedFile.getProject());
-                                break;
+                                continue;
                             }
                             
                             for (LibraryMapping mapping : module.libraryMappings())
@@ -344,8 +351,19 @@ public class TapestryProjectWatchdog extends AbstractWatchdog
                         {
                             if (!updatedProjects.contains(tapestryProject.getProject()))
                             {
+                                if (hasProblems(tapestryProject.getProject()))
+                                {
+                                    // Java search is very slow on broken
+                                    // projects, skip automatic refresh
+
+                                    // TODO Update icon in Tapestry Project
+                                    // Outline to indicate it's probably out of
+                                    // sync
+                                    continue;
+                                }
+
                                 updateProject(tapestryProject.getProject());
-                                
+
                                 updatedProjects.add(tapestryProject.getProject());
                             }
                         }
@@ -436,12 +454,6 @@ public class TapestryProjectWatchdog extends AbstractWatchdog
                 return locations;
             }
 
-            private boolean isModuleFile(IFile affectedFile, TapestryModule module)
-            {
-                return ObjectUtils.equals(module.getModuleFile().getPath(), affectedFile.getProjectRelativePath())
-                        && ObjectUtils.equals(module.getModuleFile().getProject(), affectedFile.getProject());
-            }
-
             private boolean isWebXmlFile(IFile affectedFile)
             {
                 return affectedFile.getName().equals("web.xml")
@@ -525,5 +537,47 @@ public class TapestryProjectWatchdog extends AbstractWatchdog
     public TapestryProject getTapestryProject(IWorkbenchWindow window)
     {
         return currentProjects.get(window);
+    }
+
+    public void forceProjectRefresh(IWorkbenchWindow window)
+    {
+        TapestryProject tapestryProject = currentProjects.get(window);
+
+        if (tapestryProject != null)
+        {
+            IProject project = tapestryProject.getProject();
+
+            Activator.getDefault().getTapestryModuleFactory().clearCache(project);
+
+            updateProject(project);
+        }
+    }
+
+    private static boolean hasProblems(IProject project)
+    {
+        try
+        {
+            IMarker[] markers = project.findMarkers(
+                    IJavaModelMarker.JAVA_MODEL_PROBLEM_MARKER,
+                    true,
+                    IResource.DEPTH_INFINITE);
+
+            for (IMarker marker : markers)
+            {
+                Integer severityType = (Integer) marker.getAttribute(IMarker.SEVERITY);
+                if (severityType.intValue() == IMarker.SEVERITY_ERROR)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+        catch (CoreException e)
+        {
+            Activator.getDefault().logError("Error determining project problems", e);
+
+            return true;
+        }
     }
 }

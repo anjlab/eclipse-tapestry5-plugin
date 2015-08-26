@@ -7,7 +7,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.jdt.core.IAnnotatable;
 import org.eclipse.jdt.core.IAnnotation;
@@ -106,7 +106,6 @@ public class TapestryServiceDiscovery
         }
     }
 
-
     private void addStartupContributor(IMethod method) throws JavaModelException
     {
         contributorFound.callback(
@@ -127,7 +126,7 @@ public class TapestryServiceDiscovery
                 ? EclipseUtils.readFirstValueFromAnnotation(tapestryModule.getEclipseProject(), annotation, "value")
                 : null;
         
-        String id = annotation == null
+        String serviceSimpleId = annotation == null
                 ? stripMethodPrefix(method, TapestryUtils.CONTRIBUTE_METHOD_NAME_PREFIX)
                 : null;
         
@@ -140,12 +139,17 @@ public class TapestryServiceDiscovery
                     TapestryUtils.ORG_APACHE_TAPESTRY5_IOC_ANNOTATIONS_LOCAL)));
         
         Matcher serviceMatcher = createServiceMatcherForConfigurationContribution(
-                method, id, serviceInterface, markers);
+                method, serviceSimpleId, serviceInterface, markers);
+        
+        String instrumenterLabel =
+                StringUtils.isNotEmpty(serviceInterface)
+                        ? TapestryUtils.getSimpleName(serviceInterface)
+                        : serviceSimpleId;
         
         contributorFound.callback(
                 new ServiceInstrumenter()
                         .setType(InstrumenterType.CONTRIBUTOR)
-                        .setId(id)
+                        .setId(instrumenterLabel)
                         .setReference(new JavaElementReference(tapestryModule, method))
                         .setServiceMatcher(serviceMatcher)
                         .setConstraints(extractConstraints(method)));
@@ -191,7 +195,7 @@ public class TapestryServiceDiscovery
                     TapestryUtils.ORG_APACHE_TAPESTRY5_IOC_ANNOTATIONS_ORDER,
                     TapestryUtils.ORG_APACHE_TAPESTRY5_IOC_ANNOTATIONS_MATCH)));
         
-        Matcher serviceMatcher = createMatcherForInstrumenter(method, id, markers);
+        Matcher serviceMatcher = createMatcherForInstrumenter(method, id, serviceInterface, markers);
         
         return new ServiceInstrumenter()
                 .setType(instrumenterType)
@@ -212,12 +216,19 @@ public class TapestryServiceDiscovery
                         tapestryModule.getEclipseProject(), annotation, "value");
     }
 
-    private Matcher createMatcherForInstrumenter(IMethod method, String serviceId, List<String> markers) throws JavaModelException
+    private Matcher createMatcherForInstrumenter(
+            IMethod method, String serviceId, String serviceInterface, List<String> markers)
+                    throws JavaModelException
     {
         AndMatcher matcher = new AndMatcher();
         
         IAnnotation match = TapestryUtils.findAnnotation(method.getAnnotations(),
                 TapestryUtils.ORG_APACHE_TAPESTRY5_IOC_ANNOTATIONS_MATCH);
+        
+        if (StringUtils.isNotEmpty(serviceInterface))
+        {
+            matcher.add(new ServiceIntfMatcher(serviceInterface));
+        }
         
         if (match != null)
         {

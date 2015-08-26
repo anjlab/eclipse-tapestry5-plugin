@@ -4,16 +4,20 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 
-import org.apache.commons.lang.ObjectUtils;
+import org.apache.commons.lang3.ObjectUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.eclipse.core.resources.IContainer;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.IResourceDelta;
 import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.Platform;
 import org.eclipse.jdt.core.IAnnotation;
+import org.eclipse.jdt.core.ICompilationUnit;
 import org.eclipse.jdt.core.IField;
+import org.eclipse.jdt.core.IImportDeclaration;
 import org.eclipse.jdt.core.IJavaElement;
 import org.eclipse.jdt.core.IMember;
 import org.eclipse.jdt.core.IMemberValuePair;
@@ -49,6 +53,8 @@ import org.eclipse.jdt.core.search.SearchMatch;
 import org.eclipse.jdt.core.search.SearchParticipant;
 import org.eclipse.jdt.core.search.SearchPattern;
 import org.eclipse.jdt.core.search.SearchRequestor;
+import org.eclipse.jdt.core.search.TypeNameMatch;
+import org.eclipse.jdt.core.search.TypeNameMatchRequestor;
 import org.eclipse.jdt.internal.ui.javaeditor.EditorUtility;
 import org.eclipse.jdt.ui.JavaUI;
 import org.eclipse.jface.dialogs.MessageDialog;
@@ -271,7 +277,9 @@ public class EclipseUtils
     public static IField findFieldDeclaration(IProject project, Name name)
     {
         SearchPattern pattern = SearchPattern.createPattern(name.getFullyQualifiedName(),
-                IJavaSearchConstants.FIELD, IJavaSearchConstants.DECLARATIONS, SearchPattern.R_FULL_MATCH);
+                IJavaSearchConstants.FIELD,
+                IJavaSearchConstants.DECLARATIONS,
+                SearchPattern.R_EXACT_MATCH | SearchPattern.R_CASE_SENSITIVE);
         
         final List<SearchMatch> matches = searchJava(project, pattern);
         
@@ -294,21 +302,105 @@ public class EclipseUtils
 
     public static IType findTypeDeclaration(IProject project, String className)
     {
-        SearchPattern pattern = SearchPattern.createPattern(className,
-                IJavaSearchConstants.TYPE,
-                IJavaSearchConstants.DECLARATIONS,
-                SearchPattern.R_FULL_MATCH);
+        return findTypeDeclaration(project, IJavaSearchConstants.CLASS_AND_INTERFACE, className);
+    }
+    
+    public static IType findTypeDeclaration(IProject project, int searchFor, String className)
+    {
+        if (StringUtils.isEmpty(className))
+        {
+            return null;
+        }
         
-        final List<SearchMatch> matches = searchJava(project, pattern);
+        //  Try to break className to type/package name
+        //  assuming PascalCase notation used for type names
         
-        return exactMatchOrNull(matches, IType.class);
+        int typeNameIndex = -1;
+        for (int i = className.length() - 1; i>= 0; i--)
+        {
+            if (className.charAt(i) == '.')
+            {
+                if (className.length() > i + 1)
+                {
+                    if (Character.isUpperCase(className.charAt(i + 1)))
+                    {
+                        //  Class name begins after `i`,
+                        //  check if this a nested class
+                        typeNameIndex = i + 1;
+                    }
+                    else
+                    {
+                        break;
+                    }
+                }
+            }
+        }
+        
+        if (typeNameIndex == -1)
+        {
+            return null;
+        }
+        
+        String packageName = typeNameIndex == 0
+                        ? ""
+                        : className.substring(0, typeNameIndex - 1);
+
+        String typeName = className.substring(typeNameIndex);
+
+        return findTypeDeclaration(project, searchFor, packageName, typeName);
+    }
+
+    public static IType findTypeDeclaration(
+            IProject project, int searchFor, String packageName, String typeName)
+    {
+        final List<TypeNameMatch> matches = new ArrayList<TypeNameMatch>();
+
+        SearchEngine searchEngine = new SearchEngine();
+
+        try
+        {
+            IJavaSearchScope scope = SearchEngine.createJavaSearchScope(
+                    new IJavaElement[] { JavaCore.create(project) },
+                    true);
+            
+            IProgressMonitor progressMonitor = null;
+            
+            searchEngine.searchAllTypeNames(
+                    packageName.toCharArray(),
+                    SearchPattern.R_EXACT_MATCH | SearchPattern.R_CASE_SENSITIVE,
+                    typeName.toCharArray(),
+                    SearchPattern.R_EXACT_MATCH | SearchPattern.R_CASE_SENSITIVE,
+                    searchFor,
+                    scope,
+                    new TypeNameMatchRequestor()
+                    {
+                        @Override
+                        public void acceptTypeNameMatch(TypeNameMatch match)
+                        {
+                            matches.add(match);
+                        }
+                    },
+                    IJavaSearchConstants.WAIT_UNTIL_READY_TO_SEARCH,
+                    progressMonitor);
+        }
+        catch (CoreException e)
+        {
+            //  XXX May happen, say, if classpath is incorrectly set.
+            //  Probably shouldn't invoke this method if classpath errors can be detected
+            Activator.getDefault().logWarning("Error performing search", e);;
+        }
+        
+        return matches.isEmpty()
+                ? null
+                : matches.get(0).getType();
     }
 
     private static List<SearchMatch> searchJava(IProject project,
             SearchPattern pattern)
     {
         IJavaSearchScope scope = SearchEngine.createJavaSearchScope(
-                new IJavaElement[] { JavaCore.create(project) });
+                new IJavaElement[] { JavaCore.create(project) },
+                true);
         
         final List<SearchMatch> matches = new ArrayList<SearchMatch>();
         
@@ -664,6 +756,50 @@ public class EclipseUtils
                  : tryResolveFQNameFromImports(project, type.getRoot(), name.getFullyQualifiedName());
     }
 
+    public static String toClassNameFromImports(IProject project, IType relativeTo, String className)
+            throws JavaModelException
+    {
+        if (!className.contains("."))
+        {
+            ICompilationUnit compilationUnit = relativeTo.getCompilationUnit();
+            if (compilationUnit != null)
+            {
+                IImportDeclaration[] imports = compilationUnit.getImports();
+                if (imports.length > 0)
+                {
+                    for (IImportDeclaration importDecl : imports)
+                    {
+                        if (importDecl.getElementName().endsWith("." + className))
+                        {
+                            return importDecl.getElementName();
+                        }
+
+                        if (importDecl.isOnDemand())
+                        {
+                            String packageName = importDecl.getElementName()
+                                    .substring(0, importDecl.getElementName().length() - 2);
+
+                            String candidate = packageName + "." + className;
+
+                            if (EclipseUtils.findTypeDeclaration(
+                                    project,
+                                    IJavaSearchConstants.CLASS_AND_INTERFACE,
+                                    packageName,
+                                    className) != null)
+                            {
+                                return candidate;
+                            }
+                        }
+                    }
+                }
+                
+                //  Class is from the same package
+                return relativeTo.getPackageFragment().getElementName() + "." + className;
+            }
+        }
+        return className;
+    }
+
     private static String tryResolveFQNameFromImports(IProject project, ASTNode root, String simpleName)
     {
         if (!(root instanceof CompilationUnit))
@@ -687,7 +823,11 @@ public class EclipseUtils
 
                 String candidate = packageName + "." + simpleName;
 
-                if (EclipseUtils.findTypeDeclaration(project, candidate) != null)
+                if (EclipseUtils.findTypeDeclaration(
+                        project,
+                        IJavaSearchConstants.CLASS_AND_INTERFACE,
+                        packageName,
+                        simpleName) != null)
                 {
                     return candidate;
                 }
@@ -795,5 +935,4 @@ public class EclipseUtils
         
         display.asyncExec(runnable);
     }
-
 }

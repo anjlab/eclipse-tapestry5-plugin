@@ -79,4 +79,10 @@ public class ClassFile extends AbstractTapestryFile
     {
         return classFile.exists();
     }
+    
+    @Override
+    public String getClassName()
+    {
+        return classFile.getType().getFullyQualifiedName();
+    }
 }

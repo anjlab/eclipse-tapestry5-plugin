@@ -7,11 +7,11 @@ import org.apache.commons.lang3.StringUtils;
 import com.anjlab.eclipse.tapestry5.TapestryService;
 import com.anjlab.eclipse.tapestry5.TapestryService.Matcher;
 
-public class ServiceIntfMatcher implements Matcher
+public class ServiceImplMatcher implements Matcher
 {
     private final String className;
     
-    public ServiceIntfMatcher(String className)
+    public ServiceImplMatcher(String className)
     {
         this.className = className;
     }
@@ -19,19 +19,14 @@ public class ServiceIntfMatcher implements Matcher
     @Override
     public boolean matches(TapestryService service)
     {
-        if (StringUtils.isEmpty(className))
+        if (StringUtils.isEmpty(service.getDefinition().getImplClass()))
         {
             return false;
         }
         
-        if (StringUtils.isEmpty(service.getDefinition().getIntfClass()))
-        {
-            return false;
-        }
-        
-        return StringUtils.equals(className, service.getDefinition().getIntfClass())
+        return StringUtils.equals(className, service.getDefinition().getImplClass())
                 || StringUtils.equals(getSimpleName(this.className),
-                        getSimpleName(service.getDefinition().getIntfClass()));
+                        getSimpleName(service.getDefinition().getImplClass()));
     }
 
 }

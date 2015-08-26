@@ -24,6 +24,7 @@ import org.eclipse.jdt.core.dom.ASTVisitor;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.MethodDeclaration;
 import org.eclipse.jdt.core.dom.MethodInvocation;
+import org.eclipse.jdt.core.search.IJavaSearchConstants;
 
 import com.anjlab.eclipse.tapestry5.DeclarationReference.ASTNodeReference;
 import com.anjlab.eclipse.tapestry5.DeclarationReference.JavaElementReference;
@@ -38,7 +39,7 @@ import com.anjlab.eclipse.tapestry5.internal.visitors.TapestryServiceCapturingVi
 import com.anjlab.eclipse.tapestry5.internal.visitors.TapestryServiceConfigurationCapturingVisitor;
 import com.anjlab.eclipse.tapestry5.internal.visitors.TapestryServiceDiscovery;
 
-public abstract class TapestryModule
+public abstract class TapestryModule implements Openable
 {
     private TapestryProject project;
     private IType moduleClass;
@@ -61,7 +62,7 @@ public abstract class TapestryModule
     
     public IProject getEclipseProject()
     {
-        return moduleClass.getJavaProject().getProject();
+        return project.getProject();
     }
     
     public void addReference(TapestryModuleReference reference)
@@ -212,8 +213,15 @@ public abstract class TapestryModule
                         return;
                     }
                     
+                    String typeName = EclipseUtils.toClassNameFromImports(
+                            getEclipseProject(),
+                            moduleClass,
+                            (String) className);
+                    
                     IType subModuleClass = EclipseUtils.findTypeDeclaration(
-                            moduleClass.getJavaProject().getProject(), (String) className);
+                            moduleClass.getJavaProject().getProject(),
+                            IJavaSearchConstants.CLASS,
+                            typeName);
                     
                     if (subModuleClass != null)
                     {
@@ -939,5 +947,11 @@ public abstract class TapestryModule
                 }
             }.usesMappedConfiguration());
         }
+    }
+    
+    @Override
+    public void openInEditor()
+    {
+        EclipseUtils.openDeclaration(getModuleClass(), null);
     }
 }

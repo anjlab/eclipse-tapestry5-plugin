@@ -1,13 +1,15 @@
 package com.anjlab.eclipse.tapestry5.views;
 
-import org.eclipse.jface.viewers.ILabelProvider;
-import org.eclipse.ui.internal.navigator.NavigatorDecoratingLabelProvider;
+import org.eclipse.jface.viewers.DecoratingStyledCellLabelProvider;
+import org.eclipse.jface.viewers.DecorationContext;
+import org.eclipse.ui.PlatformUI;
 
-@SuppressWarnings("restriction")
-public class TapestryDecoratingLabelProvider extends NavigatorDecoratingLabelProvider
+public class TapestryDecoratingLabelProvider extends DecoratingStyledCellLabelProvider
 {
-    public TapestryDecoratingLabelProvider(ILabelProvider commonLabelProvider)
+    public TapestryDecoratingLabelProvider()
     {
-        super(commonLabelProvider);
+        super(new LabelProvider(),
+                PlatformUI.getWorkbench().getDecoratorManager().getLabelDecorator(),
+                DecorationContext.DEFAULT_CONTEXT);
     }
 }

@@ -18,6 +18,11 @@
             categoryId="com.anjlab.eclipse.tapestry5.commands.category"
             id="com.anjlab.eclipse.tapestry5.commands.createCommand">
       </command>
+      <command
+            name="Refresh Project"
+            categoryId="com.anjlab.eclipse.tapestry5.commands.category"
+            id="com.anjlab.eclipse.tapestry5.commands.projectRefreshCommand">
+      </command>
    </extension>
    <extension
          point="org.eclipse.ui.handlers">
@@ -28,6 +33,10 @@
       <handler
             commandId="com.anjlab.eclipse.tapestry5.commands.createCommand"
             class="com.anjlab.eclipse.tapestry5.handlers.CreateHandler">
+      </handler>
+      <handler
+            commandId="com.anjlab.eclipse.tapestry5.commands.projectRefreshCommand"
+            class="com.anjlab.eclipse.tapestry5.handlers.ProjectRefreshHandler">
       </handler>
    </extension>
    <extension
@@ -53,7 +62,7 @@
             </command>
             <command
                   commandId="com.anjlab.eclipse.tapestry5.commands.createCommand"
-                  icon="IMG_OBJ_ADD"
+                  icon="platform:/plugin/org.eclipse.ui/icons/full/obj16/add_obj.png"
                   tooltip="Create File for Tapestry5"
                   id="com.anjlab.eclipse.tapestry5.toolbars.createCommand">
             </command>
@@ -108,26 +117,26 @@
                locationURI="toolbar:com.anjlab.eclipse.tapestry5.views.context.TapestryContextView">
             <command
                   commandId="com.anjlab.eclipse.tapestry5.commands.createCommand"
-                  icon="IMG_OBJ_ADD"
+                  icon="platform:/plugin/org.eclipse.ui/icons/full/obj16/add_obj.png"
                   tooltip="Create..."
                   id="com.anjlab.eclipse.tapestry5.toolbars.createCommand">
             </command>
          </menuContribution>
+         <menuContribution
+               locationURI="toolbar:com.anjlab.eclipse.tapestry5.views.project.TapestryProjectOutlineView">
+            <command
+                  commandId="com.anjlab.eclipse.tapestry5.commands.projectRefreshCommand"
+                  tooltip="Refresh Project"
+                  id="com.anjlab.eclipse.tapestry5.toolbars.projectRefreshCommand">
+            </command>
+         </menuContribution>
    </extension>
    <extension
-         point="org.eclipse.ui.decorators">
-         <decorator
-             id="com.anjlab.eclipse.tapestry5.views.ViewLabelDecorator"
-             class="com.anjlab.eclipse.tapestry5.views.ViewLabelDecorator"
-             label="Tapestry View Label Decorator"
-             lightweight="true"
-             state="true">
-             <enablement>
-                 <objectClass
-                     name="com.anjlab.eclipse.tapestry5.views.TreeObject">
-                 </objectClass>
-             </enablement>
-         </decorator>
+         point="org.eclipse.ui.commandImages">
+      <image
+            commandId="com.anjlab.eclipse.tapestry5.commands.projectRefreshCommand"
+            disabledIcon="platform:/plugin/org.eclipse.search/icons/full/dlcl16/refresh.gif"
+            icon="platform:/plugin/org.eclipse.search/icons/full/elcl16/refresh.gif"/>
    </extension>
    <extension
          point="org.eclipse.ui.console.consolePatternMatchListeners">

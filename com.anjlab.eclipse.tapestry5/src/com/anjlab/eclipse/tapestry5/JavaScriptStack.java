@@ -3,7 +3,7 @@ package com.anjlab.eclipse.tapestry5;
 import org.eclipse.jdt.core.IType;
 
 
-public class JavaScriptStack
+public class JavaScriptStack implements Openable
 {
     private final String name;
     private final DeclarationReference reference;
@@ -42,5 +42,11 @@ public class JavaScriptStack
     public boolean isOverride()
     {
         return override;
+    }
+    
+    @Override
+    public void openInEditor()
+    {
+        EclipseUtils.openDeclaration(getType(), null);
     }
 }

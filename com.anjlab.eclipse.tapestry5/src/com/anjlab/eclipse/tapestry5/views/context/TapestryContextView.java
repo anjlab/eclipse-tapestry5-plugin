@@ -1,5 +1,6 @@
 package com.anjlab.eclipse.tapestry5.views.context;
 
+import org.eclipse.jface.viewers.AbstractTreeViewer;
 import org.eclipse.jface.viewers.IContentProvider;
 import org.eclipse.jface.viewers.ISelectionProvider;
 import org.eclipse.jface.viewers.TreePath;
@@ -21,7 +22,6 @@ import com.anjlab.eclipse.tapestry5.views.TapestryDecoratingLabelProvider;
 import com.anjlab.eclipse.tapestry5.views.TreeObject;
 import com.anjlab.eclipse.tapestry5.views.TreeObjectDoubleClickListener;
 import com.anjlab.eclipse.tapestry5.views.TreeObjectSelectionListener;
-import com.anjlab.eclipse.tapestry5.views.ViewLabelProvider;
 import com.anjlab.eclipse.tapestry5.watchdog.ITapestryContextListener;
 
 /**
@@ -55,18 +55,19 @@ public class TapestryContextView extends ViewPart
     public void createPartControl(Composite parent)
     {
         final ISelectionProvider selectionProvider = new SimpleSelectionProvider();
-        
+
         getSite().setSelectionProvider(selectionProvider);
 
         viewer = new TreeViewer(parent, SWT.MULTI | SWT.H_SCROLL | SWT.V_SCROLL);
         setContentProvider(
+                viewer,
                 new TapestryContextContentProvider(
                         getSite().getWorkbenchWindow(),
                         Activator.getDefault().getTapestryContext(
                                 getSite().getWorkbenchWindow())));
-        viewer.setLabelProvider(new TapestryDecoratingLabelProvider(new ViewLabelProvider()));
+        viewer.setLabelProvider(new TapestryDecoratingLabelProvider());
         viewer.setSorter(new NameSorter());
-        viewer.setInput(getViewSite());
+        viewer.setInput(this);
         viewer.addSelectionChangedListener(
                 new TreeObjectSelectionListener(
                         getSite().getWorkbenchWindow(),
@@ -89,7 +90,9 @@ public class TapestryContextView extends ViewPart
                     @Override
                     public void run()
                     {
-                        setContentProvider(new TapestryContextContentProvider(window, newContext));
+                        setContentProvider(
+                                viewer,
+                                new TapestryContextContentProvider(window, newContext));
                     }
                 });
             }
@@ -125,7 +128,9 @@ public class TapestryContextView extends ViewPart
                         
                         context.validate();
                         
-                        setContentProvider(new TapestryContextContentProvider(window, context));
+                        setContentProvider(
+                                viewer,
+                                new TapestryContextContentProvider(window, context));
                     }
                 }
             }
@@ -135,10 +140,11 @@ public class TapestryContextView extends ViewPart
         Activator.getDefault().addTapestryProjectListener(getViewSite().getWorkbenchWindow(), tapestryContextListener);
     }
 
-    private void setContentProvider(TapestryContextContentProvider contentProvider)
+    private void setContentProvider(TreeViewer viewer, TapestryContextContentProvider contentProvider)
     {
         viewer.setContentProvider(contentProvider);
-        viewer.expandToLevel(2);
+        viewer.setAutoExpandLevel(AbstractTreeViewer.ALL_LEVELS);
+        viewer.setInput(this);
     }
     
     public TapestryContext getTapestryContext()
@@ -161,6 +167,11 @@ public class TapestryContextView extends ViewPart
     public void setFocus()
     {
         viewer.getControl().setFocus();
+    }
+    
+    public TreeViewer getViewer()
+    {
+        return viewer;
     }
 
 }

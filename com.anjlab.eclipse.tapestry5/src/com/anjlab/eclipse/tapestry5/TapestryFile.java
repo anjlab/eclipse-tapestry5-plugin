@@ -3,7 +3,7 @@ package com.anjlab.eclipse.tapestry5;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.runtime.IPath;
 
-public interface TapestryFile
+public interface TapestryFile extends Openable
 {
     boolean isTemplateFile();
     
@@ -26,4 +26,6 @@ public interface TapestryFile
     TapestryContext getContext();
 
     boolean exists();
+
+    String getClassName();
 }

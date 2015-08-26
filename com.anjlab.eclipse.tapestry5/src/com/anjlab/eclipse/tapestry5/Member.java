@@ -9,6 +9,8 @@ public class Member
     private ISourceRange nameRange;
     private String javadoc;
 
+    private LazyValue<String> javadocValue;
+
     private TapestryComponentSpecification specification;
     
     public TapestryComponentSpecification getSpecification()
@@ -33,12 +35,21 @@ public class Member
 
     public String getJavadoc()
     {
+        if (javadoc == null && javadocValue != null)
+        {
+            javadoc = javadocValue.get();
+        }
         return javadoc;
     }
 
     public void setJavadoc(String javadoc)
     {
         this.javadoc = javadoc;
+    }
+
+    public void setJavadocValue(LazyValue<String> javadocValue)
+    {
+        this.javadocValue = javadocValue;
     }
 
     public ISourceRange getNameRange()

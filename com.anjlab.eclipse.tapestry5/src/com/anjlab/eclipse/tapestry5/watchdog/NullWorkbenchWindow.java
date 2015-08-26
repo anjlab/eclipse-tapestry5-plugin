@@ -26,7 +26,7 @@ public class NullWorkbenchWindow implements IWorkbenchWindow
     
     @Override public boolean hasService(Class api) { return false; }
 
-    @Override public Object getService(Class api) { return null; }
+    @Override public <T> T getService(Class<T> api) { return null; }
 
     @Override public void removePerspectiveListener(IPerspectiveListener listener) { }
 

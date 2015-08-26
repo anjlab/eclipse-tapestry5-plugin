@@ -8,7 +8,7 @@ import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IMarker;
 import org.eclipse.core.resources.IProject;
@@ -773,7 +773,7 @@ public abstract class TapestryContext
                  ? JavadocContentAccess2.getHTMLContent(javaType, true)
                  : null;
         }
-        catch (JavaModelException e)
+        catch (CoreException e)
         {
             return null;
         }

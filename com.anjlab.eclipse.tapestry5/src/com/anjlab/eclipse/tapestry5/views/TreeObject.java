@@ -53,14 +53,13 @@ public class TreeObject implements IAdaptable
         return getName();
     }
 
-    @SuppressWarnings("rawtypes")
-    public Object getAdapter(Class key)
+    @SuppressWarnings("unchecked")
+    public <T> T getAdapter(Class<T> key)
     {
         if (key.equals(IContributorResourceAdapter.class))
         {
-            return new IContributorResourceAdapter()
+            return (T) new IContributorResourceAdapter()
             {
-                
                 @Override
                 public IResource getAdaptedResource(IAdaptable adaptable)
                 {

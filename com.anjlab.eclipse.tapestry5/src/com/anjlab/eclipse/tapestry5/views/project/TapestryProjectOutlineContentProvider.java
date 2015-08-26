@@ -6,7 +6,6 @@ import java.util.Map.Entry;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.jface.viewers.ITreeContentProvider;
 import org.eclipse.jface.viewers.Viewer;
-import org.eclipse.ui.IViewSite;
 
 import com.anjlab.eclipse.tapestry5.EclipseUtils;
 import com.anjlab.eclipse.tapestry5.JavaScriptStack;
@@ -24,6 +23,8 @@ import com.anjlab.eclipse.tapestry5.views.TreeParent.DataObject;
 
 public class TapestryProjectOutlineContentProvider implements ITreeContentProvider, IProjectProvider
 {
+    private static final Object[] NO_CHILDREN = new Object[0];
+
     private static final String CONTRIBUTORS_NODE_LABEL = "Contributors";
     private static final String ADVISORS_NODE_LABEL = "Advisors";
     private static final String DECORATORS_NODE_LABEL = "Decorators";
@@ -98,7 +99,7 @@ public class TapestryProjectOutlineContentProvider implements ITreeContentProvid
     {
         if (module.isSourceAvailable())
         {
-            TreeParent mappingsRoot = newChildNode(moduleRoot, LIBRARY_MAPPINGS_NODE_LABEL, new DataObject("LibraryMappingsNode"));
+            TreeParent mappingsRoot = new TreeParent(LIBRARY_MAPPINGS_NODE_LABEL, new DataObject("LibraryMappingsNode"));
             
             for (LibraryMapping libraryMapping : module.libraryMappings())
             {
@@ -106,14 +107,18 @@ public class TapestryProjectOutlineContentProvider implements ITreeContentProvid
                 mappingsRoot.addChild(new TreeObject("".equals(pathPrefix) ? "(default)" : pathPrefix, libraryMapping));
             }
             
-            TreeParent stacksRoot = newChildNode(moduleRoot, JAVA_SCRIPT_STACKS_NODE_LABEL, new DataObject("JavaScriptStacksNode"));
+            addIfHasChildren(moduleRoot, mappingsRoot);
+            
+            TreeParent stacksRoot = new TreeParent(JAVA_SCRIPT_STACKS_NODE_LABEL, new DataObject("JavaScriptStacksNode"));
             
             for (JavaScriptStack javaScriptStack : module.javaScriptStacks())
             {
                 stacksRoot.addChild(new TreeObject(javaScriptStack.getName(), javaScriptStack));
             }
             
-            TreeParent servicesRoot = newChildNode(moduleRoot, SERVICES_NODE_LABEL, new DataObject("ServicesNode"));
+            addIfHasChildren(moduleRoot, stacksRoot);
+            
+            TreeParent servicesRoot = new TreeParent(SERVICES_NODE_LABEL, new DataObject("ServicesNode"));
             
             for (TapestryService service : module.services())
             {
@@ -129,7 +134,9 @@ public class TapestryProjectOutlineContentProvider implements ITreeContentProvid
                 servicesRoot.addChild(new TreeObject(serviceId, service));
             }
             
-            TreeParent decoratorsRoot = newChildNode(moduleRoot, DECORATORS_NODE_LABEL, new DataObject("DecoratorsNode"));
+            addIfHasChildren(moduleRoot, servicesRoot);
+            
+            TreeParent decoratorsRoot = new TreeParent(DECORATORS_NODE_LABEL, new DataObject("DecoratorsNode"));
             
             for (ServiceInstrumenter decorator : module.decorators())
             {
@@ -143,7 +150,9 @@ public class TapestryProjectOutlineContentProvider implements ITreeContentProvid
                 decoratorsRoot.addChild(new TreeObject(id, decorator));
             }
             
-            TreeParent advisorsRoot = newChildNode(moduleRoot, ADVISORS_NODE_LABEL, new DataObject("AdvisorsNode"));
+            addIfHasChildren(moduleRoot, decoratorsRoot);
+            
+            TreeParent advisorsRoot = new TreeParent(ADVISORS_NODE_LABEL, new DataObject("AdvisorsNode"));
             
             for (ServiceInstrumenter advisor : module.advisors())
             {
@@ -156,8 +165,10 @@ public class TapestryProjectOutlineContentProvider implements ITreeContentProvid
                 
                 advisorsRoot.addChild(new TreeObject(id, advisor));
             }
-
-            TreeParent contributorsRoot = newChildNode(moduleRoot, CONTRIBUTORS_NODE_LABEL, new DataObject("ContributorsNode"));
+            
+            addIfHasChildren(moduleRoot, advisorsRoot);
+            
+            TreeParent contributorsRoot = new TreeParent(CONTRIBUTORS_NODE_LABEL, new DataObject("ContributorsNode"));
             
             for (ServiceInstrumenter contributor : module.contributors())
             {
@@ -171,35 +182,34 @@ public class TapestryProjectOutlineContentProvider implements ITreeContentProvid
                 contributorsRoot.addChild(new TreeObject(id, contributor));
             }
             
-            TreeParent importedModulesRoot = newChildNode(moduleRoot, IMPORTED_MODULES_NODE_LABEL, new DataObject("ImportedModulesNode"));
+            addIfHasChildren(moduleRoot, contributorsRoot);
+            
+            TreeParent importedModulesRoot = new TreeParent(IMPORTED_MODULES_NODE_LABEL, new DataObject("ImportedModulesNode"));
             
             for (TapestryModule subModule : module.subModules())
             {
                 importedModulesRoot.addChild(new TreeObject(subModule.getName(), subModule));
             }
+            
+            addIfHasChildren(moduleRoot, importedModulesRoot);
         }
         else
         {
-            newChildNode(moduleRoot, LIBRARY_MAPPINGS_NODE_LABEL, EclipseUtils.SOURCE_NOT_FOUND);
-            newChildNode(moduleRoot, JAVA_SCRIPT_STACKS_NODE_LABEL, EclipseUtils.SOURCE_NOT_FOUND);
-            newChildNode(moduleRoot, SERVICES_NODE_LABEL, EclipseUtils.SOURCE_NOT_FOUND);
-            newChildNode(moduleRoot, DECORATORS_NODE_LABEL, EclipseUtils.SOURCE_NOT_FOUND);
-            newChildNode(moduleRoot, ADVISORS_NODE_LABEL, EclipseUtils.SOURCE_NOT_FOUND);
-            newChildNode(moduleRoot, CONTRIBUTORS_NODE_LABEL, EclipseUtils.SOURCE_NOT_FOUND);
-            newChildNode(moduleRoot, IMPORTED_MODULES_NODE_LABEL, EclipseUtils.SOURCE_NOT_FOUND);
+            moduleRoot.addChild(new TreeParent("Source not available", EclipseUtils.SOURCE_NOT_FOUND));
         }
     }
-    
-    private static TreeParent newChildNode(TreeParent parent, String label, Object data)
+
+    private static void addIfHasChildren(TreeParent root, TreeParent child)
     {
-        TreeParent node = new TreeParent(label, data);
-        parent.addChild(node);
-        return node;
+        if (child.hasChildren())
+        {
+            root.addChild(child);
+        }
     }
     
     public Object[] getElements(Object parent)
     {
-        if (parent instanceof IViewSite || parent == null)
+        if (parent instanceof TapestryProjectOutlineView)
         {
             if (invisibleRoot == null)
             {
@@ -207,7 +217,7 @@ public class TapestryProjectOutlineContentProvider implements ITreeContentProvid
             }
             return getChildren(invisibleRoot);
         }
-        return getChildren(parent);
+        return NO_CHILDREN;
     }
 
     public Object getParent(Object child)
@@ -225,7 +235,7 @@ public class TapestryProjectOutlineContentProvider implements ITreeContentProvid
         {
             return ((TreeParent) parent).getChildren();
         }
-        return new Object[0];
+        return NO_CHILDREN;
     }
 
     public boolean hasChildren(Object parent)

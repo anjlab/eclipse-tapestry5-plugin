@@ -71,4 +71,10 @@ public class JarEntryFile extends AbstractTapestryFile
     {
         return true;
     }
+    
+    @Override
+    public String getClassName()
+    {
+        return null;
+    }
 }

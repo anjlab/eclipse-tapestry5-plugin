@@ -5,7 +5,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 
-public class TapestryService
+public class TapestryService implements Openable
 {
     public enum InstrumenterType
     {
@@ -17,7 +17,7 @@ public class TapestryService
         boolean matches(TapestryService service);
     }
     
-    public static class ServiceInstrumenter
+    public static class ServiceInstrumenter implements Openable
     {
         private Matcher serviceMatcher;
         private DeclarationReference reference;
@@ -79,6 +79,11 @@ public class TapestryService
         {
             this.constraints = constraints;
             return this;
+        }
+        @Override
+        public void openInEditor()
+        {
+            getReference().openInEditor();
         }
     }
     
@@ -206,5 +211,11 @@ public class TapestryService
     public DeclarationReference getReference()
     {
         return reference;
+    }
+    
+    @Override
+    public void openInEditor()
+    {
+        getReference().openInEditor();
     }
 }

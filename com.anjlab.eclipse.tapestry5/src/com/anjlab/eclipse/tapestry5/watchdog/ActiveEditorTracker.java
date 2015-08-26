@@ -1,6 +1,6 @@
 package com.anjlab.eclipse.tapestry5.watchdog;
 
-import org.apache.commons.lang.ObjectUtils;
+import org.apache.commons.lang3.ObjectUtils;
 import org.eclipse.ui.IEditorPart;
 import org.eclipse.ui.IWorkbenchPage;
 
