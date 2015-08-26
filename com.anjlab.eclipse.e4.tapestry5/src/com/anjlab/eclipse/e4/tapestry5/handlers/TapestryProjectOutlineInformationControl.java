@@ -8,7 +8,9 @@ import com.anjlab.eclipse.tapestry5.views.project.TapestryProjectOutlineContentP
 
 public final class TapestryProjectOutlineInformationControl extends AbstractTapestryContextInformation
 {
-    public TapestryProjectOutlineInformationControl(IWorkbenchWindow window, TapestryProject tapestryProject)
+    public TapestryProjectOutlineInformationControl(
+            final IWorkbenchWindow window,
+            final TapestryProject tapestryProject)
     {
         super(window.getShell(), new ContentProviderCreator()
         {

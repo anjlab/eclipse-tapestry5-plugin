@@ -8,7 +8,9 @@ import com.anjlab.eclipse.tapestry5.views.context.TapestryContextContentProvider
 
 public final class TapestryContextInformationControl extends AbstractTapestryContextInformation
 {
-    public TapestryContextInformationControl(IWorkbenchWindow window, TapestryContext tapestryContext)
+    public TapestryContextInformationControl(
+            final IWorkbenchWindow window,
+            final TapestryContext tapestryContext)
     {
         super(window.getShell(), new ContentProviderCreator()
         {
