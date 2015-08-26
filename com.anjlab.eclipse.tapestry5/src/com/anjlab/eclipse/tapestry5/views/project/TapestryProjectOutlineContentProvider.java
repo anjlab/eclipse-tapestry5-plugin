@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Map.Entry;
 
 import org.eclipse.core.resources.IProject;
+import org.eclipse.jface.text.IInformationControl;
 import org.eclipse.jface.viewers.ITreeContentProvider;
 import org.eclipse.jface.viewers.Viewer;
 
@@ -209,7 +210,8 @@ public class TapestryProjectOutlineContentProvider implements ITreeContentProvid
     
     public Object[] getElements(Object parent)
     {
-        if (parent instanceof TapestryProjectOutlineView)
+        if (parent instanceof TapestryProjectOutlineView
+                || parent instanceof IInformationControl)
         {
             if (invisibleRoot == null)
             {

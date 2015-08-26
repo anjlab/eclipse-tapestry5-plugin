@@ -8,7 +8,7 @@ import org.eclipse.ui.handlers.HandlerUtil;
 
 import com.anjlab.eclipse.tapestry5.Activator;
 import com.anjlab.eclipse.tapestry5.EclipseUtils;
-import com.anjlab.eclipse.tapestry5.TapestryContext;
+import com.anjlab.eclipse.tapestry5.TapestryProject;
 import com.anjlab.eclipse.tapestry5.TapestryUtils;
 
 /**
@@ -16,12 +16,12 @@ import com.anjlab.eclipse.tapestry5.TapestryUtils;
  * @see org.eclipse.core.commands.IHandler
  * @see org.eclipse.core.commands.AbstractHandler
  */
-public class QuickSwitchHandler extends AbstractHandler
+public class QuickNavigationHandler extends AbstractHandler
 {
     /**
      * The constructor.
      */
-    public QuickSwitchHandler()
+    public QuickNavigationHandler()
     {
     }
 
@@ -33,20 +33,18 @@ public class QuickSwitchHandler extends AbstractHandler
     {
         IWorkbenchWindow window = HandlerUtil.getActiveWorkbenchWindowChecked(event);
         
-        TapestryContext context = Activator.getDefault().getTapestryContext(window);
+        TapestryProject tapestryProject = Activator.getDefault().getTapestryProject(window);
         
-        if (context == null || context.isEmpty())
+        if (tapestryProject == null)
         {
             return null;
         }
         
-        TapestryContextInformationControl informationControl =
-                 new TapestryContextInformationControl(window, context);
+        TapestryProjectOutlineInformationControl informationControl =
+                new TapestryProjectOutlineInformationControl(window, tapestryProject);
         informationControl.setLocation(
                 EclipseUtils.getPopupLocation(
-                        window,
-                        window.getActivePage().getActivePartReference(),
-                        informationControl.computeSizeHint()));
+                        window, null, informationControl.computeSizeHint()));
         //  TODO When inside module class try to map current method to service instrumenter
         informationControl.setInput(TapestryUtils.getTapestryFileFromPage(window.getActivePage()));
         informationControl.open();
@@ -54,4 +52,5 @@ public class QuickSwitchHandler extends AbstractHandler
         
         return null;
     }
+
 }

@@ -60,7 +60,12 @@ import org.eclipse.jdt.ui.JavaUI;
 import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.jface.viewers.ITreeSelection;
+import org.eclipse.swt.graphics.Point;
+import org.eclipse.swt.graphics.Rectangle;
+import org.eclipse.swt.widgets.Composite;
+import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.Display;
+import org.eclipse.swt.widgets.Monitor;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.ui.IEditorInput;
 import org.eclipse.ui.IEditorPart;
@@ -70,6 +75,8 @@ import org.eclipse.ui.IWorkbenchWindow;
 import org.eclipse.ui.PartInitException;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.ide.IDE;
+import org.eclipse.ui.internal.EditorReference;
+import org.eclipse.ui.internal.PartPane;
 
 @SuppressWarnings("restriction")
 public class EclipseUtils
@@ -934,5 +941,62 @@ public class EclipseUtils
         }
         
         display.asyncExec(runnable);
+    }
+
+    public static Point getPopupLocation(
+            IWorkbenchWindow window,
+            Object relativeTo,
+            Point popupSize)
+    {
+        Point centerPoint = null;
+
+        if (relativeTo instanceof EditorReference)
+        {
+            PartPane pane = ((EditorReference) relativeTo).getPane();
+            Control control = pane.getControl();
+            Rectangle partBounds = control.getBounds();
+
+            centerPoint = new Point(partBounds.x, partBounds.y);
+
+            alignPoint(centerPoint, control.getParent(), true, true);
+
+            centerPoint.x += partBounds.width / 2;
+            centerPoint.y += partBounds.height / 2;
+        }
+
+        if (centerPoint == null)
+        {
+            Monitor mon = window.getShell().getMonitor();
+
+            Rectangle bounds = mon.getClientArea();
+
+            Point screenCenter = new Point(bounds.x + bounds.width / 2, bounds.y + bounds.height / 2);
+
+            centerPoint = screenCenter;
+        }
+
+        centerPoint.x -= popupSize.x / 2;
+        centerPoint.y -= popupSize.y / 2;
+
+        return centerPoint;
+    }
+
+    private static Composite alignPoint(Point centerPoint, Composite parent, boolean left, boolean top)
+    {
+        while (parent != null)
+        {
+            if (left)
+            {
+                centerPoint.x += parent.getBounds().x;
+            }
+
+            if (top)
+            {
+                centerPoint.y += parent.getBounds().y;
+            }
+
+            parent = parent.getParent();
+        }
+        return parent;
     }
 }
