@@ -16,6 +16,7 @@ import org.eclipse.ui.PlatformUI;
 import com.anjlab.eclipse.tapestry5.ClassFile;
 import com.anjlab.eclipse.tapestry5.ClassNameReference;
 import com.anjlab.eclipse.tapestry5.DeclarationReference;
+import com.anjlab.eclipse.tapestry5.DeclarationReference.ProjectSettingsReference;
 import com.anjlab.eclipse.tapestry5.JavaScriptStack;
 import com.anjlab.eclipse.tapestry5.LibraryMapping;
 import com.anjlab.eclipse.tapestry5.TapestryFile;
@@ -24,6 +25,7 @@ import com.anjlab.eclipse.tapestry5.TapestryModule;
 import com.anjlab.eclipse.tapestry5.TapestryService;
 import com.anjlab.eclipse.tapestry5.TapestrySymbol;
 import com.anjlab.eclipse.tapestry5.UnresolvableReferenceException;
+import com.anjlab.eclipse.tapestry5.templates.ProjectSettings;
 import com.anjlab.eclipse.tapestry5.views.TreeParent.DataObject;
 
 public class LabelProvider implements IStyledLabelProvider, ILabelProvider
@@ -211,9 +213,24 @@ public class LabelProvider implements IStyledLabelProvider, ILabelProvider
                         StyledString.DECORATIONS_STYLER);
 
                 styledString.append(
-                        ", from " + symbol.getSymbolProvider().getDefinition().getId()
-                        + " in " + symbol.getReference().getTapestryModule().getName(),
-                        StyledString.QUALIFIER_STYLER);
+                        ", from " + symbol.getSymbolProvider().getDefinition().getId());
+
+                if (symbol.getReference() instanceof ProjectSettingsReference)
+                {
+                    ProjectSettings projectSettings =
+                            ((ProjectSettingsReference) symbol.getReference())
+                                    .getProjectSettings();
+
+                    styledString.append(
+                            " in " + projectSettings.getReferenceLabel(),
+                            StyledString.QUALIFIER_STYLER);
+                }
+                else
+                {
+                    styledString.append(
+                            " in " + symbol.getReference().getTapestryModule().getName(),
+                            StyledString.QUALIFIER_STYLER);
+                }
             }
             else if (data instanceof TapestryService)
             {
@@ -221,6 +238,12 @@ public class LabelProvider implements IStyledLabelProvider, ILabelProvider
                         " " + StringUtils.defaultIfEmpty(
                                 ((TapestryService) data).getDefinition().getIntfClass(),
                                 "No interface"),
+                        StyledString.DECORATIONS_STYLER);
+            }
+            else if (data instanceof ProjectSettingsReference)
+            {
+                styledString.append(
+                        " " + ((ProjectSettingsReference) data).getProjectSettings().getReferenceLabel(),
                         StyledString.DECORATIONS_STYLER);
             }
             else if (data instanceof DeclarationReference)

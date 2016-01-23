@@ -1,0 +1,115 @@
+{
+    # Naming conventions for new files. Supported values are:
+    # UpperCamel, lowerCamel, lower_underscode, lower-hyphen
+    
+    fileNamingConventions: {
+        
+        *.js = UpperCamel
+        
+        , *.css = UpperCamel
+        
+        , *.* = UpperCamel
+        
+    }
+
+    #
+    # The plug-in tries to do its best to reconstruct configuration of a Tapestry5 project.
+    #
+    # This is done with a static code analysis and is possible because Tapestry5
+    # employs convention over configuration approach.
+    #
+    # But it's sometimes impossible to do so just from static code analysis,
+    # and some hints are needed for proper work.
+    #
+
+    # List of fully-qualified class names of additional tapestry modules
+    
+    , tapestryModules: {
+        
+        //com.anjlab.services.ConditionalModule: {
+        //
+        //    # Custom service bindings / discovery rules per tapestry module
+        //    
+        //    services: {
+        //    
+        //        com.anjlab.services.ServiceIntf: {
+        //            implClass: com.anjlab.services.ServiceImpl
+        //        }
+        //        
+        //        , 'DAO Services': {
+        //            discovery: 'intf-impl-pattern',
+        //            intfClass: 'com.anjlab.services.dao.(.*)',
+        //            implClass: 'com.anjlab.services.dao.impl.$1Impl'
+        //        }
+        //    }
+        //}
+        
+    }
+
+    # Implementation details begin
+
+    # TODO Implement support for Additional JavaScript modules
+
+    # Additional JavaScript modules (since Tapestry 5.4)
+    
+    , javaScriptModules: {
+        
+        //'my/module': 'path/to/js'
+        
+        //  T5.4 Contributions to ModuleManager from JavaScriptModule
+        
+        //  From JavaScriptModule#setupBaseModules()
+        
+        underscore = '${tapestry.asset.root}/underscore-shim.js'
+        
+        , jquery = '${tapestry.asset.root}/jquery-shim.js'
+        
+        , 'bootstrap/transition' = '${tapestry.bootstrap-root}/js/transition.js'
+        
+        , 'bootstrap/affix' = '${tapestry.bootstrap-root}/js/affix.js'
+        
+        , 'bootstrap/alert' = '${tapestry.bootstrap-root}/js/alert.js'
+        
+        , 'bootstrap/button' = '${tapestry.bootstrap-root}/js/button.js'
+        
+        , 'bootstrap/carousel' = '${tapestry.bootstrap-root}/js/carousel.js'
+        
+        , 'bootstrap/collapse' = '${tapestry.bootstrap-root}/js/collapse.js'
+        
+        , 'bootstrap/dropdown' = '${tapestry.bootstrap-root}/js/dropdown.js'
+        
+        , 'bootstrap/modal' = '${tapestry.bootstrap-root}/js/modal.js'
+        
+        , 'bootstrap/scrollspy' = '${tapestry.bootstrap-root}/js/scrollspy.js'
+        
+        , 'bootstrap/tab' = '${tapestry.bootstrap-root}/js/tab.js'
+        
+        , 'bootstrap/tooltip' = '${tapestry.bootstrap-root}/js/tooltip.js'
+        
+        , 'bootstrap/popover' = '${tapestry.bootstrap-root}/js/popover.js'
+        
+        //  From JavaScriptModule#setupFoundationFramework'
+        
+        , 't5/core/dom' = 'classpath:org/apache/tapestry5/t5-core-dom-${tapestry.javascript-infrastructure-provider}.js'
+        
+        //  TODO From JavaScriptModule#setupApplicationCatalogModules
+        //  (i.e., "t5/core/messages/")
+    }
+
+    # Implementation details end
+
+    # Additional tapestry symbols with resolved values
+    
+    , symbols: {
+        
+        //ApplicationDefaults: {
+        //    
+        //    my.symbol-key: "symbol value"
+        //    
+        //    , my.another-key: 2
+        //    
+        //}
+        
+    }
+
+}

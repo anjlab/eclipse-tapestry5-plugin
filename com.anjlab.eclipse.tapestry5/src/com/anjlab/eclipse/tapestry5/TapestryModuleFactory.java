@@ -25,6 +25,8 @@ public class TapestryModuleFactory implements IEclipseClasspathListener
 
     private Map<IType, Map<IProject, TapestryModule>> localModules = new HashMap<IType, Map<IProject, TapestryModule>>();
 
+    //  TODO Monitor changes in config.json
+    
     @Override
     public void classpathChanged(IFile classpath)
     {

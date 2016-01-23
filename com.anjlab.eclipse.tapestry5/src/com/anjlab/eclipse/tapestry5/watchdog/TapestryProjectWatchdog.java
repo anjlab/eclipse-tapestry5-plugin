@@ -190,7 +190,7 @@ public class TapestryProjectWatchdog extends AbstractWatchdog
                 
                 if (tapestryProject == null
                         || (!tapestryProject.contains(project)
-                                && TapestryUtils.isTapestryAppProject(project)))
+                                && TapestryUtils.isTapestryProject(project)))
                 {
                     changeTapestryProject(window, project);
                 }

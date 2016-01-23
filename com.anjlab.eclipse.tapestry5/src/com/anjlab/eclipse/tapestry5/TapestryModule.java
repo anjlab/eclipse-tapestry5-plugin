@@ -538,9 +538,15 @@ public abstract class TapestryModule implements Openable
             @Override
             public void callback(TapestryService service)
             {
-                services.add(service);
+                addService(service);
             }
         };
+    }
+
+    public void addService(TapestryService service)
+    {
+        //  XXX Only add if not yet exists?
+        services.add(service);
     }
 
     private CompilationUnit compilationUnit;

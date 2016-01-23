@@ -1,0 +1,62 @@
+{
+    # Naming conventions for new files. Supported values are:
+    # UpperCamel, lowerCamel, lower_underscode, lower-hyphen
+    
+    fileNamingConventions: {
+        
+        *.js = UpperCamel
+        
+        , *.css = UpperCamel
+        
+        , *.* = UpperCamel
+        
+    }
+
+    #
+    # The plug-in tries to do its best to reconstruct configuration of a Tapestry5 project.
+    #
+    # This is done with a static code analysis and is possible because Tapestry5
+    # employs convention over configuration approach.
+    #
+    # But it's sometimes impossible to do so just from static code analysis,
+    # and some hints are needed for proper work.
+    #
+
+    # List of fully-qualified class names of additional tapestry modules
+    
+    , tapestryModules: {
+        
+        //com.anjlab.services.ConditionalModule: {
+        //
+        //    # Custom service bindings / discovery rules per tapestry module
+        //    
+        //    services: {
+        //    
+        //        com.anjlab.services.ServiceIntf: {
+        //            implClass: com.anjlab.services.ServiceImpl
+        //        }
+        //        
+        //        , 'DAO Services': {
+        //            discovery: 'intf-impl-pattern',
+        //            intfClass: 'com.anjlab.services.dao.(.*)',
+        //            implClass: 'com.anjlab.services.dao.impl.$1Impl'
+        //        }
+        //    }
+        //}
+    }
+
+    # Additional tapestry symbols with resolved values
+    
+    , symbols: {
+        
+        //ApplicationDefaults: {
+        //    
+        //    my.symbol-key: "symbol value"
+        //    
+        //    , my.another-key: 2
+        //    
+        //}
+        
+    }
+
+}

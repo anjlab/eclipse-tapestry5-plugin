@@ -38,9 +38,13 @@ import org.eclipse.ui.PlatformUI;
 import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
 
+import com.anjlab.eclipse.tapestry5.templates.ProjectSettings;
+
 @SuppressWarnings("restriction")
 public class TapestryUtils
 {
+    public static final String SRC_MAIN_ECLIPSE_TAPESTRY5 = "src/main/eclipse-tapestry5";
+
     private static final String TAPESTRY_APP_PACKAGE = "tapestry.app-package";
 
     public static String getPagesPath(IProject project)
@@ -58,6 +62,15 @@ public class TapestryUtils
         
         return appPackage != null
              ? '/' + appPackage.replace('.', '/') + "/components"
+             : "";
+    }
+
+    public static String getMixinsPath(IProject project)
+    {
+        String appPackage = getAppPackage(project);
+        
+        return appPackage != null
+             ? '/' + appPackage.replace('.', '/') + "/mixins"
              : "";
     }
 
@@ -159,7 +172,7 @@ public class TapestryUtils
         return (IFile) webapp.findMember("/WEB-INF/web.xml");
     }
     
-    public static boolean isTapestryAppProject(IProject project)
+    public static boolean isTapestryProject(IProject project)
     {
         return getAppPackage(project) != null;
     }
@@ -242,14 +255,14 @@ public class TapestryUtils
         return TapestryContext.emptyContext();
     }
 
-    public static IContainer getRoot(IFile forFile)
+    public static IContainer getRoot(IContainer forContainer)
     {
-        if (forFile == null)
+        if (forContainer == null)
         {
             return null;
         }
         
-        final IContainer webapp = findWebapp(forFile.getProject());
+        final IContainer webapp = findWebapp(forContainer.getProject());
         
         RootDetector rootDetector = new RootDetector()
         {
@@ -267,7 +280,18 @@ public class TapestryUtils
             }
         };
         
-        return getRoot(forFile, rootDetector);
+        return getRoot(forContainer, rootDetector);
+
+    }
+
+    public static IContainer getRoot(IFile forFile)
+    {
+        if (forFile == null)
+        {
+            return null;
+        }
+        
+        return getRoot(forFile.getParent());
     }
     
     private static interface RootDetector
@@ -275,14 +299,14 @@ public class TapestryUtils
         boolean isRoot(IContainer container);
     }
     
-    private static IContainer getRoot(IFile forFile, RootDetector rootDetector)
+    private static IContainer getRoot(IContainer forContainer, RootDetector rootDetector)
     {
-        if (forFile == null)
+        if (forContainer == null)
         {
             return null;
         }
         
-        IContainer container = forFile.getParent();
+        IContainer container = forContainer;
         
         while (container != null && !rootDetector.isRoot(container))
         {
@@ -844,4 +868,70 @@ public class TapestryUtils
                 && ObjectUtils.equals(module.getModuleFile().getProject(), affectedFile.getProject());
     }
 
+    public static ProjectSettings readProjectSettings(TapestryProject tapestryProject)
+    {
+        ProjectSettings defaultSettings = ProjectSettings.getDefault(tapestryProject);
+
+        if (tapestryProject == null)
+        {
+            return defaultSettings;
+        }
+
+        IContainer configDir =
+                (IContainer) tapestryProject.getProject()
+                        .findMember(SRC_MAIN_ECLIPSE_TAPESTRY5);
+
+        if (configDir == null)
+        {
+            return defaultSettings;
+        }
+
+        IFile file = (IFile) configDir.findMember(ProjectSettings.CONFIG_FILE_NAME);
+
+        if (file == null)
+        {
+            return defaultSettings;
+        }
+
+        try
+        {
+            InputStream input = file.getContents();
+            try
+            {
+                ProjectSettings projectSettings = defaultSettings.extend(ProjectSettings.parse(input));
+                projectSettings.setSource(file);
+                return projectSettings;
+            }
+            finally
+            {
+                input.close();
+            }
+        }
+        catch (Exception e)
+        {
+            Activator.getDefault().logError("Error parsing " + file.getProjectRelativePath(), e);
+
+            return defaultSettings;
+        }
+    }
+
+    //  From http://stackoverflow.com/a/1248627/2414933
+    public static String createRegexpFromGlob(String line)
+    {
+        String out = "^";
+        for(int i = 0; i < line.length(); ++i)
+        {
+            final char c = line.charAt(i);
+            switch(c)
+            {
+            case '*': out += ".*"; break;
+            case '?': out += '.'; break;
+            case '.': out += "\\."; break;
+            case '\\': out += "\\\\"; break;
+            default: out += c;
+            }
+        }
+        out += '$';
+        return out;
+    }
 }

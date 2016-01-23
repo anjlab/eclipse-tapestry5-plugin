@@ -780,4 +780,28 @@ public abstract class TapestryContext
     }
 
     public abstract FileLookup createLookup();
+
+    public boolean isPage()
+    {
+        String pagesPackage = TapestryUtils.getPagesPackage(getProject());
+        return pagesPackage != null
+                ? StringUtils.startsWith(getPackageName(), pagesPackage)
+                : false;
+    }
+
+    public boolean isComponent()
+    {
+        String componentsPackage = TapestryUtils.getComponentsPackage(getProject());
+        return componentsPackage != null
+                ? StringUtils.startsWith(getPackageName(), componentsPackage)
+                : false;
+    }
+
+    public boolean isMixin()
+    {
+        String mixinsPackage = TapestryUtils.getMixinsPackage(getProject());
+        return mixinsPackage != null
+                ? StringUtils.startsWith(getPackageName(), mixinsPackage)
+                : false;
+    }
 }

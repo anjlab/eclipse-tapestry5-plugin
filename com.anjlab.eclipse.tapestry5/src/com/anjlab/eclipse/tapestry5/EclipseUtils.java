@@ -354,10 +354,10 @@ public class EclipseUtils
 
         String typeName = className.substring(typeNameIndex);
 
-        return findTypeDeclaration(project, searchFor, packageName, typeName);
+        return findTypeDeclarationExact(project, searchFor, packageName, typeName);
     }
 
-    public static IType findTypeDeclaration(
+    public static IType findTypeDeclarationExact(
             IProject project, int searchFor, String packageName, String typeName)
     {
         final List<TypeNameMatch> matches = new ArrayList<TypeNameMatch>();
@@ -394,7 +394,7 @@ public class EclipseUtils
         {
             //  XXX May happen, say, if classpath is incorrectly set.
             //  Probably shouldn't invoke this method if classpath errors can be detected
-            Activator.getDefault().logWarning("Error performing search", e);;
+            Activator.getDefault().logWarning("Error performing search", e);
         }
         
         return matches.isEmpty()
@@ -788,7 +788,7 @@ public class EclipseUtils
 
                             String candidate = packageName + "." + className;
 
-                            if (EclipseUtils.findTypeDeclaration(
+                            if (EclipseUtils.findTypeDeclarationExact(
                                     project,
                                     IJavaSearchConstants.CLASS_AND_INTERFACE,
                                     packageName,
@@ -830,7 +830,7 @@ public class EclipseUtils
 
                 String candidate = packageName + "." + simpleName;
 
-                if (EclipseUtils.findTypeDeclaration(
+                if (EclipseUtils.findTypeDeclarationExact(
                         project,
                         IJavaSearchConstants.CLASS_AND_INTERFACE,
                         packageName,
@@ -998,5 +998,33 @@ public class EclipseUtils
             parent = parent.getParent();
         }
         return parent;
+    }
+
+    public static String getClassName(IFile file)
+    {
+        IJavaElement javaElement = (IJavaElement) file.getAdapter(IJavaElement.class);
+        
+        if (javaElement instanceof ICompilationUnit)
+        {
+            ICompilationUnit compilationUnit = (ICompilationUnit) javaElement;
+            try
+            {
+                for (IJavaElement child : compilationUnit.getChildren())
+                {
+                    if (child instanceof IType)
+                    {
+                        return ((IType) child).getFullyQualifiedName();
+                    }
+                }
+                return null;
+            }
+            catch (JavaModelException e)
+            {
+                //  Ignore
+                return null;
+            }
+        }
+        
+        return null;
     }
 }

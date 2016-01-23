@@ -7,16 +7,19 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Properties;
 import java.util.jar.Manifest;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.apache.commons.lang3.StringUtils;
+import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.NullProgressMonitor;
+import org.eclipse.jdt.core.IClassFile;
 import org.eclipse.jdt.core.IJarEntryResource;
 import org.eclipse.jdt.core.IPackageFragmentRoot;
 import org.eclipse.jdt.core.IType;
@@ -25,9 +28,15 @@ import org.eclipse.jdt.core.JavaModelException;
 import org.eclipse.jdt.core.search.IJavaSearchConstants;
 
 import com.anjlab.eclipse.tapestry5.DeclarationReference.NonJavaReference;
+import com.anjlab.eclipse.tapestry5.DeclarationReference.ProjectSettingsReference;
+import com.anjlab.eclipse.tapestry5.TapestryService.ServiceDefinition;
+import com.anjlab.eclipse.tapestry5.internal.CaseInsensitiveMap;
 import com.anjlab.eclipse.tapestry5.internal.Orderable;
 import com.anjlab.eclipse.tapestry5.internal.Orderer;
 import com.anjlab.eclipse.tapestry5.internal.SymbolExpansion;
+import com.anjlab.eclipse.tapestry5.templates.ProjectSettings;
+import com.anjlab.eclipse.tapestry5.templates.ProjectSettings.TapestryModuleSettings;
+import com.anjlab.eclipse.tapestry5.templates.ProjectSettings.TapestryServiceSettings;
 import com.anjlab.eclipse.tapestry5.watchdog.WebXmlReader.WebXml;
 
 public class TapestryProject
@@ -122,10 +131,183 @@ public class TapestryProject
     public void initialize(IProgressMonitor monitor)
     {
         findModules(monitor);
-        
-        findSymbols(monitor);
-        
+
+        // Now when we know tapestry version for this project,
+        // try to locate correct version of project settings
+
+        ProjectSettings projectSettings = TapestryUtils.readProjectSettings(this);
+
+        for (Entry<String, TapestryModuleSettings> moduleEntry : projectSettings.getTapestryModules().entrySet())
+        {
+            String moduleClassName = moduleEntry.getKey();
+            
+            TapestryModule module = addModule(monitor, modules, project, moduleClassName,
+                    new ObjectCallback<TapestryModule, RuntimeException>()
+                    {
+                        @Override
+                        public void callback(TapestryModule module)
+                        {
+                            module.addReference(new TapestryModuleReference(new NonJavaReference(module), true)
+                            {
+                                @Override
+                                public String getLabel()
+                                {
+                                    return "via " + projectSettings.getReferenceLabel();
+                                }
+                            });
+                        }
+                    });
+
+            if (module != null)
+            {
+                TapestryModuleSettings moduleSettings = moduleEntry.getValue();
+                
+                for (Entry<String, TapestryServiceSettings> serviceEntry : moduleSettings.getTapestryServices().entrySet())
+                {
+                    String serviceLabel = serviceEntry.getKey();
+                    TapestryServiceSettings serviceSettings = serviceEntry.getValue();
+                    
+                    if (StringUtils.isNotEmpty(serviceSettings.getDiscovery()))
+                    {
+                        //  Support just one discovery rule for now
+                        if (serviceSettings.getDiscovery().equals("intf-impl-pattern"))
+                        {
+                            addServicesViaIntfImplPatternDiscovery(projectSettings, module, serviceLabel, serviceSettings, monitor);
+                        }
+                        else
+                        {
+                            Activator.getDefault().logWarning("Unsupported discovery '" + serviceSettings.getDiscovery());
+                        }
+                    }
+                    else
+                    {
+                        //  Clone and add new service
+                        
+                        ServiceDefinition definition = serviceSettings.clone();
+                        
+                        String intfClass;
+                        if (StringUtils.isEmpty(serviceSettings.getIntfClass()))
+                        {
+                            //  Treat serviceLabel as intfClass
+                            intfClass = serviceLabel;
+                        }
+                        else
+                        {
+                            intfClass = serviceSettings.getIntfClass();
+                        }
+                        
+                        if (StringUtils.isEmpty(definition.getId()))
+                        {
+                            definition.setId(TapestryUtils.getSimpleName(intfClass));
+                        }
+                        
+                        definition.setIntfClass(intfClass);
+                        
+                        addService(projectSettings, module, definition);
+                    }
+                }
+            }
+            else
+            {
+                Activator.getDefault().logWarning("Tapestry module '" + moduleClassName + "' not found");
+            }
+        }
+
+        // TODO Tapestry 5.4: Register javascriptModules as contributions to ModuleManager?
+
+        findSymbols(monitor, projectSettings);
+
         markJavaScriptStackOverrides();
+    }
+
+    private void addServicesViaIntfImplPatternDiscovery(
+            ProjectSettings projectSettings,
+            TapestryModule module,
+            String serviceLabel,
+            TapestryServiceSettings serviceSettings,
+            IProgressMonitor monitor)
+    {
+        //  Note: This rule can only search between classes that are located
+        //  in the same project/JAR as this module class
+        
+        if (StringUtils.isEmpty(serviceSettings.getIntfClass())
+                || StringUtils.isEmpty(serviceSettings.getImplClass()))
+        {
+            Activator.getDefault().logError("Both intfClass and implClass must not be null with auto-discovery rule '"
+                    + serviceSettings.getDiscovery()
+                    + "' (" + projectSettings.getReferenceLabel()
+                    + ", tapestryModule: " + module.getName()
+                    + ", serviceLabel: " + serviceLabel
+                    + ", intfClass: " + serviceSettings.getIntfClass()
+                    + ", implClass: " + serviceSettings.getImplClass() + ")");
+            return;
+        }
+        
+        final Pattern intfPattern = Pattern.compile(serviceSettings.getIntfClass());
+        
+        module.enumJavaClassesRecursively(monitor, "", new ObjectCallback<Object, RuntimeException>()
+        {
+            @Override
+            public void callback(Object obj) throws RuntimeException
+            {
+                String className;
+                if (obj instanceof IFile)
+                {
+                    className = EclipseUtils.getClassName((IFile) obj);
+                }
+                else if (obj instanceof IClassFile)
+                {
+                    className = ((IClassFile) obj).getElementName();
+                }
+                else
+                {
+                    return;
+                }
+                
+                Matcher matcher = intfPattern.matcher(className);
+                
+                if (matcher.find())
+                {
+                    ServiceDefinition definition = serviceSettings.clone();
+                    
+                    String intfClass = className;
+                    String implClass = matcher.replaceAll(definition.getImplClass());
+                    
+                    //  Check if implClass actually exists
+                    IType implClassType = EclipseUtils
+                            .findTypeDeclaration(getProject(), IJavaSearchConstants.CLASS, implClass);
+                    
+                    if (implClassType == null)
+                    {
+                        Activator.getDefault().logWarning(
+                                "Implementation class '" + implClass
+                                + "' not found for service interface '" + intfClass + "'");
+                        return;
+                    }
+                    
+                    definition.setIntfClass(intfClass);
+                    definition.setImplClass(implClass);
+                    
+                    definition.setId(StringUtils.isEmpty(definition.getId())
+                            ? TapestryUtils.getSimpleName(className)
+                            : matcher.replaceAll(definition.getId()));
+                    
+                    addService(projectSettings, module, definition);
+                }
+            }
+        });
+    }
+
+    private void addService(ProjectSettings projectSettings, TapestryModule module, ServiceDefinition definition)
+    {
+        definition.resolveMarkers(module);
+        
+        TapestryService service = new TapestryService(
+                module, definition, new ProjectSettingsReference(projectSettings));
+        
+        //  TODO Make sure to replace existing service that could be added via config previously
+        //  (caching issue)
+        module.addService(service);
     }
 
     private SymbolExpansion expansion;
@@ -146,13 +328,13 @@ public class TapestryProject
     {
         if (symbols == null)
         {
-            findSymbols(new NullProgressMonitor());
+            findSymbols(new NullProgressMonitor(), TapestryUtils.readProjectSettings(this));
         }
         
         return symbols;
     }
     
-    private synchronized void findSymbols(IProgressMonitor monitor)
+    private synchronized void findSymbols(IProgressMonitor monitor, ProjectSettings projectSettings)
     {
         if (symbols != null)
         {
@@ -238,6 +420,50 @@ public class TapestryProject
             monitor.worked(1);
         }
         
+        // Override symbols using values from project settings
+
+        Map<String, TapestryService> symbolProvidersLookup = new CaseInsensitiveMap<>();
+
+        for (TapestryService symbolProvider : symbolProviders)
+        {
+            symbolProvidersLookup.put(symbolProvider.getDefinition().getId(), symbolProvider);
+        }
+
+        for (Entry<String, Map<String, String>> additionalProviderSymbols : projectSettings.getSymbols().entrySet())
+        {
+            String providerName = additionalProviderSymbols.getKey();
+
+            TapestryService symbolProvider = symbolProvidersLookup.get(providerName);
+
+            if (symbolProvider == null)
+            {
+                Activator.getDefault().logWarning("Symbol provider '" + providerName + "' not found");
+                continue;
+            }
+
+            List<TapestrySymbol> symbols = providersToSymbols.get(symbolProvider);
+
+            if (symbols == null)
+            {
+                symbols = new ArrayList<TapestrySymbol>();
+                providersToSymbols.put(symbolProvider, symbols);
+            }
+
+            Map<String, String> additionalSymbols = additionalProviderSymbols.getValue();
+
+            for (Entry<String, String> symbolEntry : additionalSymbols.entrySet())
+            {
+                // Add to the top of the list to win during symbol expansion
+                symbols.add(0,
+                        new TapestrySymbol(
+                                symbolEntry.getKey(),
+                                symbolEntry.getValue(),
+                                false,
+                                new ProjectSettingsReference(projectSettings),
+                                symbolProvider));
+            }
+        }
+
         symbols = new HashMap<String, List<TapestrySymbol>>();
         
         //  Symbol providers ordered by override rule,
@@ -264,6 +490,7 @@ public class TapestryProject
                         for (TapestrySymbol existing : values)
                         {
                             if (!existing.isOverridden()
+                                    && !(existing.getReference() instanceof ProjectSettingsReference)
                                     //  Some modules may be added conditionally, like QA/DEV/Production
                                     //  we should treat them all as equal, they souldn't override each other,
                                     //  because usually only one of them enabled at run-time
@@ -548,7 +775,8 @@ public class TapestryProject
         }
     }
 
-    private TapestryModule addModule(IProgressMonitor monitor, List<TapestryModule> modules, IProject project, String moduleClassName, ObjectCallback<TapestryModule, RuntimeException> moduleCreated)
+    private TapestryModule addModule(IProgressMonitor monitor, List<TapestryModule> modules,
+            IProject project, String moduleClassName, ObjectCallback<TapestryModule, RuntimeException> moduleCreated)
     {
         if (monitor.isCanceled())
         {

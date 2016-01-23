@@ -29,6 +29,7 @@ import com.anjlab.eclipse.tapestry5.internal.AndMatcher;
 import com.anjlab.eclipse.tapestry5.internal.GlobPatternMatcher;
 import com.anjlab.eclipse.tapestry5.internal.IdentityIdMatcher;
 import com.anjlab.eclipse.tapestry5.internal.MarkerMatcher;
+import com.anjlab.eclipse.tapestry5.internal.OrMatcher;
 import com.anjlab.eclipse.tapestry5.internal.ServiceIntfMatcher;
 import com.anjlab.eclipse.tapestry5.internal.TapestryModuleMatcher;
 
@@ -232,12 +233,19 @@ public class TapestryServiceDiscovery
         
         if (match != null)
         {
+            OrMatcher serviceIdMatcher = new OrMatcher();
+            
             String[] patterns = EclipseUtils.readValuesFromAnnotation(
                     tapestryModule.getEclipseProject(), match, "value");
             
             for (String pattern : patterns)
             {
-                matcher.add(new GlobPatternMatcher(pattern));
+                serviceIdMatcher.add(new GlobPatternMatcher(pattern));
+            }
+            
+            if (patterns.length > 0)
+            {
+                matcher.add(serviceIdMatcher);
             }
         }
         

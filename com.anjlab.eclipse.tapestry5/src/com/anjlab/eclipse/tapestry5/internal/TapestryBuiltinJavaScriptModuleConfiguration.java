@@ -3,6 +3,14 @@ package com.anjlab.eclipse.tapestry5.internal;
 import java.util.HashMap;
 import java.util.Map;
 
+import com.anjlab.eclipse.tapestry5.templates.ProjectSettings;
+
+/**
+ * 
+ * @deprecated Built-in JavaScript modules moved to default
+ *             {@link ProjectSettings}
+ *
+ */
 public class TapestryBuiltinJavaScriptModuleConfiguration
 {
     private static final String TAPESTRY_ASSET_ROOT = "${tapestry.asset.root}";

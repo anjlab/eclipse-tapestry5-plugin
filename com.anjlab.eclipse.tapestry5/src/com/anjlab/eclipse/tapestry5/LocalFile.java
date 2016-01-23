@@ -3,10 +3,6 @@ package com.anjlab.eclipse.tapestry5;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.runtime.IPath;
-import org.eclipse.jdt.core.ICompilationUnit;
-import org.eclipse.jdt.core.IJavaElement;
-import org.eclipse.jdt.core.IType;
-import org.eclipse.jdt.core.JavaModelException;
 
 public class LocalFile extends AbstractTapestryFile
 {
@@ -88,29 +84,6 @@ public class LocalFile extends AbstractTapestryFile
     @Override
     public String getClassName()
     {
-        IJavaElement javaElement = (IJavaElement) file.getAdapter(IJavaElement.class);
-        
-        if (javaElement instanceof ICompilationUnit)
-        {
-            ICompilationUnit compilationUnit = (ICompilationUnit) javaElement;
-            try
-            {
-                for (IJavaElement child : compilationUnit.getChildren())
-                {
-                    if (child instanceof IType)
-                    {
-                        return ((IType) child).getFullyQualifiedName();
-                    }
-                }
-                return null;
-            }
-            catch (JavaModelException e)
-            {
-                //  Ignore
-                return null;
-            }
-        }
-        
-        return null;
+        return EclipseUtils.getClassName(file);
     }
 }

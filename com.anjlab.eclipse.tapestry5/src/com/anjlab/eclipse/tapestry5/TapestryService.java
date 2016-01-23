@@ -2,7 +2,12 @@ package com.anjlab.eclipse.tapestry5;
 
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
+
+import org.eclipse.jdt.core.IType;
+import org.eclipse.jdt.core.JavaModelException;
+import org.eclipse.jdt.core.search.IJavaSearchConstants;
 
 
 public class TapestryService implements Openable
@@ -99,6 +104,19 @@ public class TapestryService implements Openable
         private String intfClass;
         private String implClass;
         
+        protected void copyFrom(ServiceDefinition other)
+        {
+            markers.addAll(other.markers);
+            preventReloading = other.preventReloading;
+            preventDecoration = other.preventDecoration;
+            eagerLoad = other.eagerLoad;
+            scope = other.scope;
+            id = other.id;
+            simpleId = other.simpleId;
+            intfClass = other.intfClass;
+            implClass = other.implClass;
+        }
+        
         public boolean isPreventReloading()
         {
             return preventReloading;
@@ -184,6 +202,52 @@ public class TapestryService implements Openable
         {
             this.markers.addAll(markers);
             return this;
+        }
+        public void resolveMarkers(TapestryModule tapestryModule)
+        {
+            copyMarkersFromInterface(this, getIntfClass(), tapestryModule);
+            copyMarkersFromClass(this, getImplClass(), tapestryModule);
+            
+            addMarkers(tapestryModule.markers());
+        }
+
+        private static void copyMarkersFromInterface(ServiceDefinition definition, String intfName, TapestryModule tapestryModule)
+        {
+            IType type = EclipseUtils.findTypeDeclaration(
+                    tapestryModule.getEclipseProject(),
+                    IJavaSearchConstants.INTERFACE,
+                    intfName);
+
+            copyMarkersFrom(definition, type, tapestryModule);
+        }
+
+        private static void copyMarkersFromClass(ServiceDefinition definition, String className, TapestryModule tapestryModule)
+        {
+            IType type = EclipseUtils.findTypeDeclaration(
+                    tapestryModule.getEclipseProject(),
+                    IJavaSearchConstants.CLASS,
+                    className);
+
+            copyMarkersFrom(definition, type, tapestryModule);
+        }
+
+        private static void copyMarkersFrom(ServiceDefinition definition, IType type, TapestryModule tapestryModule)
+        {
+            if (type == null)
+            {
+                return;
+            }
+            
+            try
+            {
+                List<String> markers = tapestryModule.readMarkerAnnotation(type);
+
+                definition.addMarkers(markers);
+            }
+            catch (JavaModelException e)
+            {
+                // Ignore
+            }
         }
     }
 

@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Stack;
 
+import org.apache.commons.lang3.StringUtils;
 import org.eclipse.core.resources.IContainer;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IFolder;
@@ -49,11 +50,11 @@ import org.eclipse.ui.dialogs.WizardNewFileCreationPage;
 import com.anjlab.eclipse.tapestry5.Activator;
 import com.anjlab.eclipse.tapestry5.EclipseUtils;
 import com.anjlab.eclipse.tapestry5.EclipseUtils.EditorCallback;
+import com.anjlab.eclipse.tapestry5.templates.TapestryTemplates;
 import com.anjlab.eclipse.tapestry5.LocalFile;
 import com.anjlab.eclipse.tapestry5.SetEditorCaretPositionOffsetLength;
 import com.anjlab.eclipse.tapestry5.TapestryContext;
 import com.anjlab.eclipse.tapestry5.TapestryUtils;
-import com.anjlab.eclipse.tapestry5.templates.TapestryTemplates;
 
 public class NewFileWizardAction extends Action
 {
@@ -175,20 +176,43 @@ public class NewFileWizardAction extends Action
                         
                         IPath newFile = Path.fromPortableString(fileCreationPage.getFileName());
                         
-                        TapestryTemplates templates = TapestryTemplates.get(Activator.getDefault().getTapestryProject(window));
+                        String templateName = null;
+                        String contextName;
                         
-                        InputStream stream = templates.openTemplate("snippet", newFile.getFileExtension());
+                        if (tapestryContext != null)
+                        {
+                            contextName = tapestryContext.getName();
+                            
+                            if (tapestryContext.isPage())
+                            {
+                                templateName = "page";
+                            }
+                            else if (tapestryContext.isComponent())
+                            {
+                                templateName = "component";
+                            }
+                            else if (tapestryContext.isMixin())
+                            {
+                                templateName = "mixin";
+                            }
+                        }
+                        else
+                        {
+                            contextName = TapestryUtils.getDefaultContextNameFromFileName(
+                                    newFile.removeFileExtension().lastSegment());
+                        }
+                        
+                        TapestryTemplates templates = TapestryTemplates.get(
+                                Activator.getDefault().getTapestryProject(window));
+                        
+                        InputStream stream = templates.openTemplate(
+                                fileCreationPage.getContainerFullPath(),
+                                StringUtils.defaultIfEmpty(templateName, "template"),
+                                newFile.getFileExtension());
                         
                         if (stream != null)
                         {
                             String content = TapestryUtils.readToEnd(stream);
-                            
-                            String contextName = TapestryUtils.getDefaultContextNameFromFileName(newFile.removeFileExtension().lastSegment());
-                            
-                            if (tapestryContext != null)
-                            {
-                                contextName = tapestryContext.getName();
-                            }
                             
                             content = content.replace("$ContextName$", contextName);
                             

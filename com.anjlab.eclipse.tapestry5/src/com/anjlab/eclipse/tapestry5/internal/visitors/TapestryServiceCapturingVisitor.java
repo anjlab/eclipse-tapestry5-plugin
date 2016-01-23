@@ -1,7 +1,5 @@
 package com.anjlab.eclipse.tapestry5.internal.visitors;
 
-import java.util.List;
-
 import org.apache.commons.lang3.StringUtils;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.jdt.core.IAnnotation;
@@ -229,8 +227,7 @@ public class TapestryServiceCapturingVisitor extends ASTVisitor
             return;
         }
         
-        copyMarkersFromInterface(definition.getIntfClass());
-        copyMarkersFromClass(definition.getImplClass());
+        definition.resolveMarkers(tapestryModule);
         
         serviceFound.callback(new TapestryService(
                 tapestryModule,
@@ -294,44 +291,5 @@ public class TapestryServiceCapturingVisitor extends ASTVisitor
             return EclipseUtils.toClassName(tapestryModule.getEclipseProject(), (TypeLiteral) node);
         }
         return null;
-    }
-
-    private void copyMarkersFromInterface(String intfName)
-    {
-        IType type = EclipseUtils.findTypeDeclaration(
-                tapestryModule.getEclipseProject(),
-                IJavaSearchConstants.INTERFACE,
-                intfName);
-
-        copyMarkersFrom(type);
-    }
-    
-    private void copyMarkersFromClass(String className)
-    {
-        IType type = EclipseUtils.findTypeDeclaration(
-                tapestryModule.getEclipseProject(),
-                IJavaSearchConstants.CLASS,
-                className);
-
-        copyMarkersFrom(type);
-    }
-
-    private void copyMarkersFrom(IType type)
-    {
-        if (type == null)
-        {
-            return;
-        }
-        
-        try
-        {
-            List<String> markers = tapestryModule.readMarkerAnnotation(type);
-
-            serviceDefinition().addMarkers(markers);
-        }
-        catch (JavaModelException e)
-        {
-            // Ignore
-        }
     }
 }

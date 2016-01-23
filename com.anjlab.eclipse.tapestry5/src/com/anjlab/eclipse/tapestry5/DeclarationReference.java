@@ -3,6 +3,8 @@ package com.anjlab.eclipse.tapestry5;
 import org.eclipse.jdt.core.IJavaElement;
 import org.eclipse.jdt.core.dom.ASTNode;
 
+import com.anjlab.eclipse.tapestry5.templates.ProjectSettings;
+
 public interface DeclarationReference extends Openable
 {
     public static class ASTNodeReference implements DeclarationReference
@@ -142,6 +144,39 @@ public interface DeclarationReference extends Openable
         public TapestryModule getTapestryModule()
         {
             return tapestryModule;
+        }
+    }
+
+    public static class ProjectSettingsReference implements DeclarationReference
+    {
+        private ProjectSettings projectSettings;
+
+        public ProjectSettingsReference(ProjectSettings projectSettings)
+        {
+            this.projectSettings = projectSettings;
+        }
+
+        @Override
+        public void openInEditor()
+        {
+            projectSettings.openInEditor();
+        }
+
+        @Override
+        public TapestryModule getTapestryModule()
+        {
+            return null;
+        }
+
+        @Override
+        public IJavaElement getElement()
+        {
+            return null;
+        }
+
+        public ProjectSettings getProjectSettings()
+        {
+            return projectSettings;
         }
     }
 
