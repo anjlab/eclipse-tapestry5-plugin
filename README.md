@@ -124,6 +124,36 @@ Creating JavaScript or CSS assets for page/component will add/modify `@Import` a
 
 ![JavaScriptContent](https://f.cloud.github.com/assets/76579/1435415/d3352fe6-413d-11e3-9053-1a653c5840d8.png)
 
+#### Edit templates
+
+There are few very basic templates that come with the plugin.
+
+Using Tapestry Context's *Edit Templates* menu it's now possible to edit those templates.
+
+<img width="463" alt="edit-templates" src="https://cloud.githubusercontent.com/assets/76579/12533376/53f6dd3a-c23f-11e5-8c4f-ff753d4ecf8b.png">
+
+Selecting a template from the list will open or create corresponding file under `src/main/eclipse-tapestry5`.
+
+It's assumed that this folder will be committed to your repository and shared with your team.
+
+`page.*` templates used when creating assets within a *page* Tapestry Context, `component.*` -- for *components*, etc.
+
+Templates are not limited to just `*.js`, `*.css`, and `*.properties` -- you may add templates with your own file extensions manually, i.e. `page.coffee` or `page.less`.
+
+It is possible to have more than one set of templates organized in sub-folders.
+
+Templates in the root of `src/main/eclipse-tapestry5` will be used by default. Putting templates to sub-folder will override default templates for files created under that subfolder/package.
+
+For example, to use different templates for all pages under `com.example.app.pages.admin` package, put your templates in `src/main/eclipse-tapestry5/admin` folder.
+
+Two special snippets supported in templates: `$ContextName$` and `$Caret$`.
+
+`$ContextName$` will be replaced with name of a Tapestry Context for which the file was created.
+
+`$Caret$` used to position a cursor in a newly created file.
+
+### Advanced Configuration
+
 ### Install
 
 In Eclipse go to *Help* -> *Install New Software...* -> *Add...*
