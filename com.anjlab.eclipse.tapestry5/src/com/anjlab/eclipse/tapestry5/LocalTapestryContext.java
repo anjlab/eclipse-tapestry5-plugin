@@ -172,7 +172,7 @@ public class LocalTapestryContext extends TapestryContext
             
             IContainer container = null;
             
-            if (!fromWebapp)
+            if (javaProject.exists() && !fromWebapp)
             {
                 IContainer adaptedProject = (IContainer) javaProject.getCorrespondingResource().getAdapter(IContainer.class);
                 
@@ -214,7 +214,10 @@ public class LocalTapestryContext extends TapestryContext
                 return Collections.emptyList();
             }
             
-            findInSourceFolders(findFirst, complementFileName, resources, javaProject, container);
+            if (javaProject.exists())
+            {
+                findInSourceFolders(findFirst, complementFileName, resources, javaProject, container);
+            }
             
             if (findFirst && !resources.isEmpty())
             {
