@@ -64,8 +64,9 @@ public class CreateActionViewDelegate implements IViewActionDelegate, IMenuCreat
                 window);
 
         newFile.setFileName(fileName);
+        String packageName = tapestryContext.getPackageName();
         newFile.setFolder(DEFAULT_RESOURCES_SOURCE_FOLDER
-                + tapestryContext.getPackageName().replaceAll("\\.", "/"));
+                + (packageName == null ? "" : packageName.replaceAll("\\.", "/")));
 
         newFile.setText(title);
         newFile.setImageDescriptor(PlatformUI.getWorkbench().getEditorRegistry()

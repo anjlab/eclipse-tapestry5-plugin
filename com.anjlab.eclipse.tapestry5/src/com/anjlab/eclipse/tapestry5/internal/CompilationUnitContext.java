@@ -45,6 +45,11 @@ public class CompilationUnitContext implements IDisposable
             cuCreated = true;
             
             compilationUnit = lifecycle.createCompilationUnit();
+            
+            if (compilationUnit != null && !compilationUnit.exists())
+            {
+                compilationUnit = null;
+            }
         }
         
         return compilationUnit;
