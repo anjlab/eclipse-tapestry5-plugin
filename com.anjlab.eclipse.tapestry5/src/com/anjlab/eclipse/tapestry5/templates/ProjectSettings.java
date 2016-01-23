@@ -63,7 +63,7 @@ public class ProjectSettings implements Openable
         
         public TapestryModuleSettings()
         {
-            services = new HashMap<>();
+            services = new HashMap<String, TapestryServiceSettings>();
         }
         
         public Map<String, TapestryServiceSettings> getTapestryServices()
@@ -84,10 +84,10 @@ public class ProjectSettings implements Openable
 
     public ProjectSettings()
     {
-        tapestryModules = new HashMap<>();
-        javaScriptModules = new HashMap<>();
-        symbols = new HashMap<>();
-        fileNamingConventions = new LinkedHashMap<>();
+        tapestryModules = new HashMap<String, TapestryModuleSettings>();
+        javaScriptModules = new HashMap<String, String>();
+        symbols = new HashMap<String, Map<String, String>>();
+        fileNamingConventions = new LinkedHashMap<String, String>();
     }
 
     public void setSource(IFile source)
@@ -195,7 +195,7 @@ public class ProjectSettings implements Openable
 
             if (copyOfValueMap == null)
             {
-                copyOfValueMap = new HashMap<>();
+                copyOfValueMap = new HashMap<String, T>();
                 to.put(entry.getKey(), copyOfValueMap);
             }
 

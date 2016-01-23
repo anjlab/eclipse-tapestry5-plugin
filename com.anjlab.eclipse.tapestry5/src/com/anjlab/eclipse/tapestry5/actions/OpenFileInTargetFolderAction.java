@@ -46,7 +46,7 @@ public abstract class OpenFileInTargetFolderAction extends Action
         }
     }
 
-    private void createFile(IFolder targetDir, String fileName)
+    private void createFile(final IFolder targetDir, final String fileName)
     {
         try
         {
@@ -57,7 +57,7 @@ public abstract class OpenFileInTargetFolderAction extends Action
             throw new RuntimeException("Unable to pre-create folder for new file", e);
         }
 
-        WizardNewFileCreationPage fileCreationPage = new WizardNewFileCreationPage("", new TreeSelection())
+        final WizardNewFileCreationPage fileCreationPage = new WizardNewFileCreationPage("", new TreeSelection())
         {
             @Override
             protected InputStream getInitialContents()

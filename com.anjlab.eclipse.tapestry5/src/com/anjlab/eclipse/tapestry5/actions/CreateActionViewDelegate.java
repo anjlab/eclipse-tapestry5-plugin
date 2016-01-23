@@ -4,6 +4,7 @@ import java.io.InputStream;
 import java.util.Map.Entry;
 import java.util.regex.Pattern;
 
+import org.apache.commons.lang3.StringUtils;
 import org.eclipse.core.resources.IFolder;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.runtime.Path;
@@ -127,10 +128,10 @@ public class CreateActionViewDelegate implements IViewActionDelegate, IMenuCreat
     }
 
     private void addTemplateToMenu(
-            Menu editMenu,
-            TapestryTemplates tapestryTemplates,
-            IFolder templatesDir,
-            String fileName)
+            final Menu editMenu,
+            final TapestryTemplates tapestryTemplates,
+            final IFolder templatesDir,
+            final String fileName)
     {
         addActionToMenu(
                 editMenu,
@@ -239,13 +240,14 @@ public class CreateActionViewDelegate implements IViewActionDelegate, IMenuCreat
             {
                 String fileNameWithoutExtension = tapestryContext.getName();
                 String fileName = fileNameWithoutExtension + extension;
-                switch (extension)
+                
+                if (StringUtils.equals(extension, ".tml")
+                        || StringUtils.equals(extension, ".properties"))
                 {
-                case ".tml":
-                case ".properties":
                     // Case for these should be the same as context name: UpperCamel
-                    break;
-                default:
+                }
+                else
+                {
                     for (Entry<String, String> entry : settings.getFileNamingConventions().entrySet())
                     {
                         String regex = TapestryUtils.createRegexpFromGlob(entry.getKey());
@@ -258,8 +260,8 @@ public class CreateActionViewDelegate implements IViewActionDelegate, IMenuCreat
                             break;
                         }
                     }
-                    break;
                 }
+                
                 fileName = fileNameWithoutExtension + extension;
                 newTextFileMenuItem(menu, tapestryContext, "Create " + fileName + "...", fileName)
                     .setEnabled(!tapestryContext.contains(fileName));
@@ -274,19 +276,23 @@ public class CreateActionViewDelegate implements IViewActionDelegate, IMenuCreat
 
     private static CaseFormat toCaseFormat(String convention)
     {
-        switch (convention)
+        if (StringUtils.equalsIgnoreCase(convention, "UpperCamel"))
         {
-        case "UpperCamel":
-            return CaseFormat.UPPER_CAMEL;
-        case "lowerCamel":
-            return CaseFormat.LOWER_CAMEL;
-        case "lower_underscode":
-            return CaseFormat.LOWER_UNDERSCORE;
-        case "lower-hyphen":
-            return CaseFormat.LOWER_HYPHEN;
-        default:
             return CaseFormat.UPPER_CAMEL;
         }
+        if (StringUtils.equalsIgnoreCase(convention, "lowerCamel"))
+        {
+            return CaseFormat.LOWER_CAMEL;
+        }
+        if (StringUtils.equalsIgnoreCase(convention, "lower_underscode"))
+        {
+            return CaseFormat.LOWER_UNDERSCORE;
+        }
+        if (StringUtils.equalsIgnoreCase(convention, "lower-hyphen"))
+        {
+            return CaseFormat.LOWER_HYPHEN;
+        }
+        return CaseFormat.UPPER_CAMEL;
     }
 
     protected void fillMenuForTapestryModule(Menu menu, TapestryModule module, ProjectSettings settings)

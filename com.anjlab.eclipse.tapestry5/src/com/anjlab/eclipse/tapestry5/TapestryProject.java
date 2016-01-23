@@ -135,7 +135,7 @@ public class TapestryProject
         // Now when we know tapestry version for this project,
         // try to locate correct version of project settings
 
-        ProjectSettings projectSettings = TapestryUtils.readProjectSettings(this);
+        final ProjectSettings projectSettings = TapestryUtils.readProjectSettings(this);
 
         for (Entry<String, TapestryModuleSettings> moduleEntry : projectSettings.getTapestryModules().entrySet())
         {
@@ -221,11 +221,11 @@ public class TapestryProject
     }
 
     private void addServicesViaIntfImplPatternDiscovery(
-            ProjectSettings projectSettings,
-            TapestryModule module,
-            String serviceLabel,
-            TapestryServiceSettings serviceSettings,
-            IProgressMonitor monitor)
+            final ProjectSettings projectSettings,
+            final TapestryModule module,
+            final String serviceLabel,
+            final TapestryServiceSettings serviceSettings,
+            final IProgressMonitor monitor)
     {
         //  Note: This rule can only search between classes that are located
         //  in the same project/JAR as this module class
@@ -422,7 +422,7 @@ public class TapestryProject
         
         // Override symbols using values from project settings
 
-        Map<String, TapestryService> symbolProvidersLookup = new CaseInsensitiveMap<>();
+        Map<String, TapestryService> symbolProvidersLookup = new CaseInsensitiveMap<TapestryService>();
 
         for (TapestryService symbolProvider : symbolProviders)
         {
