@@ -154,6 +154,42 @@ Two special snippets supported in templates: `$ContextName$` and `$Caret$`.
 
 ### Advanced Configuration
 
+All plugin's configuration is stored in `src/main/eclipse-tapestry5/config.json` which is a JSON file with some additional formatting (see [GSON's lenient parsing mode](http://google.github.io/gson/apidocs/com/google/gson/stream/JsonReader.html#setLenient-boolean-)).
+
+To create this file with default content click *Project Settings...* from Tapestry Context's menu.
+
+The file has some inlined comments that should be self-explanatory, i.e. default `config.json` for Tapestry 5.3 can be found [here](https://raw.githubusercontent.com/anjlab/eclipse-tapestry5-plugin/master/com.anjlab.eclipse.tapestry5/src/com/anjlab/eclipse/tapestry5/templates/config-5.3.json).
+
+#### File naming conventions
+
+When creating new file within Tapestry Context it's possible to specify naming convention that should be used for a name of the file:
+
+```
+    # Naming conventions for new files. Supported values are:
+    # UpperCamel, lowerCamel, lower_underscode, lower-hyphen
+    
+    fileNamingConventions: {
+        
+        *.js = UpperCamel
+        
+        , *.css = UpperCamel
+        
+        , *.* = UpperCamel
+        
+    }
+```
+
+For `*.tml` and `*.java` files naming convention is always `UpperCamel` and cannot be overridden.
+
+Concrete convention is picked in the order from top to bottom using simple Glob pattern matching.
+
+#### Other settings
+
+Other settings can be used to help plugin to parse structure of your project, read inline comments for more details: [T5.3](https://raw.githubusercontent.com/anjlab/eclipse-tapestry5-plugin/master/com.anjlab.eclipse.tapestry5/src/com/anjlab/eclipse/tapestry5/templates/config-5.3.json) and [T5.4](https://raw.githubusercontent.com/anjlab/eclipse-tapestry5-plugin/master/com.anjlab.eclipse.tapestry5/src/com/anjlab/eclipse/tapestry5/templates/config.json).
+
+This is still work in progress and is subject to change.
+
+
 ### Install
 
 In Eclipse go to *Help* -> *Install New Software...* -> *Add...*
