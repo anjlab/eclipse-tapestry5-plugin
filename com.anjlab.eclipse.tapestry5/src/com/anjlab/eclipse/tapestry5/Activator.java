@@ -75,16 +75,16 @@ public class Activator extends AbstractUIPlugin implements IWebXmlListener
         tapestryProjectWatchdog = new TapestryProjectWatchdog();
         tapestryProjectWatchdog.start();
 
+        tapestryContextFactory = new TapestryContextFactory();
+
+        tapestryModuleFactory = new TapestryModuleFactory();
+
         eclipseClasspathWatchdog = new EclipseClasspathWatchdog();
         eclipseClasspathWatchdog.addListener(null, tapestryModuleFactory);
         eclipseClasspathWatchdog.start();
 
         tapestryContextWatchdog = new TapestryContextWatchdog();
         tapestryContextWatchdog.start();
-
-        tapestryModuleFactory = new TapestryModuleFactory();
-        
-        tapestryContextFactory = new TapestryContextFactory();
     }
 
     private Map<String, Map<String, Object>> projectCache;
