@@ -5,9 +5,12 @@ import java.util.Map.Entry;
 import java.util.regex.Pattern;
 
 import org.apache.commons.lang3.StringUtils;
+import org.eclipse.core.resources.IContainer;
 import org.eclipse.core.resources.IFolder;
 import org.eclipse.core.resources.IProject;
+import org.eclipse.core.resources.IResource;
 import org.eclipse.core.runtime.Path;
+import org.eclipse.jdt.core.JavaModelException;
 import org.eclipse.jface.action.ActionContributionItem;
 import org.eclipse.jface.action.IAction;
 import org.eclipse.jface.action.IMenuCreator;
@@ -23,6 +26,7 @@ import org.eclipse.ui.PlatformUI;
 
 import com.anjlab.eclipse.tapestry5.EclipseUtils;
 import com.anjlab.eclipse.tapestry5.TapestryContext;
+import com.anjlab.eclipse.tapestry5.TapestryFile;
 import com.anjlab.eclipse.tapestry5.TapestryModule;
 import com.anjlab.eclipse.tapestry5.TapestryProject;
 import com.anjlab.eclipse.tapestry5.TapestryUtils;
@@ -33,9 +37,13 @@ import com.google.common.base.CaseFormat;
 
 public class CreateActionViewDelegate implements IViewActionDelegate, IMenuCreator
 {
-    private static final String DEFAULT_RESOURCES_SOURCE_FOLDER = "src/main/resources/";
+    private static final String SRC_TEST_RESOURCES = "src/test/resources";
 
-    private static final String DEFAULT_JAVA_SOURCE_FOLDER = "src/main/java";
+    private static final String SRC_TEST_JAVA = "src/test/java";
+
+    private static final String SRC_MAIN_RESOURCES = "src/main/resources";
+
+    private static final String SRC_MAIN_JAVA = "src/main/java";
 
     private IWorkbenchWindow window;
     private IViewPart view;
@@ -65,8 +73,8 @@ public class CreateActionViewDelegate implements IViewActionDelegate, IMenuCreat
 
         newFile.setFileName(fileName);
         String packageName = tapestryContext.getPackageName();
-        newFile.setFolder(DEFAULT_RESOURCES_SOURCE_FOLDER
-                + (packageName == null ? "" : packageName.replaceAll("\\.", "/")));
+        newFile.setFolder(getSourceFolder(tapestryContext, true)
+                + "/" + (packageName == null ? "" : packageName.replaceAll("\\.", "/")));
 
         newFile.setText(title);
         newFile.setImageDescriptor(PlatformUI.getWorkbench().getEditorRegistry()
@@ -75,11 +83,11 @@ public class CreateActionViewDelegate implements IViewActionDelegate, IMenuCreat
         return addActionToMenu(menu, newFile);
     }
 
-    private IAction newJavaClassMenuItem(Menu menu, IProject project, String title, String packageName, String typeName)
+    private IAction newJavaClassMenuItem(Menu menu, IProject project, String title, String sourceFolder, String packageName, String typeName)
     {
         NewJavaClassWizardAction newJavaClass = new NewJavaClassWizardAction(project);
         newJavaClass.setText(title);
-        newJavaClass.setSourceFolder(DEFAULT_JAVA_SOURCE_FOLDER);
+        newJavaClass.setSourceFolder(sourceFolder);
         newJavaClass.setPackageName(packageName);
         newJavaClass.setTypeName(typeName);
 
@@ -228,8 +236,8 @@ public class CreateActionViewDelegate implements IViewActionDelegate, IMenuCreat
             String packageName = tapestryContext.getPackageName();
             newJavaClassMenuItem(menu, tapestryContext.getProject(),
                     "Create " + tapestryContext.getName() + ".java...",
-                    packageName != null ? packageName : TapestryUtils.getPagesPackage(tapestryContext.getProject()),
-                    tapestryContext.getName())
+                    getSourceFolder(tapestryContext, false),
+                    packageName != null ? packageName : TapestryUtils.getPagesPackage(tapestryContext.getProject()), tapestryContext.getName())
                 .setEnabled(tapestryContext.getJavaFile() == null);
 
             String[] extensions = new String[] { ".tml", ".properties", ".js", ".css" };
@@ -262,7 +270,7 @@ public class CreateActionViewDelegate implements IViewActionDelegate, IMenuCreat
                         }
                     }
                 }
-                
+
                 fileName = fileNameWithoutExtension + extension;
                 newTextFileMenuItem(menu, tapestryContext, "Create " + fileName + "...", fileName)
                     .setEnabled(!tapestryContext.contains(fileName));
@@ -272,6 +280,70 @@ public class CreateActionViewDelegate implements IViewActionDelegate, IMenuCreat
                     CaseFormat.UPPER_CAMEL.to(
                             toCaseFormat(settings.getFileNamingConventions().get("*.*")),
                             tapestryContext.getName()));
+        }
+    }
+
+    private String getSourceFolder(
+            TapestryContext tapestryContext, boolean forResource)
+    {
+        if (forResource)
+        {
+            TapestryFile javaFile = tapestryContext.getJavaFile();
+            if (javaFile != null)
+            {
+                if (SRC_TEST_JAVA.equals(
+                        findSourceFolderProjectRelativePath(javaFile)))
+                {
+                    return SRC_TEST_RESOURCES;
+                }
+            }
+
+            //  No Java file -> use default resource folder
+            return SRC_MAIN_RESOURCES;
+        }
+
+        TapestryFile templateFile = tapestryContext.getTemplateFile();
+        if (templateFile != null)
+        {
+            if (SRC_TEST_RESOURCES.equals(
+                    findSourceFolderProjectRelativePath(templateFile)))
+            {
+                return SRC_TEST_JAVA;
+            }
+        }
+
+        //  No template file -> use default java folder
+        return SRC_MAIN_JAVA;
+    }
+
+    private String findSourceFolderProjectRelativePath(TapestryFile tapestryFile)
+    {
+        try
+        {
+            IResource resource =
+                    tapestryFile
+                        .getProject()
+                        .findMember(tapestryFile.getPath());
+    
+            if (resource == null)
+            {
+                return null;
+            }
+    
+            IContainer container = resource.getParent();
+            while (container != null && !EclipseUtils.isSourceFolder(container))
+            {
+                container = container.getParent();
+            }
+    
+            return container != null
+                    ? container.getProjectRelativePath().toPortableString()
+                    : null;
+        }
+        catch (JavaModelException e)
+        {
+            //  Ignore
+            return null;
         }
     }
 
@@ -316,25 +388,25 @@ public class CreateActionViewDelegate implements IViewActionDelegate, IMenuCreat
 
         newJavaClassMenuItem(menu, project,
                 "New Page Class...",
+                SRC_MAIN_JAVA,
                 //  TODO Get package for TapestryModule
                 //  Check if TapestryModule.isAppModule() then resolve package via IProject,
                 //  otherwise via LibraryMappings
                 //  TODO Support LibraryMappings for workspace projects -- they usually don't provide MANIFEST.MF
                 //  maybe try searching manifests in build folders of the projects?
-                TapestryUtils.getPagesPackage(project),
-                null);
+                TapestryUtils.getPagesPackage(project), null);
 
         newJavaClassMenuItem(menu, project,
                 "New Component Class...",
+                SRC_MAIN_JAVA,
                 //  TODO Get package for TapestryModule
-                TapestryUtils.getComponentsPackage(project),
-                null);
+                TapestryUtils.getComponentsPackage(project), null);
 
         newJavaClassMenuItem(menu, project,
                 "New Mixin Class...",
+                SRC_MAIN_JAVA,
                 //  TODO Get package for TapestryModule
-                TapestryUtils.getMixinsPackage(project),
-                null);
+                TapestryUtils.getMixinsPackage(project), null);
 
         new MenuItem(menu, SWT.SEPARATOR);
 
