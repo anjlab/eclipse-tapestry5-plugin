@@ -1,8 +1,10 @@
 package com.anjlab.eclipse.tapestry5;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.regex.Pattern;
 
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -239,7 +241,7 @@ public class EclipseUtils
 
     public static IFile findFileCaseInsensitive(IContainer container, String componentPath)
     {
-        String[] parts = (componentPath.startsWith("/") ? componentPath.substring(1) : componentPath).split("/");
+        String[] parts = (componentPath.startsWith(File.separator) ? componentPath.substring(1) : componentPath).split(Pattern.quote(File.separator));
         for (int i = 0; i < parts.length; i++)
         {
             String part = parts[i];
