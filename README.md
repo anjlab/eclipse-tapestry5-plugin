@@ -192,19 +192,30 @@ This is still work in progress and is subject to change.
 
 ### Install
 
+Download plugin update site archive to your local machine
+from the <a href="https://github.com/anjlab/eclipse-tapestry5-plugin/releases">releases page</a>.
+
 In Eclipse go to *Help* -> *Install New Software...* -> *Add...*
 
-Use this update site URL:
+Click "Archive..." and select downloaded update site.
 
-    https://dl.bintray.com/anjlab/eclipse-tapestry5-plugin
+### How to build
 
-Or drag &amp; drop this icon into a running Eclipse:
+1. Download "Eclipse IDE for Enterprise Java and Web Developers"
+	from <a href="https://www.eclipse.org/downloads/packages/">Eclipse.org</a>
+2. Clone this project and import via *File* -> *Import...* -> *General / Existing Projects into Workspace*
+3. Open `update-site/target-platform.target` and click *Set as Active Target Platform*
+4. Right click `update-site/site.xml` and select *Plug-in Tools* -> *Build Site*
+5. That's it, the `update-site` folder will contain the build and be used for local installation.
 
-<a href="http://marketplace.eclipse.org/marketplace-client-intro?mpc_install=1125032" title="Drag and drop into a running Eclipse workspace to install Eclipse Integration for Tapestry5">
-  <img src="https://marketplace.eclipse.org/sites/all/modules/custom/marketplace/images/installbutton.png"/>
-</a>
+  Alternatively, you can run `update-site/package.sh` to create a ZIP file with content of update site.
 
-**Note:** Not sure if this is an Eclipse Marketplace bug, but for some reason when you install the plugin using drag &amp; drop you will only see one feature (Basic). If you install using update site then you should see all 3 features available.
+To build a new release with new version:
+
+1. Use Find and Replace in all projects to change all occurrences of current version with new value.
+2. Delete `features`, `plugins`, `artifacts.jar`, and `content.jar` files from the `update-site` folder.
+3. Repeat steps 4 and 5 from above.
+
 
 ### Thanks To
 
