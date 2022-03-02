@@ -5,4 +5,4 @@ artifacts.jar
 content.jar
 features
 plugins
-update-site.zip
+update-site/*.zip

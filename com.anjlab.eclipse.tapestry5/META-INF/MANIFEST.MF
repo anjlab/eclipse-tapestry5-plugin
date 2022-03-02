@@ -31,3 +31,4 @@ Export-Package: com.anjlab.eclipse.tapestry5;x-friends:="com.anjlab.eclipse.e4.t
  com.anjlab.eclipse.tapestry5.views;x-friends:="com.anjlab.eclipse.e4.tapestry5,com.anjlab.eclipse.tapestry5.webtools",
  com.anjlab.eclipse.tapestry5.views.context;x-friends:="com.anjlab.eclipse.e4.tapestry5,com.anjlab.eclipse.tapestry5.webtools",
  com.anjlab.eclipse.tapestry5.views.project;x-friends:="com.anjlab.eclipse.e4.tapestry5,com.anjlab.eclipse.tapestry5.webtools"
+Automatic-Module-Name: com.anjlab.eclipse.tapestry5
