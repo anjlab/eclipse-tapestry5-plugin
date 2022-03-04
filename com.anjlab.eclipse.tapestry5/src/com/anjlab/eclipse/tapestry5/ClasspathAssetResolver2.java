@@ -1,5 +1,7 @@
 package com.anjlab.eclipse.tapestry5;
 
+import java.io.File;
+
 import org.apache.commons.lang3.StringUtils;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.Path;
@@ -31,7 +33,7 @@ public class ClasspathAssetResolver2 extends ClasspathAssetResolver
         {
             FileLookup fileLookup = relativeTo.getContext().createLookup();
             
-            if (path.startsWith("META-INF/modules/"))
+            if (path.startsWith("META-INF"+File.separator+"modules"+File.separator))
             {
                 TapestryFile file = fileLookup.findClasspathFileCaseInsensitive(path);
                 
@@ -71,8 +73,8 @@ public class ClasspathAssetResolver2 extends ClasspathAssetResolver
             
             String packageName =
                     StringUtils
-                        .removeStart(parentDir.toPortableString(), "/")
-                        .replace('/', '.');
+                        .removeStart(parentDir.toPortableString(), File.separator)
+                        .replace(File.separatorChar, '.');
             
             LibraryMapping mapping = tapestryProject.findLibraryMapping(packageName);
             
@@ -81,7 +83,7 @@ public class ClasspathAssetResolver2 extends ClasspathAssetResolver
                 throw createAssetException(path, null);
             }
             
-            IPath rootPath = new Path(mapping.getRootPackage().replace('.', '/'));
+            IPath rootPath = new Path(mapping.getRootPackage().replace('.', File.separatorChar));
             
             IPath subDir = parentDir.makeRelativeTo(rootPath).addTrailingSeparator();
             
@@ -96,9 +98,9 @@ public class ClasspathAssetResolver2 extends ClasspathAssetResolver
             
             String folderName = StringUtils.isEmpty(mapping.getPathPrefix())
                     ? ""
-                    : mapping.getPathPrefix() + "/";
+                    : mapping.getPathPrefix() + File.separatorChar;
             
-            String assetPath = "META-INF/assets/"
+            String assetPath = "META-INF"+File.separator+"assets"+File.separator
                     + folderName
                     + (subDir.segmentCount() == 0 ? "" : subDir.toPortableString())
                     + path;
