@@ -195,7 +195,7 @@ for TML files.
    </license>
 
    <url>
-      <update label="Eclipse Integration for Tapestry5" url="https://dl.bintray.com/anjlab/eclipse-tapestry5-plugin"/>
+      <update label="Eclipse Integration for Tapestry5" url="https://raw.githubusercontent.com/wiki/anjlab/eclipse-tapestry5-plugin/update-site"/>
    </url>
 
    <plugin

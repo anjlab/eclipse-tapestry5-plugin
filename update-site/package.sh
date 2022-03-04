@@ -8,12 +8,21 @@ SCRIPT_PATH=$( cd $(dirname $0) ; pwd -P )
 
 cd ${SCRIPT_PATH}
 
-ARCHIVE_NAME=${REPO_NAME}-${PACKAGE_NAME}-${VERSION_NAME}.zip
+rm -rf ${VERSION_NAME}
 
-rm ${ARCHIVE_NAME}
+mkdir ${VERSION_NAME}
 
-zip -r ${ARCHIVE_NAME} \
-  artifacts.jar \
-  content.jar \
-  features \
-  plugins
+cp artifacts.jar ${VERSION_NAME}
+cp content.jar ${VERSION_NAME}
+mv features ${VERSION_NAME}
+mv plugins ${VERSION_NAME}
+
+unzip artifacts.jar
+
+sed -i'.bak' -e "s/\/plugins\/\\$/\/${VERSION_NAME}\/plugins\/$/g" artifacts.xml
+sed -i'.bak' -e "s/\/features\/\\$/\/${VERSION_NAME}\/features\/$/g" artifacts.xml
+sed -i'.bak' -e "s/\/binary\/\\$/\/${VERSION_NAME}\/binary\/$/g" artifacts.xml
+
+zip artifacts.jar artifacts.xml
+
+rm artifacts.xml artifacts.xml.bak
