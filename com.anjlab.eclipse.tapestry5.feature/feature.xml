@@ -2,7 +2,7 @@
 <feature
       id="com.anjlab.eclipse.tapestry5.feature"
       label="Basic Tapestry5 Support (required)"
-      version="2.13.5"
+      version="2.13.6"
       provider-name="AnjLab Team"
       plugin="com.anjlab.eclipse.tapestry5">
 

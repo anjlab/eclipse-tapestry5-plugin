@@ -2,7 +2,7 @@ Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
 Bundle-Name: Tapestry5 WebTools Editors Extensions (experimental)
 Bundle-SymbolicName: com.anjlab.eclipse.tapestry5.webtools;singleton:=true
-Bundle-Version: 2.13.5
+Bundle-Version: 2.13.6
 Bundle-Vendor: AnjLab Team
 Bundle-RequiredExecutionEnvironment: JavaSE-1.6
 Require-Bundle: org.eclipse.wst.sse.ui,
