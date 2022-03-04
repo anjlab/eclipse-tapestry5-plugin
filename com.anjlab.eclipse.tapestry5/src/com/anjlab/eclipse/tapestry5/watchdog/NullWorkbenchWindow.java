@@ -65,5 +65,4 @@ public class NullWorkbenchWindow implements IWorkbenchWindow
     @Override public boolean close() { return false; }
 
     @Override public boolean isClosing() { return false; }
-    
 }
