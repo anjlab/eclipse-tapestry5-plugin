@@ -192,12 +192,13 @@ This is still work in progress and is subject to change.
 
 ### Install
 
-Download plugin update site archive to your local machine
-from the <a href="https://github.com/anjlab/eclipse-tapestry5-plugin/releases">releases page</a>.
+Use this update site URL:
 
-In Eclipse go to *Help* -> *Install New Software...* -> *Add...*
+	https://raw.githubusercontent.com/wiki/anjlab/eclipse-tapestry5-plugin/update-site
 
-Click "Archive..." and select downloaded update site.
+Or drag &amp; drop this icon into a running Eclipse:
+
+<a href="http://marketplace.eclipse.org/marketplace-client-intro?mpc_install=1125032" class="drag" title="Drag to your running Eclipse* workspace. *Requires Eclipse Marketplace Client"><img style="width:80px;" typeof="foaf:Image" class="img-responsive" src="https://marketplace.eclipse.org/sites/all/themes/solstice/public/images/marketplace/btn-install.svg" alt="Drag to your running Eclipse* workspace. *Requires Eclipse Marketplace Client" /></a>
 
 ### How to build
 
@@ -207,15 +208,6 @@ Click "Archive..." and select downloaded update site.
 3. Open `update-site/target-platform.target` and click *Set as Active Target Platform*
 4. Right click `update-site/site.xml` and select *Plug-in Tools* -> *Build Site*
 5. That's it, the `update-site` folder will contain the build and be used for local installation.
-
-  Alternatively, you can run `update-site/package.sh` to create a ZIP file with content of update site.
-
-To build a new release with new version:
-
-1. Use Find and Replace in all projects to change all occurrences of current version with new value.
-2. Delete `features`, `plugins`, `artifacts.jar`, and `content.jar` files from the `update-site` folder.
-3. Repeat steps 4 and 5 from above.
-
 
 ### Thanks To
 
