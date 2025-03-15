@@ -2,7 +2,7 @@ Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
 Bundle-Name: Basic Tapestry5 Support (required)
 Bundle-SymbolicName: com.anjlab.eclipse.tapestry5;singleton:=true
-Bundle-Version: 2.13.6
+Bundle-Version: 2.13.7
 Bundle-Activator: com.anjlab.eclipse.tapestry5.Activator
 Bundle-Vendor: AnjLab Team
 Require-Bundle: org.eclipse.ui,
@@ -19,12 +19,12 @@ Require-Bundle: org.eclipse.ui,
  org.eclipse.core.filebuffers,
  org.eclipse.ui.views,
  org.eclipse.ui.navigator,
- org.apache.commons.lang3;bundle-version="3.1.0",
+ org.apache.commons.lang3,
  org.eclipse.ui.console,
  org.eclipse.emf.common.ui,
  com.google.gson;bundle-version="2.2.4",
  com.google.guava;bundle-version="15.0.0"
-Bundle-RequiredExecutionEnvironment: JavaSE-1.6
+Bundle-RequiredExecutionEnvironment: JavaSE-21
 Bundle-ActivationPolicy: lazy
 Eclipse-LazyStart: true
 Export-Package: com.anjlab.eclipse.tapestry5;x-friends:="com.anjlab.eclipse.e4.tapestry5,com.anjlab.eclipse.tapestry5.webtools",

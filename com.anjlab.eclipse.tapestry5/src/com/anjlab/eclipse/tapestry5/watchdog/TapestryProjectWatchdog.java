@@ -6,9 +6,9 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Objects;
 import java.util.Set;
 
-import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IMarker;
@@ -457,13 +457,13 @@ public class TapestryProjectWatchdog extends AbstractWatchdog
             private boolean isWebXmlFile(IFile affectedFile)
             {
                 return affectedFile.getName().equals("web.xml")
-                        && ObjectUtils.equals(affectedFile, TapestryUtils.findWebXml(affectedFile.getProject()));
+                        && Objects.equals(affectedFile, TapestryUtils.findWebXml(affectedFile.getProject()));
             }
 
             private boolean isEclipseProjectClasspathFile(IFile affectedFile)
             {
                 return affectedFile.getName().equals(".classpath")
-                    && ObjectUtils.equals(affectedFile.getParent(), affectedFile.getProject());
+                    && Objects.equals(affectedFile.getParent(), affectedFile.getProject());
             }
         };
         
@@ -480,7 +480,7 @@ public class TapestryProjectWatchdog extends AbstractWatchdog
             
             for (TapestryModule module : project.modules())
             {
-                if (ObjectUtils.equals(affectedProject, module.getEclipseProject()))
+                if (Objects.equals(affectedProject, module.getEclipseProject()))
                 {
                     //  Let every window get its own copy of TapestryProject
                     changeTapestryProject(window, affectedProject);

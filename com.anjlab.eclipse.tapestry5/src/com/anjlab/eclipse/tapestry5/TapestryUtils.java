@@ -4,8 +4,8 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.util.Objects;
 
-import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.eclipse.core.resources.IContainer;
 import org.eclipse.core.resources.IFile;
@@ -21,6 +21,7 @@ import org.eclipse.jdt.core.ICompilationUnit;
 import org.eclipse.jdt.core.IJarEntryResource;
 import org.eclipse.jdt.core.IJavaProject;
 import org.eclipse.jdt.core.IMethod;
+import org.eclipse.jdt.core.IOrdinaryClassFile;
 import org.eclipse.jdt.core.IPackageFragmentRoot;
 import org.eclipse.jdt.core.JavaModelException;
 import org.eclipse.jdt.core.dom.Annotation;
@@ -414,11 +415,11 @@ public class TapestryUtils
         {
             IClassFile classFile = ((IClassFileEditorInput) editorInput).getClassFile();
             
-            if (classFile != null)
+            if (classFile != null && classFile instanceof IOrdinaryClassFile)
             {
                 return Activator.getDefault()
                         .getTapestryContextFactory()
-                        .createTapestryContext(classFile)
+                        .createTapestryContext((IOrdinaryClassFile) classFile)
                         .getInitialFile();
             }
         }
@@ -445,11 +446,11 @@ public class TapestryUtils
             }
         }
         
-        if (firstElement instanceof IClassFile)
+        if (firstElement instanceof IOrdinaryClassFile)
         {
             return Activator.getDefault()
                     .getTapestryContextFactory()
-                    .createTapestryContext((IClassFile) firstElement)
+                    .createTapestryContext((IOrdinaryClassFile) firstElement)
                     .getInitialFile();
         }
         
@@ -864,8 +865,8 @@ public class TapestryUtils
 
     public static boolean isModuleFile(IFile affectedFile, TapestryModule module)
     {
-        return ObjectUtils.equals(module.getModuleFile().getPath(), affectedFile.getProjectRelativePath())
-                && ObjectUtils.equals(module.getModuleFile().getProject(), affectedFile.getProject());
+        return Objects.equals(module.getModuleFile().getPath(), affectedFile.getProjectRelativePath())
+                && Objects.equals(module.getModuleFile().getProject(), affectedFile.getProject());
     }
 
     public static ProjectSettings readProjectSettings(TapestryProject tapestryProject)

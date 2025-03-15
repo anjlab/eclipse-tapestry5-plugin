@@ -59,7 +59,7 @@ public class TapestryProjectOutlineView extends ViewPart
                         Activator.getDefault().getTapestryProject(
                                 getSite().getWorkbenchWindow())));
         viewer.setLabelProvider(new TapestryDecoratingLabelProvider());
-        viewer.setSorter(new NameSorter());
+        viewer.setComparator(new NameSorter());
         viewer.setInput(this);
         viewer.addSelectionChangedListener(
                 new TreeObjectSelectionListener(

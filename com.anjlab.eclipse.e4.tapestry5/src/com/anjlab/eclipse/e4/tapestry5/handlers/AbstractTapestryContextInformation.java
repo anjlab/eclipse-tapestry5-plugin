@@ -659,7 +659,7 @@ public abstract class AbstractTapestryContextInformation extends PopupDialog
     
         treeViewer.setContentProvider(getContentProvider());
         treeViewer.setLabelProvider(new TapestryDecoratingLabelProvider());
-        treeViewer.setSorter(new NameSorter());
+        treeViewer.setComparator(new NameSorter());
         treeViewer.setAutoExpandLevel(AbstractTreeViewer.ALL_LEVELS);
         treeViewer.setInput(this);
     

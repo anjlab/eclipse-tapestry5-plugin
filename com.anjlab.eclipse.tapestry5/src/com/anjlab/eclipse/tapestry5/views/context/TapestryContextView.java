@@ -66,7 +66,7 @@ public class TapestryContextView extends ViewPart
                         Activator.getDefault().getTapestryContext(
                                 getSite().getWorkbenchWindow())));
         viewer.setLabelProvider(new TapestryDecoratingLabelProvider());
-        viewer.setSorter(new NameSorter());
+        viewer.setComparator(new NameSorter());
         viewer.setInput(this);
         viewer.addSelectionChangedListener(
                 new TreeObjectSelectionListener(

@@ -1,6 +1,7 @@
 package com.anjlab.eclipse.tapestry5.watchdog;
 
-import org.apache.commons.lang3.ObjectUtils;
+import java.util.Objects;
+
 import org.eclipse.ui.IEditorPart;
 import org.eclipse.ui.IWorkbenchPage;
 
@@ -17,7 +18,7 @@ public class ActiveEditorTracker
             return true;
         }
 
-        if (ObjectUtils.equals(page.getActiveEditor(), previousEditor))
+        if (Objects.equals(page.getActiveEditor(), previousEditor))
         {
             return false;
         }

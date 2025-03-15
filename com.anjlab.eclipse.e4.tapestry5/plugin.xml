@@ -60,7 +60,7 @@
          point="org.eclipse.ui.commandImages">
       <image
             commandId="com.anjlab.eclipse.e4.tapestry5.commands.quickNavigationCommand"
-            disabledIcon="platform:/plugin/org.eclipse.search/icons/full/dtool16/search.gif"
-            icon="platform:/plugin/org.eclipse.search/icons/full/etool16/search.gif"/>
+            disabledIcon="platform:/plugin/org.eclipse.search/icons/full/dtool16/search.png"
+            icon="platform:/plugin/org.eclipse.search/icons/full/etool16/search.png"/>
    </extension>
 </plugin>

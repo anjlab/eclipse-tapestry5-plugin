@@ -3,20 +3,20 @@ package com.anjlab.eclipse.tapestry5;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.Path;
-import org.eclipse.jdt.core.IClassFile;
+import org.eclipse.jdt.core.IOrdinaryClassFile;
 
 public class ClassFile extends AbstractTapestryFile
 {
     private TapestryContext context;
-    private IClassFile classFile;
+    private IOrdinaryClassFile classFile;
 
-    public ClassFile(TapestryContext context, IClassFile classFile)
+    public ClassFile(TapestryContext context, IOrdinaryClassFile classFile)
     {
         this.context = context;
         this.classFile = classFile;
     }
 
-    public IClassFile getClassFile()
+    public IOrdinaryClassFile getClassFile()
     {
         return classFile;
     }

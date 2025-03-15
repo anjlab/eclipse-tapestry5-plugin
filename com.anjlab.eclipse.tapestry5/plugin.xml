@@ -135,8 +135,8 @@
          point="org.eclipse.ui.commandImages">
       <image
             commandId="com.anjlab.eclipse.tapestry5.commands.projectRefreshCommand"
-            disabledIcon="platform:/plugin/org.eclipse.search/icons/full/dlcl16/refresh.gif"
-            icon="platform:/plugin/org.eclipse.search/icons/full/elcl16/refresh.gif"/>
+            disabledIcon="platform:/plugin/org.eclipse.search/icons/full/dlcl16/refresh.png"
+            icon="platform:/plugin/org.eclipse.search/icons/full/elcl16/refresh.png"/>
    </extension>
    <extension
          point="org.eclipse.ui.console.consolePatternMatchListeners">

@@ -3,8 +3,8 @@ package com.anjlab.eclipse.tapestry5.watchdog;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
-import org.apache.commons.lang3.ObjectUtils;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResourceChangeEvent;
@@ -59,7 +59,7 @@ public class WebXmlWatchdog extends AbstractWatchdog
                         continue;
                     }
                     
-                    if (ObjectUtils.equals(changedFile, webXml))
+                    if (Objects.equals(changedFile, webXml))
                     {
                         notifyWebXmlChanged(changedFile);
                     }

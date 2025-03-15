@@ -20,6 +20,7 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonIOException;
 import com.google.gson.JsonSyntaxException;
+import com.google.gson.Strictness;
 import com.google.gson.stream.JsonReader;
 
 //  TODO Add file markers with SEVERITY_INFO in Eclipse views
@@ -157,7 +158,7 @@ public class ProjectSettings implements Openable
             throws JsonIOException, JsonSyntaxException, IOException
     {
         JsonReader reader = new JsonReader(new InputStreamReader(input, "UTF-8"));
-        reader.setLenient(true);
+        reader.setStrictness(Strictness.LENIENT);
         try
         {
             return gson.fromJson(reader, ProjectSettings.class);

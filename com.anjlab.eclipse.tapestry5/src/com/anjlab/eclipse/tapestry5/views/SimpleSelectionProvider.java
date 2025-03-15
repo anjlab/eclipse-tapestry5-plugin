@@ -8,7 +8,7 @@ import org.eclipse.jface.viewers.SelectionChangedEvent;
 
 public class SimpleSelectionProvider implements ISelectionProvider
 {
-    private final ListenerList listeners = new ListenerList();
+    private final ListenerList<ISelectionChangedListener> listeners = new ListenerList<ISelectionChangedListener>();
     private ISelection selection;
     
     @Override

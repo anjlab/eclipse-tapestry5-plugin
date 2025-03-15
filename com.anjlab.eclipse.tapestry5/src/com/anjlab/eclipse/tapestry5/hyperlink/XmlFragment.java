@@ -5,8 +5,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Objects;
 
-import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.eclipse.jface.text.BadLocationException;
 import org.eclipse.jface.text.IDocument;
@@ -309,7 +309,7 @@ public abstract class XmlFragment
                     return this == obj;
                 }
                 
-                return ObjectUtils.equals(value, ((XmlFragment.Optional<?>) obj).value);
+                return Objects.equals(value, ((XmlFragment.Optional<?>) obj).value);
             }
             return false;
         }

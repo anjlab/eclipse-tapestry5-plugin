@@ -1,9 +1,9 @@
 package com.anjlab.eclipse.tapestry5;
 
 import org.apache.commons.lang3.StringUtils;
-import org.eclipse.jdt.core.IClassFile;
 import org.eclipse.jdt.core.IJarEntryResource;
 import org.eclipse.jdt.core.IJavaElement;
+import org.eclipse.jdt.core.IOrdinaryClassFile;
 import org.eclipse.jdt.core.IPackageFragment;
 import org.eclipse.jdt.core.IPackageFragmentRoot;
 import org.eclipse.jdt.core.IParent;
@@ -123,9 +123,9 @@ public class JarFileLookup implements FileLookup
             {
                 if (segments.length == 0)
                 {
-                    if (child instanceof IClassFile)
+                    if (child instanceof IOrdinaryClassFile)
                     {
-                        IClassFile classFile = (IClassFile) child;
+                        IOrdinaryClassFile classFile = (IOrdinaryClassFile) child;
                         
                         return Activator.getDefault()
                                 .getTapestryContextFactory()
@@ -147,7 +147,7 @@ public class JarFileLookup implements FileLookup
                 {
                     IPackageFragment pkg = (IPackageFragment) child;
                     
-                    for (IClassFile classFile : pkg.getClassFiles())
+                    for (IOrdinaryClassFile classFile : pkg.getOrdinaryClassFiles())
                     {
                         if (classFile.getElementName().equalsIgnoreCase(segments[1]))
                         {

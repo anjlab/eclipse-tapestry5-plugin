@@ -11,6 +11,7 @@ import org.eclipse.jdt.core.IClassFile;
 import org.eclipse.jdt.core.ICompilationUnit;
 import org.eclipse.jdt.core.IJarEntryResource;
 import org.eclipse.jdt.core.IJavaElement;
+import org.eclipse.jdt.core.IOrdinaryClassFile;
 import org.eclipse.jdt.core.IPackageFragment;
 import org.eclipse.jdt.core.IType;
 import org.eclipse.jdt.core.JavaModelException;
@@ -25,7 +26,7 @@ public class JarTapestryContext extends TapestryContext
         initFromFile(new JarEntryFile(this, jarEntry));
     }
 
-    public JarTapestryContext(IClassFile classFile)
+    public JarTapestryContext(IOrdinaryClassFile classFile)
     {
         initFromFile(new ClassFile(this, classFile));
     }
@@ -118,9 +119,9 @@ public class JarTapestryContext extends TapestryContext
                 {
                     IClassFile classFile = pkg.getClassFile(fileName);
                     
-                    if (classFile != null)
+                    if (classFile instanceof IOrdinaryClassFile)
                     {
-                        files.add(new ClassFile(this, classFile));
+                        files.add(new ClassFile(this, (IOrdinaryClassFile) classFile));
                         
                         if (findFirst)
                         {

@@ -3,6 +3,7 @@ package com.anjlab.eclipse.tapestry5;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.jdt.core.IClassFile;
 import org.eclipse.jdt.core.IJavaElement;
+import org.eclipse.jdt.core.IOrdinaryClassFile;
 import org.eclipse.jdt.core.IPackageFragment;
 import org.eclipse.jdt.core.IPackageFragmentRoot;
 import org.eclipse.jdt.core.IType;
@@ -19,7 +20,7 @@ public class JarTapestryModule extends TapestryModule
     @Override
     public TapestryFile getModuleFile()
     {
-        IClassFile classFile = getModuleClass().getClassFile();
+        IOrdinaryClassFile classFile = getModuleClass().getClassFile();
         
         TapestryContext context = Activator.getDefault()
                 .getTapestryContextFactory()

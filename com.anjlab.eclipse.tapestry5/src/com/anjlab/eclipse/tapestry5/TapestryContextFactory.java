@@ -1,8 +1,8 @@
 package com.anjlab.eclipse.tapestry5;
 
 import org.eclipse.core.resources.IFile;
-import org.eclipse.jdt.core.IClassFile;
 import org.eclipse.jdt.core.IJarEntryResource;
+import org.eclipse.jdt.core.IOrdinaryClassFile;
 
 public class TapestryContextFactory
 {
@@ -31,7 +31,7 @@ public class TapestryContextFactory
         }
     }
 
-    public TapestryContext createTapestryContext(IClassFile classFile)
+    public TapestryContext createTapestryContext(IOrdinaryClassFile classFile)
     {
         try
         {

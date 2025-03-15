@@ -3,10 +3,10 @@ package com.anjlab.eclipse.tapestry5;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Pattern;
 
-import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.eclipse.core.resources.IContainer;
 import org.eclipse.core.resources.IFile;
@@ -640,7 +640,7 @@ public class EclipseUtils
 
                 if (editorInput instanceof IFileEditorInput)
                 {
-                    if (ObjectUtils.equals(((IFileEditorInput) editorInput).getFile(), file))
+                    if (Objects.equals(((IFileEditorInput) editorInput).getFile(), file))
                     {
                         // The file is opened in editor
 
@@ -913,7 +913,7 @@ public class EclipseUtils
                 annotation,
                 name,
                 project,
-                AST.newAST(getParserLevel()),
+                AST.newAST(getParserLevel(), false),
                 new ObjectCallback<String, JavaModelException>()
                 {
                     @Override

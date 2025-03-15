@@ -16,6 +16,7 @@ import org.eclipse.jdt.core.IClassFile;
 import org.eclipse.jdt.core.IJavaElement;
 import org.eclipse.jdt.core.IMemberValuePair;
 import org.eclipse.jdt.core.IMethod;
+import org.eclipse.jdt.core.IOrdinaryClassFile;
 import org.eclipse.jdt.core.IType;
 import org.eclipse.jdt.core.JavaModelException;
 import org.eclipse.jdt.core.dom.ASTNode;
@@ -663,9 +664,9 @@ public abstract class TapestryModule implements Openable
                             .getTapestryContextFactory()
                             .createTapestryContext((IFile) obj);
                 }
-                else if (obj instanceof IClassFile)
+                else if (obj instanceof IOrdinaryClassFile)
                 {
-                    IClassFile classFile = (IClassFile) obj;
+                    IOrdinaryClassFile classFile = (IOrdinaryClassFile) obj;
                     
                     //  Ignore inner classes
                     if (!classFile.getElementName().contains("$"))

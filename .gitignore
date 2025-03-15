@@ -1,4 +1,5 @@
 bin
+.metadata
 .settings
 .project
 .DS_Store

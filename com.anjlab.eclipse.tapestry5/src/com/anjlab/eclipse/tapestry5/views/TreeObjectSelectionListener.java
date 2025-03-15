@@ -1,10 +1,12 @@
 package com.anjlab.eclipse.tapestry5.views;
 
-import org.apache.commons.lang3.ObjectUtils;
+import java.util.Objects;
+
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.jdt.core.IClassFile;
 import org.eclipse.jdt.core.IJavaElement;
+import org.eclipse.jdt.core.IOrdinaryClassFile;
 import org.eclipse.jdt.core.ISourceReference;
 import org.eclipse.jdt.core.IType;
 import org.eclipse.jdt.core.JavaModelException;
@@ -230,16 +232,19 @@ public class TreeObjectSelectionListener implements ISelectionChangedListener
                 {
                     IClassFile classFile = ((IClassFileEditorInput) input).getClassFile();
                     
-                    if (ObjectUtils.equals(classFile.getType(), EclipseUtils.findParentType(reference.getElement())))
+                    if (classFile instanceof IOrdinaryClassFile)
                     {
-                        new SetEditorCaretPositionOffsetLength(offset, length).editorOpened(activeEditor);
+                        if (Objects.equals(((IOrdinaryClassFile) classFile).getType(), EclipseUtils.findParentType(reference.getElement())))
+                        {
+                            new SetEditorCaretPositionOffsetLength(offset, length).editorOpened(activeEditor);
+                        }
                     }
                 }
                 else if (input instanceof IFileEditorInput)
                 {
                     IFile file = ((IFileEditorInput) input).getFile();
                     
-                    if (ObjectUtils.equals(file, reference.getElement().getResource()))
+                    if (Objects.equals(file, reference.getElement().getResource()))
                     {
                         new SetEditorCaretPositionOffsetLength(offset, length).editorOpened(activeEditor);
                     }
