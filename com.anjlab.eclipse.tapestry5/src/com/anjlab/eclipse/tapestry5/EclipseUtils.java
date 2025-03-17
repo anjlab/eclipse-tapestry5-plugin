@@ -3,6 +3,7 @@ package com.anjlab.eclipse.tapestry5;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Pattern;
@@ -21,6 +22,7 @@ import org.eclipse.jdt.core.ICompilationUnit;
 import org.eclipse.jdt.core.IField;
 import org.eclipse.jdt.core.IImportDeclaration;
 import org.eclipse.jdt.core.IJavaElement;
+import org.eclipse.jdt.core.IJavaProject;
 import org.eclipse.jdt.core.IMember;
 import org.eclipse.jdt.core.IMemberValuePair;
 import org.eclipse.jdt.core.IPackageFragmentRoot;
@@ -442,11 +444,11 @@ public class EclipseUtils
         return matches;
     }
 
-    public static ASTNode parse(ISourceReference reference, int kind)
+    public static ASTNode parse(ISourceReference reference, int kind, IProject project)
     {
         String source = getSource(reference);
 
-        return parse(source, kind);
+        return parse(source, kind, project);
     }
 
     private static String getSource(ISourceReference reference)
@@ -463,7 +465,7 @@ public class EclipseUtils
         return source;
     }
 
-    public static ASTNode parse(String source, int kind)
+    public static ASTNode parse(String source, int kind, IProject project)
     {
         if (source == null)
         {
@@ -471,6 +473,22 @@ public class EclipseUtils
         }
 
         ASTParser parser = ASTParser.newParser(getParserLevel());
+
+        Map<String, String> options = JavaCore.getOptions();
+
+        if (isJavaProject(project))
+        {
+            IJavaProject javaProject = JavaCore.create(project);
+
+            String compilerCompliance = javaProject.getOption(JavaCore.COMPILER_COMPLIANCE, false);
+
+            if (compilerCompliance != null)
+            {
+                JavaCore.setComplianceOptions(compilerCompliance, options);
+            }
+        }
+
+        parser.setCompilerOptions(options);
         parser.setKind(kind);
         parser.setSource(source.toCharArray());
         parser.setResolveBindings(true);
@@ -582,7 +600,7 @@ public class EclipseUtils
 
                         if (source != null)
                         {
-                            ASTNode node = parse(source, ASTParser.K_CLASS_BODY_DECLARATIONS);
+                            ASTNode node = parse(source, ASTParser.K_CLASS_BODY_DECLARATIONS, project);
 
                             final AtomicReference<Expression> initializer = new AtomicReference<Expression>();
 
@@ -659,9 +677,16 @@ public class EclipseUtils
         openFile(window, file, editorCallback);
     }
 
-    public static boolean isJavaProject(IProject project) throws CoreException
+    public static boolean isJavaProject(IProject project)
     {
-        return project.hasNature(JavaCore.NATURE_ID);
+        try
+        {
+            return project.hasNature(JavaCore.NATURE_ID);
+        }
+        catch (CoreException e)
+        {
+            return false;
+        }
     }
 
     public static IWorkbenchWindow getWorkbenchWindow(Shell shell)

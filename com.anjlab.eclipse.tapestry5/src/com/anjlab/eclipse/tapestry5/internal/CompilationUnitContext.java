@@ -1,5 +1,6 @@
 package com.anjlab.eclipse.tapestry5.internal;
 
+import org.eclipse.core.resources.IProject;
 import org.eclipse.jdt.core.ICompilationUnit;
 import org.eclipse.jdt.core.JavaModelException;
 import org.eclipse.jdt.core.dom.AST;
@@ -32,10 +33,12 @@ public class CompilationUnitContext implements IDisposable
     private boolean cuCreated;
     private CompilationUnit parsedUnit;
     private boolean cuParsed;
+	private IProject project;
     
-    public CompilationUnitContext(CompilationUnitLifecycle lifecycle)
+    public CompilationUnitContext(CompilationUnitLifecycle lifecycle, IProject project)
     {
         this.lifecycle = lifecycle;
+		this.project = project;
     }
     
     public ICompilationUnit getCompilationUnit()
@@ -62,7 +65,7 @@ public class CompilationUnitContext implements IDisposable
             cuParsed = true;
             try
             {
-                parsedUnit = (CompilationUnit) EclipseUtils.parse(compilationUnit, ASTParser.K_COMPILATION_UNIT);
+                parsedUnit = (CompilationUnit) EclipseUtils.parse(compilationUnit, ASTParser.K_COMPILATION_UNIT, project);
             }
             catch (Exception e)
             {

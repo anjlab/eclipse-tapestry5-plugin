@@ -581,7 +581,7 @@ public abstract class TapestryModule implements Openable
             return null;
         }
         
-        compilationUnit = (CompilationUnit) EclipseUtils.parse(source, ASTParser.K_COMPILATION_UNIT);
+        compilationUnit = (CompilationUnit) EclipseUtils.parse(source, ASTParser.K_COMPILATION_UNIT, project.getProject());
         
         return compilationUnit;
     }

@@ -153,7 +153,7 @@ public abstract class TapestryContext
     
     private void analyzeCompilationUnit()
     {
-        CompilationUnitContext context = new CompilationUnitContext(getCompilationUnit());
+        CompilationUnitContext context = new CompilationUnitContext(getCompilationUnit(), initialFile.getProject());
         
         try
         {

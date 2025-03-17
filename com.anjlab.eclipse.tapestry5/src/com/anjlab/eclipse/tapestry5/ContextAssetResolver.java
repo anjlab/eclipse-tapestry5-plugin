@@ -5,7 +5,6 @@ import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.ResourcesPlugin;
-import org.eclipse.core.runtime.CoreException;
 
 public class ContextAssetResolver implements AssetResolver
 {
@@ -16,29 +15,22 @@ public class ContextAssetResolver implements AssetResolver
         
         for (IProject project : projects)
         {
-            try
+            if (EclipseUtils.isJavaProject(project))
             {
-                if (EclipseUtils.isJavaProject(project))
+                IContainer webapp = TapestryUtils.findWebapp(project);
+
+                if (webapp != null)
                 {
-                    IContainer webapp = TapestryUtils.findWebapp(project);
+                    IFile file = EclipseUtils.findFileCaseInsensitive(webapp, path);
                     
-                    if (webapp != null)
+                    if (file != null)
                     {
-                        IFile file = EclipseUtils.findFileCaseInsensitive(webapp, path);
-                        
-                        if (file != null)
-                        {
-                            return Activator.getDefault()
-                                    .getTapestryContextFactory()
-                                    .createTapestryContext(file)
-                                    .getInitialFile();
-                        }
+                        return Activator.getDefault()
+                                .getTapestryContextFactory()
+                                .createTapestryContext(file)
+                                .getInitialFile();
                     }
                 }
-            }
-            catch (CoreException e)
-            {
-                //  Ignore
             }
         }
         return null;

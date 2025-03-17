@@ -283,7 +283,7 @@ public class NewFileWizardAction extends Action
                 
                 final ICompilationUnit compilationUnit = (ICompilationUnit) javaElement;
                 
-                CompilationUnit unit = (CompilationUnit) EclipseUtils.parse(compilationUnit, ASTParser.K_COMPILATION_UNIT);
+                CompilationUnit unit = (CompilationUnit) EclipseUtils.parse(compilationUnit, ASTParser.K_COMPILATION_UNIT, project);
                 
                 AnnotationLookupContext rewriteContext = new AnnotationLookupContext();
                 

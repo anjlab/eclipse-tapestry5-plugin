@@ -6,7 +6,6 @@ import java.util.Set;
 
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.ResourcesPlugin;
-import org.eclipse.core.runtime.CoreException;
 import org.eclipse.jdt.core.IJavaProject;
 import org.eclipse.jdt.core.JavaCore;
 
@@ -49,23 +48,16 @@ public class ClasspathAssetResolver implements AssetResolver
                 continue;
             }
             
-            try
+            if (EclipseUtils.isJavaProject(project))
             {
-                if (EclipseUtils.isJavaProject(project))
+                IJavaProject javaProject = JavaCore.create(project);
+
+                TapestryFile file = TapestryUtils.findFileInSourceFolders(javaProject, path);
+
+                if (file != null)
                 {
-                    IJavaProject javaProject = JavaCore.create(project);
-                    
-                    TapestryFile file = TapestryUtils.findFileInSourceFolders(javaProject, path);
-                    
-                    if (file != null)
-                    {
-                        return file;
-                    }
+                    return file;
                 }
-            }
-            catch (CoreException e)
-            {
-                //  Ignore
             }
         }
         
