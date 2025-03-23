@@ -3,7 +3,6 @@ package com.anjlab.eclipse.tapestry5;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Pattern;
@@ -474,21 +473,13 @@ public class EclipseUtils
 
         ASTParser parser = ASTParser.newParser(getParserLevel());
 
-        Map<String, String> options = JavaCore.getOptions();
-
         if (isJavaProject(project))
         {
             IJavaProject javaProject = JavaCore.create(project);
 
-            String compilerCompliance = javaProject.getOption(JavaCore.COMPILER_COMPLIANCE, false);
-
-            if (compilerCompliance != null)
-            {
-                JavaCore.setComplianceOptions(compilerCompliance, options);
-            }
+            parser.setProject(javaProject);
         }
 
-        parser.setCompilerOptions(options);
         parser.setKind(kind);
         parser.setSource(source.toCharArray());
         parser.setResolveBindings(true);

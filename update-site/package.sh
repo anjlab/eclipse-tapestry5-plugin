@@ -2,7 +2,7 @@
 
 REPO_NAME=eclipse-tapestry5-plugin
 PACKAGE_NAME=update-site
-VERSION_NAME=2.13.8
+VERSION_NAME=2.13.9
 
 SCRIPT_PATH=$( cd $(dirname $0) ; pwd -P )
 
